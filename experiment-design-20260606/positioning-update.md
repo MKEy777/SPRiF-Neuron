@@ -1,7 +1,7 @@
 # SPRiF Positioning Update — Literature-Grounded (Round 2)
 
 Date: 2026-06-06
-Based on: ccf-literature-search (12 papers, 4 clusters) + ccf-experiment-designer (7 claims, 6 ablations)
+Based on: ccf-literature-search (12 papers, 4 clusters) + ccf-experiment-designer (updated: 6 claims, 3 ablations)
 Previous round: ccf-idea-optimizer initial report
 
 ---
@@ -91,7 +91,7 @@ Any single competitor may share one or two of these features, but none combines 
 
 **Literature basis**: AdLIF (Baronig 2025) has adaptation but the adaptation variable modulates firing threshold, not stores input history. TC-LIF (Yin IJCNN 2024) has dendritic+somatic compartments but these are spatial, not functional. No known work proposes functional role-based state decomposition in a spiking neuron.
 
-**Strongest defense**: Ablation B (merge slow/fast) + Ablation D (free A vs spectral) together.
+**Strongest defense**: Ablation B (merge slow/fast). Also supported by spectral structure analysis.
 
 ### C2: Spike-never-resets-memory principle [Confidence: HIGH]
 > In SPRiF, spike events trigger reset only on the fast discharge manifold; the slow spectral state that carries temporal memory is structurally preserved across spike events.
@@ -107,7 +107,7 @@ Any single competitor may share one or two of these features, but none combines 
 
 **Novelty risk**: Reviewer may argue "structured state space is well-known from S4/Mamba." Defense: SPRiF uses structure as a **neuron design principle**, not a **network architecture pattern**. The structured A matrix lives inside each neuron's slow state, not as a network layer.
 
-**Strongest defense**: Ablation D (free A vs spectral) — **this is the highest-stakes experiment**. If free A ≥ spectral A with comparable stability, this claim must be downgraded.
+**Strongest defense**: Parameter interpretability analysis (α,ρ,ω per-task distributions). Spectral constraint claim is supported analytically — no ablation experiment planned for this claim.
 
 ### C4: Projective reset in fast state space [Confidence: HIGH — STRONGEST NOVELTY]
 > SPRiF's post-spike reset operates as a directional projection along a learnable vector [1,λ] in the 2D fast state space, rather than a scalar subtraction on membrane potential. This allows the neuron to learn how reset affects different dimensions of the discharge state.
@@ -122,7 +122,7 @@ Any single competitor may share one or two of these features, but none combines 
 
 | # | Risk | Round 1 Label | Round 2 Update |
 | --- | --- | --- | --- |
-| 1 | "Just more state variables" | design-fixable (HIGH) | **Downgraded to MEDIUM**. Literature search confirms no other model does functional decomposition. Defense: direct comparison matrix shows SPRiF's unique combination. Ablation D (free A) and B (merge) are specific defenses. |
+| 1 | "Just more state variables" | design-fixable (HIGH) | **Downgraded to MEDIUM**. Literature search confirms no other model does functional decomposition. Defense: direct comparison matrix shows SPRiF's unique combination. Ablation B (merge) and Ablation A (ω=0) are specific defenses. |
 | 2 | SiLIF already did this | NEW | **NEW RISK (MEDIUM-HIGH)**. SiLIF (Jun 2025) proposes SSM-inspired oscillatory spiking neurons. Defense: SPRiF ≠ SiLIF in motivation (design principle vs training technique), architecture (dual-state vs single-state), and reset (projective vs scalar). Explicit comparison table in Related Work. |
 | 3 | BRF/PRF already have oscillation | requires-new-result (HIGH) | **Downgraded to MEDIUM**. BRF/PRF oscillation is in the membrane (gets reset); SPRiF oscillation is in the slow state (never reset). Differentiation is clear and testable. |
 | 4 | SSM-SNN field is crowded | NEW | **NEW RISK (MEDIUM)**. 2024-2025 saw 6+ SSM-SNN frameworks. SPRiF must not be positioned as "SSM for SNN" — must be positioned as "neuron design principle." |
@@ -172,7 +172,7 @@ Any single competitor may share one or two of these features, but none combines 
 1. **Functional state decomposition** for spiking neurons — separating temporal memory, spike readout, and reset into distinct dynamical roles
 2. **Constrained spectral slow dynamics** — structured (not free) temporal filtering via real decay and damped rotation modes
 3. **Projective fast-state reset** — directional, learnable reset that never touches the memory state
-4. **Empirical validation** across speech, physiological, event-based, and long-range sequence tasks with mechanism ablations and learned dynamics analysis
+4. **Empirical validation** across speech, physiological, and long-range sequence tasks with 3 mechanism ablations and learned dynamics analysis
 
 ---
 
@@ -186,7 +186,7 @@ Any single competitor may share one or two of these features, but none combines 
 
 ### Not ready to write (blocked on experiments):
 - Results section (waiting for Table 1 + Table 2 fill-in)
-- Ablation analysis (waiting for Ablations A-D)
+- Ablation analysis (waiting for Ablations A-C on PS-MNIST, QTDB, GSC)
 - Parameter visualization (waiting for Analysis 1-4)
 - Limitation paragraph (needs failure analysis results)
 - Claim-evidence alignment pass (needs completed results to verify claims)
@@ -230,6 +230,6 @@ SPRiF Neuron/
     search-notes.md     — query audit + handoff notes
 
   experiment-design-20260606/
-    experiment-plan.md  — full experiment design (7 claims, 6 ablations, TBD tables)
+    experiment-plan.md  — full experiment design (6 claims, 3 ablations on PS-MNIST/QTDB/GSC, TBD tables)
     positioning-update.md — THIS FILE (Round 2 positioning)
 ```

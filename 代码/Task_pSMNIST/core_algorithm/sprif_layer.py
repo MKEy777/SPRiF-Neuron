@@ -46,10 +46,10 @@ class SPRiFNeuronLayer(nn.Module):
         recurrent: bool = False,
         bias: bool = False,
         init_std: float = 0.05,
-        tau_alpha_range: Tuple[float, float] = (10.0, 80.0),
-        tau_rho_range: Tuple[float, float] = (4.0, 30.0),
-        tau_eta_range: Tuple[float, float] = (0.8, 8.0),
-        omega_range: Tuple[float, float] = (0.04 * math.pi, 0.40 * math.pi),
+        tau_alpha_range: Tuple[float, float] = (2.0, 60.0),
+        tau_rho_range: Tuple[float, float] = (2.0, 40.0),
+        tau_eta_range: Tuple[float, float] = (0.8, 10.0),
+        omega_range: Tuple[float, float] = (0.04 * math.pi, 0.50 * math.pi),
     ) -> None:
         super().__init__()
 
@@ -95,38 +95,36 @@ class SPRiFNeuronLayer(nn.Module):
             nn.init.orthogonal_(self.recurrent_linear.weight)
 
         with torch.no_grad():
-            tau_alpha = torch.exp(
-                torch.empty(self.hidden_size).uniform_(
-                    math.log(tau_alpha_range[0]),
-                    math.log(tau_alpha_range[1]),
-                )
+            # 线性空间均匀采样 tau_alpha
+            tau_alpha = torch.empty(self.hidden_size).uniform_(
+                tau_alpha_range[0], tau_alpha_range[1]
             )
             alpha = torch.exp(-1.0 / tau_alpha)
             self.alpha_raw.copy_(self._safe_logit(alpha))
 
-            tau_rho = torch.exp(
-                torch.empty(self.hidden_size).uniform_(
-                    math.log(tau_rho_range[0]),
-                    math.log(tau_rho_range[1]),
-                )
-            )
-            rho = torch.exp(-1.0 / tau_rho)
-            self.rho_raw.copy_(self._safe_logit(rho))
-
+            # 线性空间均匀采样 omega
             omega = torch.empty(self.hidden_size).uniform_(
-                omega_range[0],
-                omega_range[1],
+                omega_range[0], omega_range[1]
             )
             self.omega_raw.copy_(self._safe_logit(omega / math.pi))
 
-            tau_eta = torch.exp(
-                torch.empty(self.hidden_size, 2).uniform_(
-                    math.log(tau_eta_range[0]),
-                    math.log(tau_eta_range[1]),
-                )
+            # omega 依赖的动态 tau_rho 上界
+            omega_norm = (omega - omega_range[0]) / (omega_range[1] - omega_range[0] + 1e-5)
+            dynamic_upper = tau_rho_range[1] - omega_norm * (tau_rho_range[1] - tau_rho_range[0] * 1.5)
+            dynamic_upper = torch.clamp(dynamic_upper, min=tau_rho_range[0] + 0.1)
+
+            u = torch.rand(self.hidden_size, device=omega.device)
+            tau_rho = tau_rho_range[0] + u * (dynamic_upper - tau_rho_range[0])
+            rho = torch.exp(-1.0 / tau_rho)
+            self.rho_raw.copy_(self._safe_logit(rho))
+
+            # 线性空间均匀采样 tau_eta
+            tau_eta = torch.empty(self.hidden_size, 2).uniform_(
+                tau_eta_range[0], tau_eta_range[1]
             )
             eta = torch.exp(-1.0 / tau_eta)
             self.eta_raw.copy_(self._safe_logit(eta))
+
             self.lambda_reset.normal_(mean=0.0, std=init_std)
 
         nn.init.normal_(self.fast_coupling, mean=0.0, std=init_std)
@@ -248,6 +246,26 @@ class SPRiFNeuronLayer(nn.Module):
         }
         return spike, membrane, next_state
 
+    def forward_with_state(
+        self,
+        x: Tensor,
+        state: StateDict,
+        batch_first: bool = False,
+    ) -> Tuple[Tensor, StateDict]:
+        """Forward full sequence from external state. Returns (spikes, next_state)."""
+        if batch_first:
+            x = x.transpose(0, 1)
+        T, B, F = x.shape
+        runtime = self._precompute_runtime_params()
+        spikes = []
+        for t in range(T):
+            spike, _, state = self.forward_step(x[t], state, runtime)
+            spikes.append(spike)
+        spike_seq = torch.stack(spikes, dim=0)
+        if batch_first:
+            spike_seq = spike_seq.transpose(0, 1)
+        return spike_seq, state
+
     def forward(
         self,
         x: Tensor,
@@ -264,18 +282,9 @@ class SPRiFNeuronLayer(nn.Module):
             raise ValueError(f"Expected input_size={self.input_size}, got {feature_dim}.")
 
         state = self.init_state(batch_size, device=x.device, dtype=x.dtype)
-        runtime = self._precompute_runtime_params()
-        spikes = []
-
-        for t in range(time_steps):
-            spike, _, state = self.forward_step(x[t], state, runtime)
-            spikes.append(spike)
-
-        spike_seq = torch.stack(spikes, dim=0)
-
+        spike_seq, _ = self.forward_with_state(x, state, batch_first=False)
         if batch_first:
             spike_seq = spike_seq.transpose(0, 1)
-
         return spike_seq
 
 

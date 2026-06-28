@@ -1,0 +1,35 @@
+{
+  "_description": "Table 2: Mechanism Ablation Results",
+  "_paper_section": "Mechanism Ablations (C2-C4)",
+  "_datasets": ["PS-MNIST", "QTDB", "GSC"],
+  "_variants": {
+    "SPRiF_full": "Full SPRiF (baseline)",
+    "ablation_A_omega0": "A: ω=0 — remove rotation coupling",
+    "ablation_B_merged": "B: merged slow+fast — no separate fast state",
+    "ablation_C_scalar": "C: scalar reset — λ=0 fixed"
+  },
+  "_metrics": {
+    "accuracy_mean": "Mean test accuracy over seeds",
+    "accuracy_std": "Standard deviation of test accuracy over seeds",
+    "spike_rate": "Mean spikes per neuron per timestep",
+    "num_seeds": "Number of random seeds used"
+  },
+  "_instructions": "Replace all 'TBD' with actual values. Run ablation scripts: python train_ablation_{a,b,c}.py in each task directory.",
+
+  "results": [
+    {"dataset": "PS-MNIST", "variant": "SPRiF_full",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "PS-MNIST", "variant": "ablation_A_omega0",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "PS-MNIST", "variant": "ablation_B_merged",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "PS-MNIST", "variant": "ablation_C_scalar",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+
+    {"dataset": "QTDB",     "variant": "SPRiF_full",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "QTDB",     "variant": "ablation_A_omega0",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "QTDB",     "variant": "ablation_B_merged",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "QTDB",     "variant": "ablation_C_scalar",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+
+    {"dataset": "GSC",      "variant": "SPRiF_full",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "GSC",      "variant": "ablation_A_omega0",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "GSC",      "variant": "ablation_B_merged",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "GSC",      "variant": "ablation_C_scalar",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"}
+  ]
+}

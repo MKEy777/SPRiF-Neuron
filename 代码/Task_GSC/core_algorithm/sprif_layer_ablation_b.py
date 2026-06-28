@@ -1,5 +1,16 @@
+"""
+SPRiF Ablation B: Merged slow/fast state — no separate fast state.
+
+This layer removes the entire fast-state subsystem (u, eta, G, fast_coupling,
+lambda_reset). Membrane potential is read directly from the first slow component
+x[0], and reset is scalar (subtract threshold from x[0] only).
+
+Compare with full SPRiFNeuronLayer in model.py: fast state adds a 2D
+compartment with projective reset and learned slow→fast coupling.
+"""
+
 import math
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 import torch
 from torch import Tensor, nn
 
@@ -37,7 +48,16 @@ def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
 
-class SPRiFNeuronLayer(nn.Module):
+SurrogateSpike = ActFun_adp
+
+
+class SPRiFNeuronLayerAblationB(nn.Module):
+    """SPRiF neuron with merged slow/fast — no separate fast state.
+
+    Slow state (3D): [x_real, x_osc_1, x_osc_2] with spectral block-diagonal
+    dynamics.  Membrane = x[..., 0] directly.  Scalar reset on x[0] only.
+    """
+
     def __init__(
         self,
         input_size: int,
@@ -46,10 +66,10 @@ class SPRiFNeuronLayer(nn.Module):
         recurrent: bool = False,
         bias: bool = False,
         init_std: float = 0.05,
-        tau_alpha_range: Tuple[float, float] = (20.0, 120.0),
-        tau_rho_range: Tuple[float, float] = (4.0, 30.0),
-        tau_eta_range: Tuple[float, float] = (0.8, 8.0),
-        omega_range: Tuple[float, float] = (0.02 * math.pi, 0.20 * math.pi),
+        tau_alpha_range=(10.0, 80.0),
+        tau_rho_range=(4.0, 30.0),
+        omega_range: Tuple[float, float] = (0.04 * math.pi, 0.40 * math.pi),
+        **unused_kwargs,
     ) -> None:
         super().__init__()
 
@@ -57,22 +77,21 @@ class SPRiFNeuronLayer(nn.Module):
         self.hidden_size = hidden_size
         self.threshold = threshold
         self.recurrent = recurrent
-        self.lambda_reset = nn.Parameter(torch.empty(hidden_size))
-        self.input_linear = nn.Linear(input_size, hidden_size, bias=bias)
-        self.recurrent_linear = nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
 
+        self.input_linear = nn.Linear(input_size, hidden_size, bias=bias)
+        self.recurrent_linear = (
+            nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
+        )
+
+        # Only slow-state parameters — no eta, fast_coupling, G, or lambda_reset
         self.alpha_raw = nn.Parameter(torch.empty(hidden_size))
         self.rho_raw = nn.Parameter(torch.empty(hidden_size))
         self.omega_raw = nn.Parameter(torch.empty(hidden_size))
-        self.eta_raw = nn.Parameter(torch.empty(hidden_size, 2))
-        self.fast_coupling = nn.Parameter(torch.empty(hidden_size))
-        self.G = nn.Parameter(torch.empty(hidden_size, 2, 3))
 
         self._reset_parameters(
             init_std=init_std,
             tau_alpha_range=tau_alpha_range,
             tau_rho_range=tau_rho_range,
-            tau_eta_range=tau_eta_range,
             omega_range=omega_range,
         )
 
@@ -85,7 +104,6 @@ class SPRiFNeuronLayer(nn.Module):
         init_std: float,
         tau_alpha_range: Tuple[float, float],
         tau_rho_range: Tuple[float, float],
-        tau_eta_range: Tuple[float, float],
         omega_range: Tuple[float, float],
     ) -> None:
         nn.init.xavier_uniform_(self.input_linear.weight)
@@ -114,23 +132,15 @@ class SPRiFNeuronLayer(nn.Module):
             self.rho_raw.copy_(self._safe_logit(rho))
 
             omega = torch.empty(self.hidden_size).uniform_(
-                omega_range[0],
-                omega_range[1],
+                omega_range[0], omega_range[1],
             )
             self.omega_raw.copy_(self._safe_logit(omega / math.pi))
 
-            tau_eta = torch.exp(
-                torch.empty(self.hidden_size, 2).uniform_(
-                    math.log(tau_eta_range[0]),
-                    math.log(tau_eta_range[1]),
-                )
-            )
-            eta = torch.exp(-1.0 / tau_eta)
-            self.eta_raw.copy_(self._safe_logit(eta))
-            self.lambda_reset.normal_(mean=0.0, std=init_std)
+        # No eta, fast_coupling, G, or lambda_reset to initialise
 
-        nn.init.normal_(self.fast_coupling, mean=0.0, std=init_std)
-        nn.init.normal_(self.G, mean=0.0, std=0.05)
+    # ------------------------------------------------------------------
+    # State management
+    # ------------------------------------------------------------------
 
     def init_state(
         self,
@@ -145,19 +155,24 @@ class SPRiFNeuronLayer(nn.Module):
 
         return {
             "x": torch.zeros(batch_size, self.hidden_size, 3, device=device, dtype=dtype),
-            "u": 0.1 * torch.rand(batch_size, self.hidden_size, 2, device=device, dtype=dtype),
             "prev_spike": torch.zeros(batch_size, self.hidden_size, device=device, dtype=dtype),
+            # NOTE: no "u" key — fast state removed
         }
+
+    @staticmethod
+    def detach_state(state: Optional[StateDict]) -> Optional[StateDict]:
+        if state is None:
+            return None
+        return {k: v.detach() for k, v in state.items()}
+
+    # ------------------------------------------------------------------
+    # Runtime parameters
+    # ------------------------------------------------------------------
 
     def _precompute_runtime_params(self) -> Dict[str, Tensor]:
         alpha = torch.sigmoid(self.alpha_raw)
         rho = torch.sigmoid(self.rho_raw)
         omega = math.pi * torch.sigmoid(self.omega_raw)
-        eta = torch.sigmoid(self.eta_raw).unsqueeze(0)
-
-        lambda_reset = self.lambda_reset
-        ones = torch.ones_like(lambda_reset)
-        reset_direction = torch.stack((ones, lambda_reset), dim=-1)
 
         return {
             "alpha": alpha,
@@ -165,10 +180,6 @@ class SPRiFNeuronLayer(nn.Module):
             "omega": omega,
             "cos_w": torch.cos(omega),
             "sin_w": torch.sin(omega),
-            "eta": eta,
-            "fast_coupling": self.fast_coupling,
-            "lambda_reset": lambda_reset,
-            "reset_direction": reset_direction,
         }
 
     def get_spectral_parameters(self) -> Dict[str, Tensor]:
@@ -177,11 +188,16 @@ class SPRiFNeuronLayer(nn.Module):
             "alpha": runtime["alpha"],
             "rho": runtime["rho"],
             "omega": runtime["omega"],
-            "eta": runtime["eta"].squeeze(0),
-            "lambda_reset": runtime["lambda_reset"],
         }
 
-    def _slow_flow(self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]) -> Tensor:
+    # ------------------------------------------------------------------
+    # Core dynamics  (slow flow only — fast flow removed)
+    # ------------------------------------------------------------------
+
+    def _slow_flow(
+        self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]
+    ) -> Tensor:
+        """3D spectral slow state — identical to full SPRiF."""
         x_real = x_prev[..., 0]
         x_osc_1 = x_prev[..., 1]
         x_osc_2 = x_prev[..., 2]
@@ -197,86 +213,112 @@ class SPRiFNeuronLayer(nn.Module):
 
         return torch.stack((x_next_0, x_next_1, x_next_2), dim=-1)
 
-    def _fast_flow(self, u_prev: Tensor, x_t: Tensor, runtime: Dict[str, Tensor]) -> Tensor:
-        eta = runtime["eta"]
-        fast_coupling = runtime["fast_coupling"].unsqueeze(0)
-
-        slow_to_fast = torch.einsum("bhk,hpk->bhp", x_t, self.G)
-
-        u0 = eta[..., 0] * u_prev[..., 0] + fast_coupling * u_prev[..., 1]
-        u1 = eta[..., 1] * u_prev[..., 1]
-        fast_leak = torch.stack((u0, u1), dim=-1)
-
-        return fast_leak + slow_to_fast
+    # ------------------------------------------------------------------
+    # Spike
+    # ------------------------------------------------------------------
 
     def _spike_fn(self, membrane_delta: Tensor) -> Tensor:
         return surrogate_spike(membrane_delta)
 
-    def forward_step(self, x_t: Tensor, state: StateDict, runtime: Dict[str, Tensor], input_current: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, StateDict]:
+    # ------------------------------------------------------------------
+    # Single time-step
+    # ------------------------------------------------------------------
+
+    def forward_step(
+        self, x_t: Tensor, state: StateDict, runtime: Dict[str, Tensor]
+    ) -> Tuple[Tensor, Tensor, StateDict]:
         x_state = state["x"]
-        u_state = state["u"]
         prev_spike = state["prev_spike"]
 
-        if input_current is None:
-            input_current = self.input_linear(x_t)
-            if self.recurrent and self.recurrent_linear is not None:
-                input_current = input_current + self.recurrent_linear(prev_spike)
+        # Input current
+        input_current = self.input_linear(x_t)
+        if self.recurrent and self.recurrent_linear is not None:
+            input_current = input_current + self.recurrent_linear(prev_spike)
 
+        # Slow flow (no fast flow follows)
         x_next = self._slow_flow(x_state, input_current, runtime)
-        u_tilde = self._fast_flow(u_state, x_next, runtime)
 
-        membrane = u_tilde[..., 0]
+        # Membrane = first slow component directly (no fast state)
+        membrane = x_next[..., 0]
         theta = self.threshold
         spike = self._spike_fn(membrane - theta)
 
+        # Scalar reset on x[0] only (no projective reset)
         if isinstance(theta, Tensor):
-            reset_scale = theta.to(device=u_tilde.device, dtype=u_tilde.dtype)
+            reset_scale = theta
         else:
-            reset_scale = torch.as_tensor(theta, device=u_tilde.device, dtype=u_tilde.dtype)
+            reset_scale = torch.as_tensor(theta, device=x_next.device, dtype=x_next.dtype)
 
-        u_next = (
-            u_tilde
-            - spike.unsqueeze(-1)
-            * runtime["reset_direction"].unsqueeze(0)
-            * reset_scale.unsqueeze(-1)
-        )
+        x_next_reset = x_next.clone()
+        x_next_reset[..., 0] = x_next[..., 0] - spike * reset_scale
+        # x[1], x[2] are NEVER reset — oscillation persists across spikes
 
         next_state = {
-            "x": x_next,
-            "u": u_next,
+            "x": x_next_reset,
             "prev_spike": spike,
         }
         return spike, membrane, next_state
 
+    # ------------------------------------------------------------------
+    # Full sequence forward
+    # ------------------------------------------------------------------
+
     def forward(
         self,
         x: Tensor,
+        state: Optional[StateDict] = None,
         batch_first: bool = False,
-    ) -> Tensor:
+        return_state: bool = False,
+        return_voltages: bool = False,
+        return_post_reset_voltages: bool = False,
+    ) -> Union[Tensor, Tuple[Tensor, StateDict], Tuple[Tensor, Tensor], Tuple[Tensor, Tensor, StateDict]]:
         if x.dim() != 3:
-            raise ValueError("Input must be [time, batch, features] or [batch, time, features].")
+            raise ValueError(
+                "Input must be [time, batch, features] or [batch, time, features]."
+            )
 
         if batch_first:
             x = x.transpose(0, 1)
 
         time_steps, batch_size, feature_dim = x.shape
         if feature_dim != self.input_size:
-            raise ValueError(f"Expected input_size={self.input_size}, got {feature_dim}.")
+            raise ValueError(
+                f"Expected input_size={self.input_size}, got {feature_dim}."
+            )
 
-        state = self.init_state(batch_size, device=x.device, dtype=x.dtype)
+        if state is None:
+            state = self.init_state(batch_size, device=x.device, dtype=x.dtype)
+        else:
+            state = {
+                k: v.to(device=x.device, dtype=x.dtype) for k, v in state.items()
+            }
+
         runtime = self._precompute_runtime_params()
-        spikes = []
+        spikes: List[Tensor] = []
+        voltages: List[Tensor] = []
 
         for t in range(time_steps):
-            spike, _, state = self.forward_step(x[t], state, runtime)
+            spike, membrane, state = self.forward_step(x[t], state, runtime)
             spikes.append(spike)
 
+            if return_voltages:
+                if return_post_reset_voltages:
+                    voltages.append(state["x"][..., 0])   # post-reset x[0]  (no "u" state)
+                else:
+                    voltages.append(membrane)
+
         spike_seq = torch.stack(spikes, dim=0)
+        voltage_seq = torch.stack(voltages, dim=0) if return_voltages else None
 
         if batch_first:
             spike_seq = spike_seq.transpose(0, 1)
+            if voltage_seq is not None:
+                voltage_seq = voltage_seq.transpose(0, 1)
 
+        if return_voltages and return_state:
+            return spike_seq, voltage_seq, state
+        if return_voltages:
+            return spike_seq, voltage_seq
+        if return_state:
+            return spike_seq, state
         return spike_seq
-
-
-__all__ = ["SPRiFNeuronLayer"]

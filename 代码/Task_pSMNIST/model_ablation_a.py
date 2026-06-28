@@ -1,4 +1,4 @@
-"""pSMNIST-specific network definition using SPRiF neuron layers."""
+"""pSMNIST model using Ablation A SPRiF layer (1D slow state, no rotation)."""
 
 from typing import List
 
@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 
-from core_algorithm.sprif_layer import SPRiFNeuronLayer
+from core_algorithm.sprif_layer_ablation_a import SPRiFNeuronLayerAblationA
 
 
 class PermutedMNIST(Dataset):
@@ -27,7 +27,9 @@ class PermutedMNIST(Dataset):
         return permuted, label
 
 
-class SPRiFpSMNISTNet(nn.Module):
+class SPRiFpSMNISTNetAblationA(nn.Module):
+    """Same architecture as SPRiFpSMNISTNet but with Ablation A layer (1D slow)."""
+
     def __init__(
         self,
         input_size: int,
@@ -43,7 +45,7 @@ class SPRiFpSMNISTNet(nn.Module):
         in_dim = input_size
         for h in hidden_sizes:
             self.layers.append(
-                SPRiFNeuronLayer(
+                SPRiFNeuronLayerAblationA(
                     input_size=in_dim,
                     hidden_size=h,
                     recurrent=recurrent,

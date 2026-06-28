@@ -1,8 +1,14 @@
 """
-SPRiF-ECG: QTDB ECG classification with SPRiF neuron networks.
+SPRiF Ablation A — ECG (QTDB) training with ω=0 (no rotation coupling).
 
 Usage:
-    python train.py --train-mat ./data/QTDB_train.mat --test-mat ./data/QTDB_test.mat
+    python train_ablation_a.py --train-mat ./data/QTDB_train.mat --test-mat ./data/QTDB_test.mat
+
+Compared to full SPRiF:
+    - ω is fixed to 0  →  cos=1, sin=0
+    - x¹' = ρ·x¹ + (1-ρ)·I  (no rotation from x²)
+    - x²' = ρ·x²             (no rotation from x¹)
+    - 3D slow state, 2D fast state, G (2×3), and projective reset unchanged
 """
 
 import argparse
@@ -15,11 +21,11 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, TensorDataset
 
 from core_algorithm.utils import set_seed, convert_dataset_wtime
-from model import SPRiFECGModel, build_neuron_kwargs, _collect_internal_stats
+from model_ablation_a import SPRiFECGModelAblationA
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="SPRiF-ECG: QTDB ECG Classification")
+    parser = argparse.ArgumentParser(description="SPRiF Ablation A: ECG ω=0")
     # Training
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=250)
@@ -56,6 +62,7 @@ def main():
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
+    print("Ablation A: ω=0, no rotation coupling (3D slow, 2D fast, G=2x3)")
 
     # Load data
     print("Loading data...")
@@ -89,20 +96,18 @@ def main():
     print(f"Train samples: {train_x.shape[0]}, Test samples: {test_x.shape[0]}")
     print(f"Input size: {train_x.shape[2]}, Output size: {args.out_size}")
 
-    # Build neuron kwargs with spectral ranges
-    neuron_config = {
-        "neuron_threshold": args.neuron_threshold,
-        "neuron_init_std": args.neuron_init_std,
-        "neuron_bias": args.neuron_bias,
+    # Model — no omega_range; alpha, rho, eta retained
+    neuron_kwargs = {
+        "threshold": args.neuron_threshold,
+        "init_std": args.neuron_init_std,
+        "bias": args.neuron_bias,
     }
-
-    # Model
-    model = SPRiFECGModel(
+    model = SPRiFECGModelAblationA(
         input_size=train_x.shape[2],
         hidden_sizes=list(args.hidden_sizes),
         output_size=args.out_size,
         mode=args.mode,
-        neuron_kwargs=build_neuron_kwargs(neuron_config),
+        neuron_kwargs=neuron_kwargs,
     ).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())
@@ -156,28 +161,22 @@ def main():
         test_loss = test_loss_sum / max(len(test_loader), 1)
         test_acc = 100.0 * test_correct / max(test_total, 1)
 
-        # Collect internal stats (matching root behaviour)
-        internal_stats = _collect_internal_stats(model)
-
         print(
             f"Epoch {epoch:03d} | "
             f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% | "
-            f"Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}% | "
-            f"alpha_mean={internal_stats['global']['alpha']['mean']:.4f} | "
-            f"rho_mean={internal_stats['global']['rho']['mean']:.4f} | "
-            f"omega_mean={internal_stats['global']['omega']['mean']:.4f}"
+            f"Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}%"
         )
 
         if test_acc > best_test_acc:
             best_test_acc = test_acc
             hs_str = "hs" + "".join(str(h) for h in args.hidden_sizes)
             save_name = (
-                f"SPRiFECGModel_{hs_str}_bs{args.batch_size}"
+                f"SPRiFECGModelAblationA_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
             torch.save(model.state_dict(), save_name)
 
-    print(f"\nTraining complete. Best test accuracy: {best_test_acc:.2f}%")
+    print(f"\nAblation A complete. Best test accuracy: {best_test_acc:.2f}%")
 
 
 if __name__ == "__main__":

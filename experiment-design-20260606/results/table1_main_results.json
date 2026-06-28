@@ -1,0 +1,32 @@
+{
+  "_description": "Table 1: Main Comparison Results",
+  "_paper_section": "Main Results (C1)",
+  "_note": "This table is for YOU to fill. Replace TBD with actual values from your baseline comparison experiments.",
+  "_metrics": {
+    "accuracy_mean": "Mean test accuracy over seeds",
+    "accuracy_std": "Standard deviation over seeds",
+    "spike_rate": "Mean spikes per neuron per timestep",
+    "num_params": "Total trainable parameters",
+    "train_time_per_epoch": "Wall-clock seconds per training epoch"
+  },
+  "_instructions": "Fill in one entry per (dataset, method) combination. Add/remove methods as needed.",
+
+  "results": [
+    {"dataset": "GSC",      "method": "SPRiF (ours)", "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "GSC",      "method": "LIF",          "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "QTDB",     "method": "SPRiF (ours)", "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "QTDB",     "method": "LIF",          "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "SHD",      "method": "SPRiF (ours)", "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "SHD",      "method": "LIF",          "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "S-MNIST",  "method": "SPRiF (ours)", "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "S-MNIST",  "method": "LIF",          "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "PS-MNIST", "method": "SPRiF (ours)", "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "PS-MNIST", "method": "LIF",          "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"}
+  ],
+
+  "_extra_methods_template": [
+    {"dataset": "...", "method": "AdLIF",        "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "...", "method": "PLIF",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"},
+    {"dataset": "...", "method": "LIF (param-matched)", "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_params": "TBD", "num_seeds": "TBD"}
+  ]
+}

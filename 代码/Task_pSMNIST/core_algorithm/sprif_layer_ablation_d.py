@@ -1,5 +1,25 @@
+"""
+Ablation D: SPRiF with unconstrained 3x3 A matrix (free learnable recurrence).
+
+Compared to full SPRiF:
+  - Replaces constrained block-diagonal A:
+        [[alpha, 0, 0],
+         [0, rho*cos(omega), -rho*sin(omega)],
+         [0, rho*sin(omega),  rho*cos(omega)]]
+    with a fully learnable 3x3 matrix A_raw per neuron (9 params vs 3).
+  - B*I_t input via learnable B_vec per neuron (3 params)
+  - 2D fast state and projective reset are unchanged
+
+Tests claim C3: Does the spectral structure provide benefits beyond an
+unconstrained 3D linear recurrence with MORE parameters?
+
+NOTE: Free A has MORE parameters (9+3=12) than spectral A (3). If spectral
+SPRiF wins despite fewer params, this STRENGTHENS the claim.
+"""
+
 import math
 from typing import Dict, Optional, Tuple
+
 import torch
 from torch import Tensor, nn
 
@@ -37,7 +57,13 @@ def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
 
-class SPRiFNeuronLayer(nn.Module):
+class SPRiFNeuronLayerAblationD(nn.Module):
+    """
+    Ablation D — free A matrix.
+    Replaces structured spectral A with fully learnable 3x3 per neuron.
+    Fast state (2D) and projective reset unchanged.
+    """
+
     def __init__(
         self,
         input_size: int,
@@ -46,10 +72,7 @@ class SPRiFNeuronLayer(nn.Module):
         recurrent: bool = False,
         bias: bool = False,
         init_std: float = 0.05,
-        tau_alpha_range: Tuple[float, float] = (20.0, 120.0),
-        tau_rho_range: Tuple[float, float] = (4.0, 30.0),
-        tau_eta_range: Tuple[float, float] = (0.8, 8.0),
-        omega_range: Tuple[float, float] = (0.02 * math.pi, 0.20 * math.pi),
+        tau_eta_range: Tuple[float, float] = (0.8, 10.0),
     ) -> None:
         super().__init__()
 
@@ -57,36 +80,33 @@ class SPRiFNeuronLayer(nn.Module):
         self.hidden_size = hidden_size
         self.threshold = threshold
         self.recurrent = recurrent
+
         self.lambda_reset = nn.Parameter(torch.empty(hidden_size))
         self.input_linear = nn.Linear(input_size, hidden_size, bias=bias)
-        self.recurrent_linear = nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
+        self.recurrent_linear = (
+            nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
+        )
 
-        self.alpha_raw = nn.Parameter(torch.empty(hidden_size))
-        self.rho_raw = nn.Parameter(torch.empty(hidden_size))
-        self.omega_raw = nn.Parameter(torch.empty(hidden_size))
+        # --- Free 3x3 A matrix per neuron (9 params) ---
+        self.A_raw = nn.Parameter(torch.empty(hidden_size, 3, 3))
+
+        # --- Learnable B vector: input projection into slow state (3 params) ---
+        self.B_vec = nn.Parameter(torch.empty(hidden_size, 3))
+
         self.eta_raw = nn.Parameter(torch.empty(hidden_size, 2))
         self.fast_coupling = nn.Parameter(torch.empty(hidden_size))
+
+        # G: slow -> fast projection  (2 x 3)
         self.G = nn.Parameter(torch.empty(hidden_size, 2, 3))
 
-        self._reset_parameters(
-            init_std=init_std,
-            tau_alpha_range=tau_alpha_range,
-            tau_rho_range=tau_rho_range,
-            tau_eta_range=tau_eta_range,
-            omega_range=omega_range,
-        )
+        self._reset_parameters(init_std=init_std, tau_eta_range=tau_eta_range)
 
     @staticmethod
     def _safe_logit(x: Tensor, eps: float = 1e-4) -> Tensor:
         return torch.logit(x.clamp(eps, 1.0 - eps))
 
     def _reset_parameters(
-        self,
-        init_std: float,
-        tau_alpha_range: Tuple[float, float],
-        tau_rho_range: Tuple[float, float],
-        tau_eta_range: Tuple[float, float],
-        omega_range: Tuple[float, float],
+        self, init_std: float, tau_eta_range: Tuple[float, float],
     ) -> None:
         nn.init.xavier_uniform_(self.input_linear.weight)
         if self.input_linear.bias is not None:
@@ -95,35 +115,21 @@ class SPRiFNeuronLayer(nn.Module):
             nn.init.orthogonal_(self.recurrent_linear.weight)
 
         with torch.no_grad():
-            tau_alpha = torch.exp(
-                torch.empty(self.hidden_size).uniform_(
-                    math.log(tau_alpha_range[0]),
-                    math.log(tau_alpha_range[1]),
-                )
-            )
-            alpha = torch.exp(-1.0 / tau_alpha)
-            self.alpha_raw.copy_(self._safe_logit(alpha))
+            # A initialized near scaled identity for training stability
+            eye = torch.eye(3).unsqueeze(0).expand(self.hidden_size, -1, -1).clone()
+            noise = torch.empty(self.hidden_size, 3, 3).normal_(0.0, 0.02)
+            self.A_raw.copy_(eye * 0.9 + noise)
 
-            tau_rho = torch.exp(
-                torch.empty(self.hidden_size).uniform_(
-                    math.log(tau_rho_range[0]),
-                    math.log(tau_rho_range[1]),
-                )
-            )
-            rho = torch.exp(-1.0 / tau_rho)
-            self.rho_raw.copy_(self._safe_logit(rho))
+            # B initialized similar to (1-alpha, 1-rho, 0) pattern
+            B_init = torch.zeros(self.hidden_size, 3)
+            B_init[:, 0] = 0.1
+            B_init[:, 1] = 0.1
+            B_init[:, 2] = 0.0
+            self.B_vec.copy_(B_init + torch.empty_like(B_init).normal_(0.0, 0.01))
 
-            omega = torch.empty(self.hidden_size).uniform_(
-                omega_range[0],
-                omega_range[1],
-            )
-            self.omega_raw.copy_(self._safe_logit(omega / math.pi))
-
-            tau_eta = torch.exp(
-                torch.empty(self.hidden_size, 2).uniform_(
-                    math.log(tau_eta_range[0]),
-                    math.log(tau_eta_range[1]),
-                )
+            # 线性空间均匀采样 tau_eta
+            tau_eta = torch.empty(self.hidden_size, 2).uniform_(
+                tau_eta_range[0], tau_eta_range[1]
             )
             eta = torch.exp(-1.0 / tau_eta)
             self.eta_raw.copy_(self._safe_logit(eta))
@@ -150,9 +156,6 @@ class SPRiFNeuronLayer(nn.Module):
         }
 
     def _precompute_runtime_params(self) -> Dict[str, Tensor]:
-        alpha = torch.sigmoid(self.alpha_raw)
-        rho = torch.sigmoid(self.rho_raw)
-        omega = math.pi * torch.sigmoid(self.omega_raw)
         eta = torch.sigmoid(self.eta_raw).unsqueeze(0)
 
         lambda_reset = self.lambda_reset
@@ -160,11 +163,6 @@ class SPRiFNeuronLayer(nn.Module):
         reset_direction = torch.stack((ones, lambda_reset), dim=-1)
 
         return {
-            "alpha": alpha,
-            "rho": rho,
-            "omega": omega,
-            "cos_w": torch.cos(omega),
-            "sin_w": torch.sin(omega),
             "eta": eta,
             "fast_coupling": self.fast_coupling,
             "lambda_reset": lambda_reset,
@@ -174,45 +172,43 @@ class SPRiFNeuronLayer(nn.Module):
     def get_spectral_parameters(self) -> Dict[str, Tensor]:
         runtime = self._precompute_runtime_params()
         return {
-            "alpha": runtime["alpha"],
-            "rho": runtime["rho"],
-            "omega": runtime["omega"],
             "eta": runtime["eta"].squeeze(0),
             "lambda_reset": runtime["lambda_reset"],
         }
 
-    def _slow_flow(self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]) -> Tensor:
-        x_real = x_prev[..., 0]
-        x_osc_1 = x_prev[..., 1]
-        x_osc_2 = x_prev[..., 2]
+    # ------------------------------------------------------------------
+    #  Core change: free 3x3 recurrence  x_t = A @ x_{t-1} + B * I_t
+    # ------------------------------------------------------------------
+    def _slow_flow(
+        self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]
+    ) -> Tensor:
+        # x_prev: (B, H, 3),  A_raw: (H, 3, 3),  B_vec: (H, 3)
+        Ax = torch.einsum("bhi,hij->bhj", x_prev, self.A_raw)           # (B, H, 3)
+        Bx = torch.einsum("hi,bh->bhi", self.B_vec, input_current)       # (B, H, 3)
+        return Ax + Bx
 
-        alpha = runtime["alpha"].unsqueeze(0)
-        rho = runtime["rho"].unsqueeze(0)
-        cos_w = runtime["cos_w"].unsqueeze(0)
-        sin_w = runtime["sin_w"].unsqueeze(0)
-
-        x_next_0 = alpha * x_real + (1.0 - alpha) * input_current
-        x_next_1 = rho * (cos_w * x_osc_1 - sin_w * x_osc_2) + (1.0 - rho) * input_current
-        x_next_2 = rho * (sin_w * x_osc_1 + cos_w * x_osc_2)
-
-        return torch.stack((x_next_0, x_next_1, x_next_2), dim=-1)
-
-    def _fast_flow(self, u_prev: Tensor, x_t: Tensor, runtime: Dict[str, Tensor]) -> Tensor:
+    def _fast_flow(
+        self, u_prev: Tensor, x_t: Tensor, runtime: Dict[str, Tensor]
+    ) -> Tensor:
         eta = runtime["eta"]
         fast_coupling = runtime["fast_coupling"].unsqueeze(0)
-
         slow_to_fast = torch.einsum("bhk,hpk->bhp", x_t, self.G)
 
         u0 = eta[..., 0] * u_prev[..., 0] + fast_coupling * u_prev[..., 1]
         u1 = eta[..., 1] * u_prev[..., 1]
         fast_leak = torch.stack((u0, u1), dim=-1)
-
         return fast_leak + slow_to_fast
 
     def _spike_fn(self, membrane_delta: Tensor) -> Tensor:
         return surrogate_spike(membrane_delta)
 
-    def forward_step(self, x_t: Tensor, state: StateDict, runtime: Dict[str, Tensor], input_current: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, StateDict]:
+    def forward_step(
+        self,
+        x_t: Tensor,
+        state: StateDict,
+        runtime: Dict[str, Tensor],
+        input_current: Optional[Tensor] = None,
+    ) -> Tuple[Tensor, Tensor, StateDict]:
         x_state = state["x"]
         u_state = state["u"]
         prev_spike = state["prev_spike"]
@@ -230,7 +226,7 @@ class SPRiFNeuronLayer(nn.Module):
         spike = self._spike_fn(membrane - theta)
 
         if isinstance(theta, Tensor):
-            reset_scale = theta.to(device=u_tilde.device, dtype=u_tilde.dtype)
+            reset_scale = theta
         else:
             reset_scale = torch.as_tensor(theta, device=u_tilde.device, dtype=u_tilde.dtype)
 
@@ -241,12 +237,28 @@ class SPRiFNeuronLayer(nn.Module):
             * reset_scale.unsqueeze(-1)
         )
 
-        next_state = {
-            "x": x_next,
-            "u": u_next,
-            "prev_spike": spike,
-        }
+        next_state = {"x": x_next, "u": u_next, "prev_spike": spike}
         return spike, membrane, next_state
+
+    def forward_with_state(
+        self,
+        x: Tensor,
+        state: StateDict,
+        batch_first: bool = False,
+    ) -> Tuple[Tensor, StateDict]:
+        """Forward full sequence from external state. Returns (spikes, next_state)."""
+        if batch_first:
+            x = x.transpose(0, 1)
+        T, B, F = x.shape
+        runtime = self._precompute_runtime_params()
+        spikes = []
+        for t in range(T):
+            spike, _, state = self.forward_step(x[t], state, runtime)
+            spikes.append(spike)
+        spike_seq = torch.stack(spikes, dim=0)
+        if batch_first:
+            spike_seq = spike_seq.transpose(0, 1)
+        return spike_seq, state
 
     def forward(
         self,
@@ -254,29 +266,23 @@ class SPRiFNeuronLayer(nn.Module):
         batch_first: bool = False,
     ) -> Tensor:
         if x.dim() != 3:
-            raise ValueError("Input must be [time, batch, features] or [batch, time, features].")
-
+            raise ValueError(
+                "Input must be [time, batch, features] or [batch, time, features]."
+            )
         if batch_first:
             x = x.transpose(0, 1)
 
         time_steps, batch_size, feature_dim = x.shape
         if feature_dim != self.input_size:
-            raise ValueError(f"Expected input_size={self.input_size}, got {feature_dim}.")
+            raise ValueError(
+                f"Expected input_size={self.input_size}, got {feature_dim}."
+            )
 
         state = self.init_state(batch_size, device=x.device, dtype=x.dtype)
-        runtime = self._precompute_runtime_params()
-        spikes = []
-
-        for t in range(time_steps):
-            spike, _, state = self.forward_step(x[t], state, runtime)
-            spikes.append(spike)
-
-        spike_seq = torch.stack(spikes, dim=0)
-
+        spike_seq, _ = self.forward_with_state(x, state, batch_first=False)
         if batch_first:
             spike_seq = spike_seq.transpose(0, 1)
-
         return spike_seq
 
 
-__all__ = ["SPRiFNeuronLayer"]
+__all__ = ["SPRiFNeuronLayerAblationD"]
