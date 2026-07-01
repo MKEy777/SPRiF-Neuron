@@ -1,35 +1,32 @@
 {
   "_description": "Table 2: Mechanism Ablation Results",
   "_paper_section": "Mechanism Ablations (C2-C4)",
-  "_datasets": ["PS-MNIST", "QTDB", "GSC"],
+  "_datasets": ["PS-MNIST", "GSC", "QTDB (ECG)"],
   "_variants": {
-    "SPRiF_full": "Full SPRiF (baseline)",
-    "ablation_A_omega0": "A: ω=0 — remove rotation coupling",
-    "ablation_B_merged": "B: merged slow+fast — no separate fast state",
-    "ablation_C_scalar": "C: scalar reset — λ=0 fixed"
+    "SPRiF_full":       "Full SPRiF (baseline)",
+    "ablation_A_omega0": "A: ω=0 — remove rotation coupling (labeled 'a' in PDF)",
+    "ablation_B_merged": "B: merged slow+fast — no separate fast state (labeled 'b' in PDF)",
+    "ablation_C_scalar": "C: scalar reset — λ=0 fixed (labeled 'c' in PDF)"
   },
   "_metrics": {
-    "accuracy_mean": "Mean test accuracy over seeds",
-    "accuracy_std": "Standard deviation of test accuracy over seeds",
-    "spike_rate": "Mean spikes per neuron per timestep",
-    "num_seeds": "Number of random seeds used"
+    "accuracy": "Test accuracy (%)"
   },
-  "_instructions": "Replace all 'TBD' with actual values. Run ablation scripts: python train_ablation_{a,b,c}.py in each task directory.",
+  "_instructions": "All values filled from PDF results. Std and spike_rate not reported in PDF.",
 
   "results": [
-    {"dataset": "PS-MNIST", "variant": "SPRiF_full",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "PS-MNIST", "variant": "ablation_A_omega0",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "PS-MNIST", "variant": "ablation_B_merged",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "PS-MNIST", "variant": "ablation_C_scalar",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "PS-MNIST", "variant": "SPRiF_full",         "accuracy": 95.82},
+    {"dataset": "PS-MNIST", "variant": "ablation_A_omega0",  "accuracy": 92.29},
+    {"dataset": "PS-MNIST", "variant": "ablation_B_merged",  "accuracy": 93.44},
+    {"dataset": "PS-MNIST", "variant": "ablation_C_scalar",  "accuracy": 95.32},
 
-    {"dataset": "QTDB",     "variant": "SPRiF_full",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "QTDB",     "variant": "ablation_A_omega0",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "QTDB",     "variant": "ablation_B_merged",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "QTDB",     "variant": "ablation_C_scalar",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
+    {"dataset": "GSC",      "variant": "SPRiF_full",         "accuracy": 94.55},
+    {"dataset": "GSC",      "variant": "ablation_A_omega0",  "accuracy": 93.83},
+    {"dataset": "GSC",      "variant": "ablation_B_merged",  "accuracy": 90.05},
+    {"dataset": "GSC",      "variant": "ablation_C_scalar",  "accuracy": 94.22},
 
-    {"dataset": "GSC",      "variant": "SPRiF_full",         "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "GSC",      "variant": "ablation_A_omega0",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "GSC",      "variant": "ablation_B_merged",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"},
-    {"dataset": "GSC",      "variant": "ablation_C_scalar",   "accuracy_mean": "TBD", "accuracy_std": "TBD", "spike_rate": "TBD", "num_seeds": "TBD"}
+    {"dataset": "QTDB (ECG)", "variant": "SPRiF_full",         "accuracy": 88.43},
+    {"dataset": "QTDB (ECG)", "variant": "ablation_A_omega0",  "accuracy": 87.78},
+    {"dataset": "QTDB (ECG)", "variant": "ablation_B_merged",  "accuracy": 83.39},
+    {"dataset": "QTDB (ECG)", "variant": "ablation_C_scalar",  "accuracy": 87.40}
   ]
 }

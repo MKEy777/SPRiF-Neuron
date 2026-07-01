@@ -20,8 +20,8 @@ SPRiF_Paper/
 │
 ├── Task_GSC/                # Google Speech Commands (12-class keyword spotting)
 ├── Task_ECG/                # QTDB ECG classification (6-class heartbeat)
-├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit classification)
-├── Task_TIMIT/              # TIMIT phoneme recognition (61 phoneme classes)
+├── Task_S-MNIST/            # Sequential MNIST (10-digit classification, row-by-row order)
+├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit classification, random pixel order)
 └── Task_SHD/                # Spiking Heidelberg Digits (20-class digit recognition)
 ```
 
@@ -66,23 +66,15 @@ python train.py
 
 MNIST dataset will be downloaded automatically on first run.
 
-### Task TIMIT (Phoneme Recognition)
+### Task S-MNIST (Sequential MNIST)
 
-**Step 1**: Extract features from raw TIMIT dataset:
 ```bash
-cd Task_TIMIT
-python make_dataset.py
+cd Task_S-MNIST
+python train.py
 ```
 
-**Step 2**: Generate fixed-length segments:
-```bash
-python generate_dataset.py
-```
-
-**Step 3**: Train the model:
-```bash
-python train.py --train-data ./data/train_f40_t100.npy --test-data ./data/test_f40_t100.npy
-```
+Pixels are read in natural row-by-row order (no permutation). Same hyperparameters as pSMNIST.
+Ablation variants: `python train_ablation_{a,b,c}.py`.
 
 ### Task SHD (Spiking Heidelberg Digits)
 

@@ -37,7 +37,7 @@ Limitation: State dimensions are empirical choices; no theoretical optimality;
 
 | # | Claim | Reviewer question | Evidence needed | Dataset/benchmark | Baselines | Metrics | Result | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| C1 | SPRiF outperforms standard LIF and strong SNN neuron models on diverse temporal tasks | "Is SPRiF actually better than existing spiking neurons?" | Main comparison table (5 datasets, ≥3 seeds, mean±std) | GSC, QTDB, SHD, S-MNIST, PS-MNIST | LIF, AdLIF, PLIF, BRF (if feasible) | Accuracy ↑, spike rate, #params | TBD | User to fill |
+| C1 | SPRiF outperforms standard LIF on diverse temporal tasks | "Is SPRiF actually better than existing spiking neurons?" | Main comparison table (5 datasets, ≥3 seeds, mean±std) | GSC, QTDB, SHD, S-MNIST, PS-MNIST | LIF | Accuracy ↑, spike rate, #params | TBD | User to fill |
 | C2 | Slow/fast state separation is the key design principle | "Is the two-state design necessary, or would one bigger state suffice?" | Ablation B: merge slow+fast into single-state equivalent | PS-MNIST, QTDB, GSC | SPRiF-merged (single 3D spectral state, no fast state) | Accuracy ↑, spike rate | TBD | 🔧 code ready |
 | C3 | Projective reset > scalar reset | "Is directional reset necessary, or is standard scalar reset enough?" | Ablation C: set λ=0 (scalar reset) vs learnable λ | PS-MNIST, QTDB, GSC | SPRiF-scalar-reset (λ=0, standard soft reset) | Accuracy ↑, learned λ analysis | TBD | 🔧 code ready |
 | C4 | Damped rotation adds complementary temporal filtering beyond exponential decay | "Does the oscillator actually help, or is real decay sufficient?" | Ablation A: remove rotation coupling (ω=0) | PS-MNIST, QTDB, GSC | SPRiF-ω=0 (3D slow, 2D fast, no rotation) | Accuracy ↑, long-range degradation | TBD | 🔧 code ready |
@@ -70,7 +70,7 @@ Limitation: State dimensions are empirical choices; no theoretical optimality;
 > **Placeholder — to be filled by user.**
 
 Datasets under consideration: GSC, QTDB, SHD, S-MNIST, PS-MNIST.
-Baselines under consideration: LIF, AdLIF, PLIF, BRF, SiLIF, param-matched LIF.
+Baselines: LIF.
 Result table: Table 1 in paper.
 
 ---
@@ -200,7 +200,7 @@ Datasets: **GSC** and **QTDB**.
 2. Frequency response (magnitude of FFT of impulse response) — show band-pass / low-pass diversity
 3. Comparison with LIF (single exponential family)
 
-**Datasets**: PS-MNIST, QTDB, GSC (trained models from main comparison).
+**Datasets**: PS-MNIST, QTDB, GSC (SPRiF impulse response); LIF comparison only on QTDB, GSC (where LIF baseline is available).
 
 ### Analysis 4: Reset Direction Analysis (C8)
 
@@ -255,9 +255,9 @@ Datasets: **GSC** and **QTDB**.
 | Method | GSC (Acc↑) | QTDB (Acc↑) | SHD (Acc↑) | S-MNIST (Acc↑) | PS-MNIST (Acc↑) | Avg Spike Rate | #Params |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | SPRiF (ours) | TBD ± TBD | TBD ± TBD | TBD ± TBD | TBD ± TBD | TBD ± TBD | TBD | TBD |
-| ... | | | | | | | |
+| LIF | TBD ± TBD | TBD ± TBD | — | — | — | TBD | TBD |
 
-*User to fill with chosen baselines.*
+*LIF baseline only for GSC and QTDB. SHD, S-MNIST, PS-MNIST report SPRiF only.*
 
 ### Table 2: Mechanism Ablations (C2-C4)
 
@@ -368,7 +368,7 @@ Checks run: all 10 mandatory checklist items
   3. [✓] 9 claims mapped to required evidence items (C1-C9)
   4. [✓] Datasets (GSC/QTDB/SHD/S-MNIST/PS-MNIST), baselines specified
   5. [✓] Dataset/baseline search completed; closest competitors identified
-  6. [✓] Baselines include standard LIF + strong SNN variants; user to finalize selection
+  6. [✓] Baseline: standard LIF (on GSC and QTDB only)
   7. [✓] 3 ablations test mechanisms (not just performance drops); each has failure interpretation
   8. [✓] Robustness (3 experiments: noise benchmark, seq-len×noise, frequency selectivity), diagnostic analyses (5 analyses), reproducibility checklist
   9. [✓] All result tables contain TBD placeholders only; no fabricated numbers
@@ -376,7 +376,6 @@ Checks run: all 10 mandatory checklist items
 
 Checks skipped: none
 Unresolved risks:
-  - Main comparison baselines not yet finalized (user to determine)
   - All 3 ablations must show clear SPRiF advantage — if any fail, adjust contribution claims accordingly
   - PS-MNIST results are especially important for the "long-range memory" narrative
 ```
