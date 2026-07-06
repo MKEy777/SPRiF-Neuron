@@ -34,13 +34,24 @@ sns.set_context("paper", font_scale=1.3)
 # ---------------------------------------------------------------------------
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FIGURE_DIR = os.path.join(
+    os.path.dirname(ROOT),
+    "experiment-design-20260606",
+    "results",
+    "figures",
+    "param_visualization",
+)
 
 
 def _add_path(task_dir: str) -> str:
     """Add task directory to sys.path, return its absolute path."""
     p = os.path.join(ROOT, task_dir)
-    if p not in sys.path:
-        sys.path.insert(0, p)
+    if p in sys.path:
+        sys.path.remove(p)
+    sys.path.insert(0, p)
+    for name in list(sys.modules):
+        if name in {"model", "data", "core_algorithm"} or name.startswith("core_algorithm."):
+            sys.modules.pop(name, None)
     return p
 
 
@@ -94,6 +105,8 @@ def _train_task(
 def _load_ecg(task_dir: str) -> Tuple[nn.Module, str]:
     """Load or train SPRiFECGModel."""
     import scipy.io
+
+    _add_path(task_dir)
     from core_algorithm.utils import convert_dataset_wtime
     from model import SPRiFECGModel
 
@@ -143,6 +156,7 @@ def _load_ecg(task_dir: str) -> Tuple[nn.Module, str]:
 
 def _load_gsc(task_dir: str) -> Tuple[nn.Module, str]:
     """Load or train SPRiFGSCNet."""
+    _add_path(task_dir)
     from model import SPRiFGSCNet
 
     ckpt = _find_checkpoint(os.path.join(ROOT, task_dir), "SPRiFGSCNet")
@@ -183,6 +197,7 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, str]:
 
 def _load_psmnist(task_dir: str) -> Tuple[nn.Module, str]:
     """Load or train SPRiFpSMNISTNet."""
+    _add_path(task_dir)
     from model import SPRiFpSMNISTNet
 
     ckpt = _find_checkpoint(os.path.join(ROOT, task_dir), "SPRiFpSMNISTNet")
@@ -385,7 +400,8 @@ LOADERS = {
 # ---------------------------------------------------------------------------
 
 def main():
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = FIGURE_DIR
+    os.makedirs(out_dir, exist_ok=True)
 
     dfs: Dict[str, pd.DataFrame] = {}
 

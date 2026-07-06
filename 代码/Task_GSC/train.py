@@ -6,6 +6,7 @@ Usage:
 """
 
 import argparse
+import math
 import os
 import random
 import warnings
@@ -27,7 +28,7 @@ warnings.filterwarnings("ignore")
 def get_args():
     parser = argparse.ArgumentParser(description="SPRiF-GSC: Google Speech Commands")
     # Training
-    parser.add_argument("--lr", type=float, default=3e-3)
+    parser.add_argument("--lr", type=float, default=5e-3)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--patience", type=int, default=40)
     parser.add_argument("--batch-size", type=int, default=200)
@@ -40,11 +41,20 @@ def get_args():
     parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--num-classes", type=int, default=12)
     # Neuron
-    parser.add_argument("--neuron-threshold", type=float, default=1.0)
-    parser.add_argument("--neuron-init-std", type=float, default=0.1)
+    parser.add_argument("--neuron-threshold", type=float, default=0.8)
+    parser.add_argument("--neuron-init-std", type=float, default=0.15)
+    # Spectral parameters
+    parser.add_argument("--tau-alpha-min", type=float, default=10.0)
+    parser.add_argument("--tau-alpha-max", type=float, default=80.0)
+    parser.add_argument("--tau-rho-min", type=float, default=4.0)
+    parser.add_argument("--tau-rho-max", type=float, default=30.0)
+    parser.add_argument("--tau-eta-min", type=float, default=0.8)
+    parser.add_argument("--tau-eta-max", type=float, default=8.0)
+    parser.add_argument("--omega-min", type=float, default=0.04)  # multiplied by pi
+    parser.add_argument("--omega-max", type=float, default=0.40)  # multiplied by pi
     # Data
-    parser.add_argument("--data-root", type=str, required=True)
-    parser.add_argument("--cache-root", type=str, default=None)
+    parser.add_argument("--data-root", type=str, default="/root/autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    parser.add_argument("--cache-root", type=str, default="/root/autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/cache_power_to_db")
     # Mel-spectrogram
     parser.add_argument("--n-mels", type=int, default=40)
     parser.add_argument("--seq-len", type=int, default=101)
@@ -156,13 +166,21 @@ def main():
     train_loader, valid_loader = build_loaders(args)
 
     # Model
+    neuron_kwargs = {
+        "threshold": args.neuron_threshold,
+        "init_std": args.neuron_init_std,
+        "tau_alpha_range": (args.tau_alpha_min, args.tau_alpha_max),
+        "tau_rho_range": (args.tau_rho_min, args.tau_rho_max),
+        "tau_eta_range": (args.tau_eta_min, args.tau_eta_max),
+        "omega_range": (args.omega_min * math.pi, args.omega_max * math.pi),
+    }
     model = SPRiFGSCNet(
         input_size=args.input_size,
         hidden_sizes=tuple(args.hidden_sizes),
         num_classes=args.num_classes,
         dropout=args.dropout,
         recurrent_flags=tuple(True for _ in args.hidden_sizes),
-        neuron_kwargs={"threshold": args.neuron_threshold, "init_std": args.neuron_init_std},
+        neuron_kwargs=neuron_kwargs,
     ).to(device)
 
     total_params = sum(p.numel() for p in model.parameters())

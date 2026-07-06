@@ -2,7 +2,7 @@
 SPRiF Robustness Experiment R1: Noise Robustness Benchmark.
 
 Methodology (following DGN ICLR 2026): Train on CLEAN data only,
-test on noisy data. Compares SPRiF vs LIF accuracy degradation.
+test on noisy data. Compares SPRiF vs ASRNN accuracy degradation.
 
 Noise types:
     - Additive Gaussian: x_noisy = x + N(0, sigma^2)
@@ -18,6 +18,7 @@ Usage:
 
 import glob
 import json
+import math
 import os
 import subprocess
 import sys
@@ -48,8 +49,16 @@ RESULTS_DIR = os.path.join(
 
 def _add_path(task_dir: str) -> str:
     p = os.path.join(ROOT, task_dir)
-    if p not in sys.path:
-        sys.path.insert(0, p)
+    if p in sys.path:
+        sys.path.remove(p)
+    sys.path.insert(0, p)
+    for name in list(sys.modules):
+        if (
+            name in {"model", "model_wrapper", "data", "data_asrnn", "core_algorithm"}
+            or name.startswith("core_algorithm.")
+            or name.startswith("model_wrapper.")
+        ):
+            sys.modules.pop(name, None)
     return p
 
 
@@ -118,58 +127,101 @@ def mixed_noise(x: np.ndarray, sigma: float, p: float, rng: np.random.RandomStat
 # ---------------------------------------------------------------------------
 
 def _load_gsc_models(task_dir: str):
-    """Load both SPRiF and LIF GSC models. Train if needed."""
+    """Load SPRiF and ASRNN GSC models. Train if needed."""
     _add_path(task_dir)
     from model import SPRiFGSCNet
-    from model_lif import LIFGSCNet
+
+    # Import ASRNN model
+    sys.path.insert(0, os.path.join(ROOT, task_dir, "model_wrapper"))
+    from asrnn_gsc import ASRNNGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "data", "SpeechCommands")
+    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
 
     models = {}
 
-    for cls, prefix in [(SPRiFGSCNet, "SPRiFGSCNet"), (LIFGSCNet, "LIFGSCNet")]:
+    # Load SPRiF
+    prefix = "SPRiFGSCNet"
+    ckpt = _find_checkpoint(task_abs, prefix)
+    if ckpt is None:
+        if not os.path.exists(data_root):
+            raise FileNotFoundError(
+                f"GSC data not found at {data_root}. Run Task_GSC/download_GSC.py first."
+            )
+        _train_task(
+            task_dir, "train.py",
+            [
+                "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+                "--lr", "5e-3", "--epochs", "150", "--batch-size", "200",
+                "--seed", "42", "--hidden-sizes", "300",
+                "--neuron-threshold", "0.8", "--neuron-init-std", "0.15",
+                "--tau-alpha-min", "10.0", "--tau-alpha-max", "80.0",
+                "--tau-rho-min", "4.0", "--tau-rho-max", "30.0",
+                "--tau-eta-min", "0.8", "--tau-eta-max", "8.0",
+                "--omega-min", "0.04", "--omega-max", "0.40",
+            ],
+        )
         ckpt = _find_checkpoint(task_abs, prefix)
         if ckpt is None:
-            train_script = "train.py" if prefix.startswith("SPRiF") else "train_lif.py"
-            if not os.path.exists(data_root):
-                raise FileNotFoundError(
-                    f"GSC data not found at {data_root}. Run Task_GSC/download_GSC.py first."
-                )
-            _train_task(
-                task_dir, train_script,
-                [
-                    "--data-root", os.path.join("data", "SpeechCommands"),
-                    "--lr", "3e-3", "--epochs", "150", "--batch-size", "200",
-                    "--seed", "42", "--hidden-sizes", "300",
-                    "--neuron-threshold", "1.0", "--neuron-init-std", "0.1",
-                ],
+            raise RuntimeError("Training completed but no checkpoint found for SPRiFGSCNet.")
+
+    print(f"  {prefix}: {os.path.basename(ckpt)}")
+    sprif_model = SPRiFGSCNet(
+        input_size=120, hidden_sizes=[300], num_classes=12,
+        dropout=0.0, recurrent_flags=(True,),
+        neuron_kwargs={
+            "threshold": 0.8, "init_std": 0.15,
+            "tau_alpha_range": (10.0, 80.0),
+            "tau_rho_range": (4.0, 30.0),
+            "tau_eta_range": (0.8, 8.0),
+            "omega_range": (0.04 * math.pi, 0.40 * math.pi),
+        },
+    )
+    sprif_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    sprif_model.eval()
+    models["SPRiFGSCNet"] = sprif_model
+
+    # Load ASRNN
+    ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
+    if ckpt is None:
+        if not os.path.exists(data_root):
+            raise FileNotFoundError(
+                f"GSC data not found at {data_root}. Run Task_GSC/download_GSC.py first."
             )
-            ckpt = _find_checkpoint(task_abs, prefix)
-            if ckpt is None:
-                raise RuntimeError(f"Training completed but no checkpoint found for {prefix}.")
-
-        print(f"  {prefix}: {os.path.basename(ckpt)}")
-        model = cls(
-            input_size=120, hidden_sizes=[300], num_classes=12,
-            dropout=0.0, recurrent_flags=(True,),
-            neuron_kwargs={"threshold": 1.0, "init_std": 0.1},
+        _train_task(
+            task_dir, "train_asrnn.py",
+            [
+                "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+                "--lr", "3e-3", "--epochs", "30", "--batch-size", "32",
+                "--seed", "0", "--hidden-size", "256",
+            ],
         )
-        model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
-        model.eval()
-        models[prefix] = model
+        ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
+        if ckpt is None:
+            raise RuntimeError("Training completed but no checkpoint found for ASRNNGSCNet.")
 
-    return models["SPRiFGSCNet"], models["LIFGSCNet"]
+    print(f"  ASRNNGSCNet: {os.path.basename(ckpt)}")
+    asrnn_model = ASRNNGSCNet(
+        input_size=120, hidden_size=256, num_classes=12,
+        device="cpu"
+    )
+    asrnn_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    asrnn_model.eval()
+    models["ASRNNGSCNet"] = asrnn_model
+
+    return models["SPRiFGSCNet"], models["ASRNNGSCNet"]
 
 
 def _build_gsc_test_loader(task_dir: str, batch_size: int = 200):
     """Build GSC test DataLoader."""
     import torchvision
     from torch.utils.data import DataLoader
+
+    _add_path(task_dir)
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "data", "SpeechCommands")
+    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
 
     testing_words = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -207,13 +259,17 @@ def _build_gsc_test_loader(task_dir: str, batch_size: int = 200):
 # ---------------------------------------------------------------------------
 
 def _load_ecg_models(task_dir: str):
-    """Load both SPRiF and LIF ECG models. Train if needed."""
+    """Load SPRiF and ASRNN ECG models. Train if needed."""
     import scipy.io
-    from core_algorithm.utils import convert_dataset_wtime
 
     _add_path(task_dir)
+    from core_algorithm.utils import convert_dataset_wtime
+
     from model import SPRiFECGModel
-    from model_lif import LIFECGModel
+
+    # Import ASRNN model
+    sys.path.insert(0, os.path.join(ROOT, task_dir, "model_wrapper"))
+    from asrnn_ecg import ASRNNECGNet
 
     task_abs = os.path.join(ROOT, task_dir)
     train_mat_path = os.path.join(task_abs, "data", "QTDB_train.mat")
@@ -226,41 +282,68 @@ def _load_ecg_models(task_dir: str):
 
     models = {}
 
-    for cls, prefix in [(SPRiFECGModel, "SPRiFECGModel"), (LIFECGModel, "LIFECGModel")]:
+    # Load SPRiF
+    prefix = "SPRiFECGModel"
+    ckpt = _find_checkpoint(task_abs, prefix)
+    if ckpt is None:
+        _train_task(
+            task_dir, "train.py",
+            [
+                "--train-mat", os.path.join("data", "QTDB_train.mat"),
+                "--test-mat", os.path.join("data", "QTDB_test.mat"),
+                "--lr", "1e-2", "--epochs", "250", "--batch-size", "64",
+                "--seed", "1111", "--hidden-sizes", "36",
+                "--neuron-threshold", "0.6",
+            ],
+        )
         ckpt = _find_checkpoint(task_abs, prefix)
         if ckpt is None:
-            train_script = "train.py" if prefix.startswith("SPRiF") else "train_lif.py"
-            _train_task(
-                task_dir, train_script,
-                [
-                    "--train-mat", os.path.join("data", "QTDB_train.mat"),
-                    "--test-mat", os.path.join("data", "QTDB_test.mat"),
-                    "--lr", "1e-2", "--epochs", "250", "--batch-size", "64",
-                    "--seed", "1111", "--hidden-sizes", "36",
-                    "--neuron-threshold", "0.6",
-                ],
-            )
-            ckpt = _find_checkpoint(task_abs, prefix)
-            if ckpt is None:
-                raise RuntimeError(f"Training completed but no checkpoint found for {prefix}.")
+            raise RuntimeError("Training completed but no checkpoint found for SPRiFECGModel.")
 
-        print(f"  {prefix}: {os.path.basename(ckpt)}")
-        model = cls(
-            input_size=input_size, hidden_sizes=[36], output_size=6,
-            mode="srnn",
-            neuron_kwargs={"threshold": 0.6, "init_std": 0.05, "bias": True},
+    print(f"  {prefix}: {os.path.basename(ckpt)}")
+    sprif_model = SPRiFECGModel(
+        input_size=input_size, hidden_sizes=[36], output_size=6,
+        mode="srnn",
+        neuron_kwargs={"threshold": 0.6, "init_std": 0.05, "bias": True},
+    )
+    sprif_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    sprif_model.eval()
+    models["SPRiFECGModel"] = sprif_model
+
+    # Load ASRNN
+    ckpt = _find_checkpoint(task_abs, "ASRNNECGModel")
+    if ckpt is None:
+        _train_task(
+            task_dir, "train_asrnn.py",
+            [
+                "--train-mat", os.path.join("data", "QTDB_train.mat"),
+                "--test-mat", os.path.join("data", "QTDB_test.mat"),
+                "--lr", "1e-2", "--epochs", "250", "--batch-size", "64",
+                "--seed", "1111", "--hidden-size", "36",
+            ],
         )
-        model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
-        model.eval()
-        models[prefix] = model
+        ckpt = _find_checkpoint(task_abs, "ASRNNECGModel")
+        if ckpt is None:
+            raise RuntimeError("Training completed but no checkpoint found for ASRNNECGModel.")
 
-    return models["SPRiFECGModel"], models["LIFECGModel"]
+    print(f"  ASRNNECGModel: {os.path.basename(ckpt)}")
+    asrnn_model = ASRNNECGNet(
+        input_size=input_size, hidden_size=36, num_classes=6,
+        sub_seq_length=10, device="cpu"
+    )
+    asrnn_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    asrnn_model.eval()
+    models["ASRNNECGModel"] = asrnn_model
+
+    return models["SPRiFECGModel"], models["ASRNNECGModel"]
 
 
 def _build_ecg_test_loader(task_dir: str, batch_size: int = 64):
     """Build ECG test DataLoader."""
     import scipy.io
     from torch.utils.data import DataLoader, TensorDataset
+
+    _add_path(task_dir)
     from core_algorithm.utils import convert_dataset_wtime
 
     task_abs = os.path.join(ROOT, task_dir)
@@ -287,34 +370,45 @@ def _build_ecg_test_loader(task_dir: str, batch_size: int = 64):
 # ---------------------------------------------------------------------------
 
 @torch.no_grad()
-def evaluate_gsc(model: nn.Module, loader, device, seq_len=101, n_mels=40, input_size=120):
+def evaluate_gsc(model: nn.Module, loader, device, seq_len=101, n_mels=40, input_size=120, model_name="SPRiF"):
     """Evaluate GSC model. Returns accuracy (float)."""
     model.eval()
     total_correct = 0
     total = 0
     for x, y in loader:
         x = x.view(-1, 3, seq_len, n_mels).to(device)
-        x = x.permute(0, 2, 1, 3).reshape(-1, seq_len, input_size)
         y = y.to(device)
-        logits, _ = model(x)
+
+        # Different models have different interfaces
+        if model_name == "ASRNN":
+            # ASRNN expects (batch, 3, seq_len, n_mels) directly
+            logits = model(x)
+        else:
+            # SPRiF expects (batch, seq_len, input_size)
+            x = x.permute(0, 2, 1, 3).reshape(-1, seq_len, input_size)
+            logits, _ = model(x)
+
         total_correct += (logits.argmax(dim=-1) == y).sum().item()
         total += x.size(0)
     return total_correct / total if total > 0 else 0.0
 
 
 @torch.no_grad()
-def evaluate_ecg(model: nn.Module, loader, device):
+def evaluate_ecg(model: nn.Module, loader, device, model_name="SPRiF"):
     """Evaluate ECG model. Returns accuracy (float)."""
     model.eval()
     total_correct = 0
     total = 0
     for inputs, labels in loader:
         inputs = inputs.to(device)
+        # Get the last label for comparison
         labels = labels.to(device)
+        last_labels = labels[:, -1] if labels.dim() > 1 else labels
+
         logits = model(inputs)
         pred = logits.argmax(dim=1)
-        total_correct += pred.eq(labels).sum().item()
-        total += labels.numel()
+        total_correct += pred.eq(last_labels).sum().item()
+        total += last_labels.numel()
     return total_correct / total if total > 0 else 0.0
 
 
@@ -335,14 +429,14 @@ class NoisyGSCLoader:
         self.noise_fn = noise_fn
         self.noise_args = noise_args
         self.rng = rng
-        self._batches = list(base_loader)
+        self._batches = []
+        for x, y in base_loader:
+            x_np = x.numpy()
+            x_np = self.noise_fn(x_np, *self.noise_args, self.rng)
+            self._batches.append((torch.from_numpy(x_np).float(), y))
 
     def __iter__(self):
         for x, y in self._batches:
-            # x: (B, 3, seq_len, n_mels) after collate_fn
-            x_np = x.numpy()
-            x_np = self.noise_fn(x_np, *self.noise_args, self.rng)
-            x = torch.from_numpy(x_np).float()
             yield x, y
 
     def __len__(self):
@@ -357,13 +451,14 @@ class NoisyECGLoader:
         self.noise_fn = noise_fn
         self.noise_args = noise_args
         self.rng = rng
-        self._batches = list(base_loader)
-
-    def __iter__(self):
+        self._batches = []
         for x, y in self._batches:
             x_np = x.numpy()
             x_np = self.noise_fn(x_np, *self.noise_args, self.rng)
-            x = torch.from_numpy(x_np).float()
+            self._batches.append((torch.from_numpy(x_np).float(), y))
+
+    def __iter__(self):
+        for x, y in self._batches:
             yield x, y
 
     def __len__(self):
@@ -377,12 +472,12 @@ class NoisyECGLoader:
 NOISE_CONDITIONS = [
     # (label, noise_fn, args)
     ("clean", None, ()),
-    ("additive_0.01", additive_noise, (0.01,)),
-    ("additive_0.05", additive_noise, (0.05,)),
-    ("additive_0.10", additive_noise, (0.10,)),
-    ("subtractive_0.05", subtractive_noise, (0.05,)),
-    ("subtractive_0.10", subtractive_noise, (0.10,)),
-    ("subtractive_0.20", subtractive_noise, (0.20,)),
+    ("additive_sigma_0.01", additive_noise, (0.01,)),
+    ("additive_sigma_0.05", additive_noise, (0.05,)),
+    ("additive_sigma_0.10", additive_noise, (0.10,)),
+    ("subtractive_p_0.05", subtractive_noise, (0.05,)),
+    ("subtractive_p_0.10", subtractive_noise, (0.10,)),
+    ("subtractive_p_0.20", subtractive_noise, (0.20,)),
     ("mixed", mixed_noise, (0.05, 0.10)),
 ]
 
@@ -416,9 +511,9 @@ def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
 
     # Load models
     print("Loading models...")
-    sprif_model, lif_model = config["load_models"](config["task_dir"])
+    sprif_model, asrnn_model = config["load_models"](config["task_dir"])
     sprif_model.to(device)
-    lif_model.to(device)
+    asrnn_model.to(device)
 
     # Build base loader
     base_loader = config["build_loader"](config["task_dir"])
@@ -430,21 +525,21 @@ def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
         print(f"  Condition: {label}")
         if noise_fn is None:
             # Clean — evaluate directly
-            acc_sprif = config["evaluate"](sprif_model, base_loader, device, **config["loader_kwargs"])
-            acc_lif = config["evaluate"](lif_model, base_loader, device, **config["loader_kwargs"])
+            acc_sprif = config["evaluate"](sprif_model, base_loader, device, model_name="SPRiF", **config["loader_kwargs"])
+            acc_asrnn = config["evaluate"](asrnn_model, base_loader, device, model_name="ASRNN", **config["loader_kwargs"])
         else:
             noisy_cls = config["noisy_loader_cls"]
             noisy_loader = noisy_cls(base_loader, noise_fn, args, rng)
-            acc_sprif = config["evaluate"](sprif_model, noisy_loader, device, **config["loader_kwargs"])
-            acc_lif = config["evaluate"](lif_model, noisy_loader, device, **config["loader_kwargs"])
+            acc_sprif = config["evaluate"](sprif_model, noisy_loader, device, model_name="SPRiF", **config["loader_kwargs"])
+            acc_asrnn = config["evaluate"](asrnn_model, noisy_loader, device, model_name="ASRNN", **config["loader_kwargs"])
 
         results.append({
             "dataset": dataset_name,
             "condition": label,
             "SPRiF_accuracy": round(acc_sprif, 4),
-            "LIF_accuracy": round(acc_lif, 4),
+            "ASRNN_accuracy": round(acc_asrnn, 4),
         })
-        print(f"    SPRiF: {acc_sprif:.4f}  |  LIF: {acc_lif:.4f}")
+        print(f"    SPRiF: {acc_sprif:.4f}  |  ASRNN: {acc_asrnn:.4f}")
 
     return results
 
@@ -454,11 +549,7 @@ def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
 # ---------------------------------------------------------------------------
 
 def plot_benchmark(all_results: List[dict], out_dir: str):
-    """Grouped bar chart comparing SPRiF vs LIF degradation per condition per dataset."""
-    df_data = []
-    for r in all_results:
-        df_data.append(r)
-    # Reorganize for grouped bar chart
+    """Grouped bar chart comparing SPRiF vs ASRNN degradation per condition per dataset."""
     datasets = sorted(set(r["dataset"] for r in all_results))
 
     fig, axes = plt.subplots(1, len(datasets), figsize=(7 * len(datasets), 5))
@@ -468,7 +559,7 @@ def plot_benchmark(all_results: List[dict], out_dir: str):
     conditions_order = [c[0] for c in NOISE_CONDITIONS]
     condition_labels = [c.replace("_", "\n") for c in conditions_order]
 
-    colors = {"SPRiF": "#2b83ba", "LIF": "#e41a1c"}
+    colors = {"SPRiF": "#2b83ba", "ASRNN": "#4daf4a"}
     bar_width = 0.35
 
     for ax, ds in zip(axes, datasets):
@@ -477,25 +568,25 @@ def plot_benchmark(all_results: List[dict], out_dir: str):
 
         x = np.arange(len(conditions_order))
         sprif_vals = [by_cond[c]["SPRiF_accuracy"] for c in conditions_order]
-        lif_vals = [by_cond[c]["LIF_accuracy"] for c in conditions_order]
+        asrnn_vals = [by_cond[c]["ASRNN_accuracy"] for c in conditions_order]
 
         bars1 = ax.bar(x - bar_width / 2, sprif_vals, bar_width, label="SPRiF",
                        color=colors["SPRiF"], alpha=0.85, edgecolor="white")
-        bars2 = ax.bar(x + bar_width / 2, lif_vals, bar_width, label="LIF",
-                       color=colors["LIF"], alpha=0.85, edgecolor="white")
+        bars2 = ax.bar(x + bar_width / 2, asrnn_vals, bar_width, label="ASRNN",
+                       color=colors["ASRNN"], alpha=0.85, edgecolor="white")
 
         # Annotate degradation from clean
         clean_sprif = by_cond["clean"]["SPRiF_accuracy"]
-        clean_lif = by_cond["clean"]["LIF_accuracy"]
+        clean_asrnn = by_cond["clean"]["ASRNN_accuracy"]
         for i, c in enumerate(conditions_order):
             if c == "clean":
                 continue
             d_sprif = clean_sprif - sprif_vals[i]
-            d_lif = clean_lif - lif_vals[i]
-            ax.text(x[i], sprif_vals[i] + 0.01, f"-{d_sprif:.3f}",
+            d_asrnn = clean_asrnn - asrnn_vals[i]
+            ax.text(x[i] - bar_width / 2, sprif_vals[i] + 0.01, f"-{d_sprif:.3f}",
                     ha="center", fontsize=6, color=colors["SPRiF"], fontweight="bold")
-            ax.text(x[i], lif_vals[i] + 0.01, f"-{d_lif:.3f}",
-                    ha="center", fontsize=6, color=colors["LIF"], fontweight="bold")
+            ax.text(x[i] + bar_width / 2, asrnn_vals[i] + 0.01, f"-{d_asrnn:.3f}",
+                    ha="center", fontsize=6, color=colors["ASRNN"], fontweight="bold")
 
         ax.set_xticks(x)
         ax.set_xticklabels(condition_labels, fontsize=8)
@@ -504,7 +595,7 @@ def plot_benchmark(all_results: List[dict], out_dir: str):
         ax.legend(frameon=True, fontsize=9)
         ax.set_ylim(0, 1.05)
 
-    fig.suptitle("SPRiF vs LIF Noise Robustness Benchmark", y=1.01, fontweight="bold")
+    fig.suptitle("SPRiF vs ASRNN Noise Robustness Benchmark", y=1.01, fontweight="bold")
     fig.tight_layout()
 
     save_path = os.path.join(out_dir, "robustness_benchmark.png")

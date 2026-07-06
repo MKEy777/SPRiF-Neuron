@@ -31,6 +31,13 @@ matplotlib.use("Agg")
 # ---------------------------------------------------------------------------
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FIGURE_DIR = os.path.join(
+    os.path.dirname(ROOT),
+    "experiment-design-20260606",
+    "results",
+    "figures",
+    "trajectory_analysis",
+)
 TASK_DIR = "Task_pSMNIST"
 TASK_ABS = os.path.join(ROOT, TASK_DIR)
 sys.path.insert(0, TASK_ABS)
@@ -280,7 +287,8 @@ def save_trajectory_data(
 # ---------------------------------------------------------------------------
 
 def main():
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = FIGURE_DIR
+    os.makedirs(out_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 

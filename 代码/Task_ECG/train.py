@@ -6,6 +6,7 @@ Usage:
 """
 
 import argparse
+import math
 
 import numpy as np
 import scipy.io
@@ -33,6 +34,15 @@ def get_args():
     parser.add_argument("--neuron-threshold", type=float, default=0.6)
     parser.add_argument("--neuron-init-std", type=float, default=0.05)
     parser.add_argument("--neuron-bias", action="store_true", default=True)
+    # Spectral parameters
+    parser.add_argument("--tau-alpha-min", type=float, default=20.0)
+    parser.add_argument("--tau-alpha-max", type=float, default=120.0)
+    parser.add_argument("--tau-rho-min", type=float, default=4.0)
+    parser.add_argument("--tau-rho-max", type=float, default=30.0)
+    parser.add_argument("--tau-eta-min", type=float, default=0.8)
+    parser.add_argument("--tau-eta-max", type=float, default=8.0)
+    parser.add_argument("--omega-min", type=float, default=0.02)  # multiplied by pi
+    parser.add_argument("--omega-max", type=float, default=0.20)  # multiplied by pi
     # Data
     parser.add_argument("--train-mat", type=str, default="./data/QTDB_train.mat")
     parser.add_argument("--test-mat", type=str, default="./data/QTDB_test.mat")

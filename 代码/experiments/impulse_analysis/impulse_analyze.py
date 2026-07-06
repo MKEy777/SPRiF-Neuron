@@ -35,12 +35,23 @@ sns.set_context("paper", font_scale=1.2)
 # ---------------------------------------------------------------------------
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FIGURE_DIR = os.path.join(
+    os.path.dirname(ROOT),
+    "experiment-design-20260606",
+    "results",
+    "figures",
+    "impulse_analysis",
+)
 
 
 def _add_path(task_dir: str) -> str:
     p = os.path.join(ROOT, task_dir)
-    if p not in sys.path:
-        sys.path.insert(0, p)
+    if p in sys.path:
+        sys.path.remove(p)
+    sys.path.insert(0, p)
+    for name in list(sys.modules):
+        if name in {"model", "data", "core_algorithm"} or name.startswith("core_algorithm."):
+            sys.modules.pop(name, None)
     return p
 
 
@@ -82,6 +93,7 @@ def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
 # ---------------------------------------------------------------------------
 
 def _load_psmnist(task_dir: str) -> nn.Module:
+    _add_path(task_dir)
     from model import SPRiFpSMNISTNet
 
     ckpt = _find_checkpoint(os.path.join(ROOT, task_dir), "SPRiFpSMNISTNet")
@@ -112,6 +124,7 @@ def _load_psmnist(task_dir: str) -> nn.Module:
 
 
 def _load_gsc(task_dir: str) -> nn.Module:
+    _add_path(task_dir)
     from model import SPRiFGSCNet
 
     ckpt = _find_checkpoint(os.path.join(ROOT, task_dir), "SPRiFGSCNet")
@@ -151,6 +164,8 @@ def _load_gsc(task_dir: str) -> nn.Module:
 
 def _load_ecg(task_dir: str) -> nn.Module:
     import scipy.io
+
+    _add_path(task_dir)
     from core_algorithm.utils import convert_dataset_wtime
     from model import SPRiFECGModel
 
@@ -566,7 +581,8 @@ LOADERS = {
 # ---------------------------------------------------------------------------
 
 def main():
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = FIGURE_DIR
+    os.makedirs(out_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 

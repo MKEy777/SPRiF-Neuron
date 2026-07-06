@@ -51,8 +51,16 @@ RESULTS_DIR = os.path.join(
 
 def _add_path(task_dir: str) -> str:
     p = os.path.join(ROOT, task_dir)
-    if p not in sys.path:
-        sys.path.insert(0, p)
+    if p in sys.path:
+        sys.path.remove(p)
+    sys.path.insert(0, p)
+    for name in list(sys.modules):
+        if (
+            name in {"model", "model_lif", "model_wrapper", "data", "data_asrnn", "core_algorithm"}
+            or name.startswith("core_algorithm.")
+            or name.startswith("model_wrapper.")
+        ):
+            sys.modules.pop(name, None)
     return p
 
 
@@ -125,83 +133,151 @@ def sinusoidal_perturbation(
 # ---------------------------------------------------------------------------
 
 def _load_gsc_models(task_dir: str):
+    """Load SPRiF and ASRNN GSC models. Train if needed."""
     _add_path(task_dir)
     from model import SPRiFGSCNet
-    from model_lif import LIFGSCNet
+
+    # Import ASRNN model
+    sys.path.insert(0, os.path.join(ROOT, task_dir, "model_wrapper"))
+    from asrnn_gsc import ASRNNGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "data", "SpeechCommands")
+    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
 
     models = {}
-    for cls, prefix in [(SPRiFGSCNet, "SPRiFGSCNet"), (LIFGSCNet, "LIFGSCNet")]:
+
+    # Load SPRiF
+    prefix = "SPRiFGSCNet"
+    ckpt = _find_checkpoint(task_abs, prefix)
+    if ckpt is None:
+        if not os.path.exists(data_root):
+            raise FileNotFoundError("GSC data not found.")
+        _train_subprocess(task_dir, "train.py", [
+            "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+            "--epochs", "150", "--batch-size", "200", "--seed", "42", "--hidden-sizes", "300",
+        ])
         ckpt = _find_checkpoint(task_abs, prefix)
         if ckpt is None:
-            train_script = "train.py" if prefix.startswith("SPRiF") else "train_lif.py"
-            if not os.path.exists(data_root):
-                raise FileNotFoundError("GSC data not found.")
-            _train_subprocess(task_dir, train_script, [
-                "--data-root", os.path.join("data", "SpeechCommands"),
-                "--lr", "3e-3", "--epochs", "150", "--batch-size", "200",
-                "--seed", "42", "--hidden-sizes", "300",
-                "--neuron-threshold", "1.0", "--neuron-init-std", "0.1",
-            ])
-            ckpt = _find_checkpoint(task_abs, prefix)
-            if ckpt is None:
-                raise RuntimeError(f"No checkpoint for {prefix}.")
+            raise RuntimeError("Training completed but no checkpoint found for SPRiFGSCNet.")
 
-        print(f"  {prefix}: {os.path.basename(ckpt)}")
-        model = cls(
-            input_size=120, hidden_sizes=[300], num_classes=12,
-            dropout=0.0, recurrent_flags=(True,),
-            neuron_kwargs={"threshold": 1.0, "init_std": 0.1},
-        )
-        model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
-        model.eval()
-        models[prefix] = model
+    print(f"  {prefix}: {os.path.basename(ckpt)}")
+    sprif_model = SPRiFGSCNet(
+        input_size=120, hidden_sizes=[300], num_classes=12,
+        dropout=0.0, recurrent_flags=(True,),
+        neuron_kwargs={
+            "threshold": 0.8, "init_std": 0.15,
+            "tau_alpha_range": (10.0, 80.0),
+            "tau_rho_range": (4.0, 30.0),
+            "tau_eta_range": (0.8, 8.0),
+            "omega_range": (0.04 * math.pi, 0.40 * math.pi),
+        },
+    )
+    sprif_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    sprif_model.eval()
+    models["SPRiFGSCNet"] = sprif_model
 
-    return models["SPRiFGSCNet"], models["LIFGSCNet"]
+    # Load ASRNN
+    ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
+    if ckpt is None:
+        if not os.path.exists(data_root):
+            raise FileNotFoundError("GSC data not found.")
+        _train_subprocess(task_dir, "train_asrnn.py", [
+            "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+            "--epochs", "30", "--batch-size", "32", "--seed", "0", "--hidden-size", "256",
+        ])
+        ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
+        if ckpt is None:
+            raise RuntimeError("Training completed but no checkpoint found for ASRNNGSCNet.")
+
+    print(f"  ASRNNGSCNet: {os.path.basename(ckpt)}")
+    asrnn_model = ASRNNGSCNet(
+        input_size=120, hidden_size=256, num_classes=12,
+        device="cpu"
+    )
+    asrnn_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    asrnn_model.eval()
+    models["ASRNNGSCNet"] = asrnn_model
+
+    return models["SPRiFGSCNet"], models["ASRNNGSCNet"]
 
 
 def _load_ecg_models(task_dir: str):
+    """Load SPRiF and ASRNN ECG models. Train if needed."""
     import scipy.io
-    from core_algorithm.utils import convert_dataset_wtime
 
     _add_path(task_dir)
+    from core_algorithm.utils import convert_dataset_wtime
+
     from model import SPRiFECGModel
-    from model_lif import LIFECGModel
+
+    # Import ASRNN model
+    sys.path.insert(0, os.path.join(ROOT, task_dir, "model_wrapper"))
+    from asrnn_ecg import ASRNNECGNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    mat = scipy.io.loadmat(os.path.join(task_abs, "data", "QTDB_train.mat"))
+    train_mat_path = os.path.join(task_abs, "data", "QTDB_train.mat")
+    if not os.path.exists(train_mat_path):
+        raise FileNotFoundError("ECG data not found.")
+
+    mat = scipy.io.loadmat(train_mat_path)
     _, train_x, _ = convert_dataset_wtime(mat)
     input_size = train_x.shape[2]
 
     models = {}
-    for cls, prefix in [(SPRiFECGModel, "SPRiFECGModel"), (LIFECGModel, "LIFECGModel")]:
+
+    # Load SPRiF
+    prefix = "SPRiFECGModel"
+    ckpt = _find_checkpoint(task_abs, prefix)
+    if ckpt is None:
+        _train_subprocess(task_dir, "train.py", [
+            "--train-mat", os.path.join("data", "QTDB_train.mat"),
+            "--test-mat", os.path.join("data", "QTDB_test.mat"),
+            "--epochs", "250", "--batch-size", "64",
+            "--seed", "1111", "--hidden-sizes", "36",
+        ])
         ckpt = _find_checkpoint(task_abs, prefix)
         if ckpt is None:
-            train_script = "train.py" if prefix.startswith("SPRiF") else "train_lif.py"
-            _train_subprocess(task_dir, train_script, [
-                "--train-mat", os.path.join("data", "QTDB_train.mat"),
-                "--test-mat", os.path.join("data", "QTDB_test.mat"),
-                "--lr", "1e-2", "--epochs", "250", "--batch-size", "64",
-                "--seed", "1111", "--hidden-sizes", "36",
-                "--neuron-threshold", "0.6",
-            ])
-            ckpt = _find_checkpoint(task_abs, prefix)
-            if ckpt is None:
-                raise RuntimeError(f"No checkpoint for {prefix}.")
+            raise RuntimeError("Training completed but no checkpoint found for SPRiFECGModel.")
 
-        print(f"  {prefix}: {os.path.basename(ckpt)}")
-        model = cls(
-            input_size=input_size, hidden_sizes=[36], output_size=6,
-            mode="srnn",
-            neuron_kwargs={"threshold": 0.6, "init_std": 0.05, "bias": True},
-        )
-        model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
-        model.eval()
-        models[prefix] = model
+    print(f"  {prefix}: {os.path.basename(ckpt)}")
+    sprif_model = SPRiFECGModel(
+        input_size=input_size, hidden_sizes=[36], output_size=6,
+        mode="srnn",
+        neuron_kwargs={
+            "threshold": 0.6, "init_std": 0.05, "bias": True,
+            "tau_alpha_range": (20.0, 120.0),
+            "tau_rho_range": (4.0, 30.0),
+            "tau_eta_range": (0.8, 8.0),
+            "omega_range": (0.02 * math.pi, 0.20 * math.pi),
+        },
+    )
+    sprif_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    sprif_model.eval()
+    models["SPRiFECGModel"] = sprif_model
 
-    return models["SPRiFECGModel"], models["LIFECGModel"]
+    # Load ASRNN
+    ckpt = _find_checkpoint(task_abs, "ASRNNECGModel")
+    if ckpt is None:
+        _train_subprocess(task_dir, "train_asrnn.py", [
+            "--train-mat", os.path.join("data", "QTDB_train.mat"),
+            "--test-mat", os.path.join("data", "QTDB_test.mat"),
+            "--epochs", "250", "--batch-size", "64",
+            "--seed", "1111", "--hidden-size", "36",
+        ])
+        ckpt = _find_checkpoint(task_abs, "ASRNNECGModel")
+        if ckpt is None:
+            raise RuntimeError("Training completed but no checkpoint found for ASRNNECGModel.")
+
+    print(f"  ASRNNECGModel: {os.path.basename(ckpt)}")
+    asrnn_model = ASRNNECGNet(
+        input_size=input_size, hidden_size=36, num_classes=6,
+        sub_seq_length=10, device="cpu"
+    )
+    asrnn_model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
+    asrnn_model.eval()
+    models["ASRNNECGModel"] = asrnn_model
+
+    return models["SPRiFECGModel"], models["ASRNNECGModel"]
 
 
 # ---------------------------------------------------------------------------
@@ -212,10 +288,12 @@ def _build_gsc_numpy_loader(task_dir: str):
     """Return (x_numpy, y_numpy) for the entire GSC test set."""
     import torchvision
     from torch.utils.data import DataLoader
+
+    _add_path(task_dir)
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "data", "SpeechCommands")
+    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
 
     testing_words = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -257,6 +335,8 @@ def _build_ecg_numpy_loader(task_dir: str):
     """Return (x_numpy, y_numpy) for the entire ECG test set."""
     import scipy.io
     from torch.utils.data import DataLoader, TensorDataset
+
+    _add_path(task_dir)
     from core_algorithm.utils import convert_dataset_wtime
 
     task_abs = os.path.join(ROOT, task_dir)
