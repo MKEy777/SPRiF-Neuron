@@ -1,0 +1,129 @@
+{
+  "name": "health-check",
+  "title": "Add Read-Only Health Check Command",
+  "version": "1.0.0",
+  "revision": 1,
+  "created": "2025-01-01T00:00:00Z",
+  "updated": "2025-01-01T00:00:00Z",
+  "status": "completed",
+  "goal": "为项目添加一个只读健康检查命令（health_check.py），用于快速诊断项目环境、结构、数据和模型的完整状态，且不修改任何文件。",
+  "architecture": "在项目根目录（代码/）下新增 health_check.py 脚本，使用 argarse 解析命令行参数（如 --verbose, --tasks），通过只读方式检查：Python/PyTorch/CUDA 环境、项目目录结构、数据集存在性、checkpoint 文件、core_algorithm 一致性、依赖安装状态。输出汇总报告到 stdout。",
+  "techStack": ["Python 3.8+", "PyTorch >= 1.9.0", "argparse (stdlib)", "pathlib / os (stdlib)", "subprocess (stdlib) for pip checks"],
+  "entryPoints": ["代码/health_check.py"],
+  "assumptions": [
+    "项目根目录是当前目录下的 '代码/' 文件夹",
+    "所有任务使用相同版本的 core_algorithm/（通过文件拷贝同步）",
+    "用户希望一个独立的脚本，不侵入现有 train.py",
+    "数据集路径可能未配置，检查时应报 warning 而非 error",
+    "检查 process 是纯只读的，不写任何文件到项目目录"
+  ],
+  "risks": [
+    "core_algorithm 各任务副本可能不完全一致，需要 diff 比对",
+    "数据集路径是硬编码的绝对路径（如 /root/autodl-tmp/...），可能无效",
+    "CUDA 检查需要 PyTorch 安装正常，如果 PyTorch 未安装则跳过",
+    "checkpoint 文件名模式依赖各任务的 save_name 格式，需解析多种模式"
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "content": "创建 代码/health_check.py 脚本框架，包含 argarse 参数解析（--verbose, --tasks, --output）和 main() 入口",
+      "status": "completed",
+      "result": "Script framework with --verbose, --tasks, --output args implemented",
+      "notes": "参考现有 train.py 的 argarse 风格，所有参数可选，默认全量检查",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --help"
+    },
+    {
+      "id": "T2",
+      "content": "实现环境检查模块：Python 版本、PyTorch 版本、CUDA 可用性、GPU 数量及名称",
+      "status": "completed",
+      "result": "Python/PyTorch/CUDA/GPU detection working",
+      "notes": "使用 sys.version_info, torch.__version__, torch.cuda 等；若 torch 未安装则打印 skip",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --verbose"
+    },
+    {
+      "id": "T3",
+      "content": "实现项目结构检查模块：验证所有预期目录（Task_GSC, Task_SHD, Task_ECG, Task_S-MNIST, Task_pSMNIST, experiments/ 子目录）和关键文件（train.py, model.py, core_algorithm/）存在",
+      "status": "pending",
+      "notes": "使用 os.path.isdir / os.path.isfile；打印缺失项",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --tasks GSC,SHD"
+    },
+    {
+      "id": "T4",
+      "content": "实现 checkpoint 检查模块：扫描各 Task 目录下的 .pth 文件，解析文件名中的精度（accXX.XX）并汇总最佳模型",
+      "status": "pending",
+      "notes": "文件名模式: {NetworkPrefix}_{hparams}_seed{N}_acc{XX.XX}.pth；使用 glob **/*.pth",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py"
+    },
+    {
+      "id": "T5",
+      "content": "实现 core_algorithm 一致性检查模块：对比各 Task 目录下 core_algorithm/ 的文件内容（使用 hashlib.md5 或 filecmp），报告不一致的副本",
+      "status": "pending",
+      "notes": "选 Task_GSC 的 core_algorithm 作为基准（reference），其余任务与之比对",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --verbose"
+    },
+    {
+      "id": "T6",
+      "content": "实现依赖检查模块：读取 requirements.txt，逐一检查 pip 包是否安装及版本兼容性",
+      "status": "pending",
+      "notes": "使用 importlib.metadata (Python 3.8+) 或 subprocess pip list；版本比较使用 packaging.version",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --verbose"
+    },
+    {
+      "id": "T7",
+      "content": "实现报告格式化模块：汇总所有检查结果，按类别分组输出到 stdout，支持 --verbose 详细模式和 --output json 模式",
+      "status": "pending",
+      "notes": "使用 emoji/符号标记状态（✅/⚠️/❌）；JSON 输出可选项；退出码：0 全部通过，1 有警告，2 有错误",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --output json"
+    },
+    {
+      "id": "T8",
+      "content": "添加 __main__ 入口和异常安全处理，确保任何单项检查失败不会中断整个脚本",
+      "status": "pending",
+      "notes": "每个检查模块用 try/except 包裹，失败记为 ERROR 并继续下一项",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py; echo 'Exit code: $?'"
+    },
+    {
+      "id": "T9",
+      "content": "（可选）添加 --tasks 参数支持只检查特定任务，用逗号分隔",
+      "status": "pending",
+      "notes": "如 --tasks GSC,ECG 只检查这两个任务；默认检查全部",
+      "blocker": null,
+      "result": null,
+      "files": ["代码/health_check.py"],
+      "tests": ["代码/health_check.py"],
+      "testCmd": "cd 代码 && python health_check.py --tasks GSC"
+    }
+  ]
+}

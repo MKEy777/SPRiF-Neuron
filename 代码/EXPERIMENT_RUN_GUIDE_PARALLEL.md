@@ -227,3 +227,67 @@ python robustness/frequency_selectivity.py
 2. **数据同步**: 机器2训练完成后，及时将模型文件复制到机器1
 3. **结果收集**: 最后从两台机器收集所有输出文件
 4. **错误处理**: 如果某个实验失败，检查对应的模型 checkpoint 是否存在
+
+---
+
+## 实验 6: 相位轨迹可视化（trajectory_visualization）
+
+**目的**: 证明 SPRiF 慢状态在 spike 时刻连续（Claim C2），对比 ASRNN 膜电位被 reset 的结构性差异。
+
+**任务**: 合成相位轨迹任务（Cue-Delay 范式），Cue 阶段编码初始相位，Delay 阶段维持旋转轨迹，probe 时刻注入扰动诱发 spike。
+
+**前置**: 无外部依赖，合成数据，自包含训练。可在任一机器上独立运行。
+
+### 运行命令
+
+```bash
+cd 代码/experiments
+
+# 一键运行（训练 SPRiF+ASRNN + 记录 + 绘图，约 10-15 分钟）
+python trajectory_visualization/run_all.py
+
+# 或分步运行:
+# 步骤1: 训练（默认 100 epochs）
+python trajectory_visualization/train.py --model both --epochs 100
+
+# 步骤2: 记录前向传播（4 个样本 × 2 模型）
+python trajectory_visualization/record_forward.py
+
+# 步骤3: 绘制 5-panel 主图
+python trajectory_visualization/plot_main_figure.py
+```
+
+### 输出
+
+```
+experiment-design-20260606/results/figures/trajectory_visualization/
+├── main_figure_5panel.png          # 5-panel 主图（论文用）
+├── appendix_phi0.png               # φ=0 附录图
+├── appendix_phi2.png               # φ=π 附录图
+├── appendix_phi3.png               # φ=3π/2 附录图
+└── trajectory_data_phi*.npz        # 记录的轨迹数据（可复现）
+
+代码/experiments/trajectory_visualization/checkpoints/
+├── TrajectoryViz_SPRiF_mse*.pth    # SPRiF 最佳模型
+└── TrajectoryViz_ASRNN_mse*.pth    # ASRNN 最佳模型
+```
+
+### 核心验证
+
+1. **SPRiF 慢状态连续**: x_t 在 probe 时刻相邻步差分小（不被 reset）
+2. **ASRNN 膜电位跳变**: mem 在 spike 处显著下降（被 reset）
+3. **输出对比**: SPRiF 2D 轨迹近似单位圆，ASRNN 在 spike 处可见畸变
+4. **Probe 诱发 spike**: probe window 内 hidden spike rate 显著高于非 probe 时段
+
+### 参数说明
+
+- 默认参数严格按 `SPRiF 状态轨迹可视化实验.md` 设计文档
+- 可通过命令行覆盖：`--epochs`, `--lr`, `--batch-size`, `--hidden-size`, `--a-probe`
+- 默认 probe 幅度 A_probe=1.0，若不诱发 spike 可调大（如 `--a-probe 2.0`）
+
+### 预期时间
+
+- 训练: ~10 分钟（GPU）
+- 记录: ~1 分钟
+- 绘图: ~30 秒
+- 总计: ~12 分钟

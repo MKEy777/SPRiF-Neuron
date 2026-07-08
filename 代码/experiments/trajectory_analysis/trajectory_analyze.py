@@ -225,20 +225,26 @@ def plot_trajectory(
     ax.set_title("SPRiF Slow State $x_t$ — Continuous Across Spike", fontweight="bold")
     ax.legend(loc="upper right", frameon=True, fontsize=9)
 
-    # --- Bottom: Membrane ---
+    # --- Bottom: Membrane (show relative to pre-spike baseline) ---
     ax = axes[1]
-    ax.plot(t_rel, membrane[t_start:t_end, neuron_idx],
+    mem_window = membrane[t_start:t_end, neuron_idx]
+    # Normalize to show reset clearly
+    mem_baseline = mem_window[0]  # use first value as baseline
+    mem_rel = mem_window - mem_baseline
+
+    ax.plot(t_rel, mem_rel,
             color="#2c7bb6", linewidth=1.8, marker=".", markersize=3,
-            label=r"Membrane $u^0$")
+            label=r"Membrane $u^0$ (relative)")
     spike_mask = spikes[t_start:t_end, neuron_idx] > 0.5
     spike_rel = t_rel[spike_mask]
-    spike_vals = membrane[t_start:t_end, neuron_idx][spike_mask]
+    spike_vals = mem_rel[spike_mask]
     ax.scatter(spike_rel, spike_vals,
                color="red", s=80, zorder=5, marker="v",
                label="Spike event")
     ax.axvline(0, color="red", linestyle="--", linewidth=2, alpha=0.8)
+    ax.axhline(0, color="gray", linestyle=":", linewidth=1, alpha=0.5)
     ax.set_xlabel("Timesteps relative to spike (t=0)")
-    ax.set_ylabel("Membrane potential")
+    ax.set_ylabel("Membrane potential (relative)")
     ax.set_title(
         "SPRiF Fast State $u^0$ (Membrane) — Projective Reset at Spike",
         fontweight="bold",
@@ -340,12 +346,36 @@ def main():
     set_seed(0)
     rec = record_trajectory(model, x_sample)
 
-    # ---- Pick a neuron and spike time ----
-    spike_times = np.where(last_spikes.sum(axis=1) > 0.5)[0]
-    chosen_spike = int(spike_times[len(spike_times) // 2])  # middle spike
-    spiking_neurons = np.where(last_spikes[chosen_spike] > 0.5)[0]
-    chosen_neuron = int(spiking_neurons[0])
+    # ---- Pick a neuron with moderate membrane values ----
+    membrane = rec["membranes"][-1]  # [T, H]
+    spikes = rec["spikes"][-1]       # [T, H]
+
+    # Find neurons that spike but have reasonable membrane range
+    H = membrane.shape[1]
+    neuron_scores = []
+    for ni in range(H):
+        spike_count = (spikes[:, ni] > 0.5).sum()
+        if spike_count < 3:
+            continue
+        mem_range = membrane[:, ni].max() - membrane[:, ni].min()
+        neuron_scores.append((ni, spike_count, mem_range))
+
+    if not neuron_scores:
+        print("  Warning: No neuron with >= 3 spikes found, using first spiking neuron")
+        spike_times = np.where(spikes.sum(axis=1) > 0.5)[0]
+        chosen_spike = int(spike_times[len(spike_times) // 2])
+        spiking_neurons = np.where(spikes[chosen_spike] > 0.5)[0]
+        chosen_neuron = int(spiking_neurons[0])
+    else:
+        # Pick neuron with smallest membrane range (most stable)
+        neuron_scores.sort(key=lambda x: x[2])
+        chosen_neuron = neuron_scores[0][0]
+        spike_times = np.where(spikes[:, chosen_neuron] > 0.5)[0]
+        chosen_spike = int(spike_times[len(spike_times) // 2])
+
     print(f"  Selected spike at t={chosen_spike}, neuron #{chosen_neuron}")
+    print(f"  Neuron spike count: {(spikes[:, chosen_neuron] > 0.5).sum()}")
+    print(f"  Membrane range: {membrane[:, chosen_neuron].min():.2f} to {membrane[:, chosen_neuron].max():.2f}")
 
     # ---- Plot ----
     print("Plotting...")
