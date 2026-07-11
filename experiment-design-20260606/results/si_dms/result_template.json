@@ -1,0 +1,20 @@
+{
+  "experiment": "SI-DMS",
+  "status": "TBD",
+  "claims": {
+    "slow_fast_separation": {"comparison": ["sprif_full", "sprif_merged"], "paired_statistics": "TBD"},
+    "projective_reset": {"comparison": ["sprif_full", "sprif_lambda0"], "paired_statistics": "TBD"}
+  },
+  "conditions": {
+    "delay_ms": [200, 400, 800, 1600, 2500],
+    "intervention_count": [0, 1, 2, 4, 8],
+    "seeds": "TBD"
+  },
+  "models": {
+    "sprif_full": "TBD", "sprif_merged": "TBD", "sprif_lambda0": "TBD",
+    "lif": "TBD", "asrnn": "TBD", "brf": "TBD"
+  },
+  "integrity": {
+    "forced_hit_rate_k_gt_0": "TBD", "reset_residual_audit": "TBD", "shared_mask_audit": "TBD"
+  }
+}

@@ -7,6 +7,7 @@ Usage:
 
 import argparse
 import math
+import os
 
 import numpy as np
 import scipy.io
@@ -24,7 +25,7 @@ def get_args():
     # Training
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=250)
-    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--seed", type=int, default=1111)
     # Model
     parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[36])
@@ -125,6 +126,7 @@ def main():
 
     # Training loop
     best_test_acc = 0.0
+    best_ckpt_path = None
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -185,7 +187,13 @@ def main():
                 f"SPRiFECGModel_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
+            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
+                try:
+                    os.remove(best_ckpt_path)
+                except OSError:
+                    pass
             torch.save(model.state_dict(), save_name)
+            best_ckpt_path = save_name
 
     print(f"\nTraining complete. Best test accuracy: {best_test_acc:.2f}%")
 

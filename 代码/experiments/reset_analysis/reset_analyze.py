@@ -152,7 +152,16 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
     from model import SPRiFGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "data", "SpeechCommands")
+    # Support multiple GSC data layouts:
+    #   - Task_GSC/data/SpeechCommands (download_GSC.py default)
+    #   - Task_GSC/dataset/SpeechCommands/speech_commands_v0.02 (autodl server)
+    #   - Task_GSC/dataset/SpeechCommands/speech_commands_v0.01
+    _gsc_candidates = [
+        os.path.join(task_abs, "data", "SpeechCommands"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     ckpt = _find_checkpoint(task_abs, "SPRiFGSCNet")
     if ckpt is not None:
@@ -166,7 +175,7 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
         _train_task(
             task_dir, "train.py",
             [
-                "--data-root", os.path.join("data", "SpeechCommands"),
+                "--data-root", os.path.relpath(data_root, task_abs),
                 "--lr", "3e-3", "--epochs", "150", "--batch-size", "200",
                 "--seed", "42", "--hidden-sizes", "300",
                 "--neuron-threshold", "1.0", "--neuron-init-std", "0.1",
@@ -185,6 +194,11 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
 
     # Build test DataLoader — mirror train.py build_loaders
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
+
+    if not os.path.exists(data_root):
+        print(f"  WARN: GSC data missing at {data_root} — skipping firing-rate "
+              f"computation. Spectral parameters will still be exported.")
+        return model, None
 
     testing_words = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -309,26 +323,64 @@ def compute_firing_rates(
         mean spike count per neuron per timestep.
     """
     model.eval()
+    # Defensive: ensure every parameter is on the target device. Some Task_*
+    # models expose sub-modules that model.to(device) does not visit if the
+    # module was re-imported after another task was already on GPU.
+    for p in model.parameters():
+        if p.device != device:
+            p.data = p.data.to(device)
+    for b in model.buffers():
+        if b.device != device:
+            b.data = b.data.to(device)
+
     spike_counts = [torch.zeros(layer.hidden_size) for layer in model.layers]
     total_steps = 0
+
+    # If model expects a larger feature dim than the loader provides (e.g. GSC
+    # returns (B, 3*T, n_mels) and train.py reshapes to (B, T, 3*n_mels)),
+    # infer the target input_size from the first layer's input_linear.
+    target_input_size = None
+    if hasattr(model, "layers") and len(model.layers) > 0:
+        first = model.layers[0]
+        if hasattr(first, "input_linear"):
+            target_input_size = first.input_linear.in_features
 
     for batch_idx, (x, _) in enumerate(test_loader):
         if batch_idx >= num_batches:
             break
         x = x.to(device)
+        # Handle GSC 4-D input: loader returns (B, delta_ch, T, n_mels).
+        # train.py does: x.permute(0, 2, 1, 3).reshape(B, T, delta_ch*n_mels).
+        if x.dim() == 4:
+            B0 = x.shape[0]
+            x = x.permute(0, 2, 1, 3).reshape(B0, x.shape[2], -1)
+        # 3-D fallback: if feature dim mismatches expected input_size and looks
+        # like it was pre-flattened along time, try to reshape (B, ch*T, feat).
+        elif target_input_size is not None and x.dim() == 3 and x.shape[-1] != target_input_size:
+            n_mels = x.shape[-1]
+            ch = target_input_size // n_mels
+            if ch > 1 and x.shape[1] % ch == 0:
+                seq_len = x.shape[1] // ch
+                x = x.view(x.shape[0], ch, seq_len, n_mels)
+                x = x.permute(0, 2, 1, 3).reshape(x.shape[0], seq_len, target_input_size)
         B, T = x.shape[0], x.shape[1]
 
         out = x
         for li, layer in enumerate(model.layers):
             state = layer.init_state(B, device=device)
             runtime = layer._precompute_runtime_params()
+            # Make sure runtime tensors follow the layer (avoid CPU/CUDA mix)
+            runtime = {k: (v.to(device) if isinstance(v, torch.Tensor) else v)
+                       for k, v in runtime.items()}
             layer_spikes = []
             for t in range(T):
                 spike, _, state = layer.forward_step(out[:, t, :], state, runtime)
-                layer_spikes.append(spike.detach().cpu())
-            spike_seq = torch.stack(layer_spikes, dim=0)  # (T, B, H)
-            spike_counts[li] += spike_seq.sum(dim=(0, 1))
-            out = spike_seq.permute(1, 0, 2)  # (B, T, H)
+                # Keep spikes on device so the NEXT layer's input_linear sees a
+                # device tensor. Moving to CPU here breaks multi-layer models.
+                layer_spikes.append(spike.detach())
+            spike_seq = torch.stack(layer_spikes, dim=0)  # (T, B, H) on device
+            spike_counts[li] += spike_seq.sum(dim=(0, 1)).cpu()
+            out = spike_seq.permute(1, 0, 2)  # (B, T, H) on device
 
         total_steps += B * T
 
@@ -423,8 +475,13 @@ def plot_lambda_distribution(dfs: Dict[str, pd.DataFrame], out_dir: str):
 
 
 def plot_lambda_vs_firing_rate(dfs: Dict[str, pd.DataFrame], out_dir: str):
-    """Scatter: lambda_reset vs firing rate, per task, colored by layer."""
-    tasks = [t for t in ["ECG", "GSC", "pSMNIST"] if t in dfs]
+    """Scatter: lambda_reset vs firing rate, per task, colored by layer.
+
+    Tasks with all-zero firing_rate (e.g. GSC when data is unavailable) are
+    excluded so the scatter is not polluted by placeholder values.
+    """
+    tasks = [t for t in ["ECG", "GSC", "pSMNIST"]
+             if t in dfs and dfs[t]["firing_rate"].abs().sum() > 0]
     if not tasks:
         return
 
@@ -597,13 +654,18 @@ def main():
         model.to(device)
         model.eval()
 
-        # Compute per-neuron firing rates
-        print(f"  Computing firing rates ({len(model.layers)} layer(s))...")
-        rates = compute_firing_rates(model, test_loader, device, num_batches=30)
+        # Compute per-neuron firing rates (skip gracefully if data missing)
+        if test_loader is None:
+            print(f"  Skipping firing rates (no data); using zeros as placeholder.")
+            rates = {li: torch.zeros(layer.hidden_size)
+                     for li, layer in enumerate(model.layers)}
+        else:
+            print(f"  Computing firing rates ({len(model.layers)} layer(s))...")
+            rates = compute_firing_rates(model, test_loader, device, num_batches=30)
 
-        for li, layer in enumerate(model.layers):
-            fr = rates[li]
-            print(f"    Layer {li}: firing rate [{fr.min():.4f}, {fr.mean():.4f}, {fr.max():.4f}]")
+            for li, layer in enumerate(model.layers):
+                fr = rates[li]
+                print(f"    Layer {li}: firing rate [{fr.min():.4f}, {fr.mean():.4f}, {fr.max():.4f}]")
 
         # Extract params + lambda + firing rates
         df = extract_and_merge(model, rates)

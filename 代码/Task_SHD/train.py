@@ -102,6 +102,7 @@ def main():
 
     # Training loop
     best_test_acc = 0.0
+    best_ckpt_path = None
     patience_counter = 0
 
     for epoch in range(1, args.epochs + 1):
@@ -157,7 +158,13 @@ def main():
                 f"SPRiFSHDNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
+            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
+                try:
+                    os.remove(best_ckpt_path)
+                except OSError:
+                    pass
             torch.save(model.state_dict(), save_name)
+            best_ckpt_path = save_name
         else:
             patience_counter += 1
             if patience_counter >= args.patience:

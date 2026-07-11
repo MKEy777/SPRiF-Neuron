@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(ROOT, "Task_GSC"))
 from config import (
     FIGURE_DIR, CHECKPOINT_DIR,
     VIZ_PHIS, VIZ_OMEGA, PROBE_TIMES,
+    RUN_TAG, tagged,
 )
 from generate_data import generate_sample
 from models import SPRiFTrajectoryNet, ASRNNTrajectoryNet
@@ -24,7 +25,8 @@ from SRNN_layers.spike_neuron import mem_update_adp
 
 def _find_best_checkpoint(model_name: str) -> str:
     """找到最佳 checkpoint（MSE 最小）。"""
-    pattern = os.path.join(CHECKPOINT_DIR, f"TrajectoryViz_{model_name}_mse*.pth")
+    _tag_suffix = f"_{RUN_TAG}" if RUN_TAG else ""
+    pattern = os.path.join(CHECKPOINT_DIR, f"TrajectoryViz_{model_name}{_tag_suffix}_mse*.pth")
     files = glob.glob(pattern)
     if not files:
         raise FileNotFoundError(f"No checkpoint found: {pattern}")
@@ -150,7 +152,7 @@ def record_asrnn(
 
             # 计算 d_input（含 perturbation）
             d_input = model.asrnn_layer.dense(x_t.float())
-            d_input = d_input + 1.0 * probe_m.unsqueeze(-1)  # A_PROBE=1.0
+            d_input = d_input + model.a_probe * probe_m.unsqueeze(-1)  # 使用模型训练时的 a_probe
 
             # 调用 mem_update_adp
             mem, spike, _, b = mem_update_adp(
@@ -162,6 +164,7 @@ def record_asrnn(
                 model.asrnn_layer.tau_m,
                 device=device,
                 isAdapt=1,
+                b_j0=0.3,
             )
 
             # 更新状态
@@ -234,7 +237,7 @@ def main():
             omega=VIZ_OMEGA,
             probe_times=PROBE_TIMES,
             jitter=False,
-            seed=42 + phi_idx,
+            rng=np.random.default_rng(42 + phi_idx),
         )
 
         # 记录 SPRiF
@@ -247,7 +250,7 @@ def main():
         asrnn_rec = record_asrnn(asrnn_model, input_spikes, probe_mask, target, device)
 
         # 保存
-        save_path = os.path.join(FIGURE_DIR, f"trajectory_data_phi{phi_idx}.npz")
+        save_path = os.path.join(FIGURE_DIR, tagged(f"trajectory_data_phi{phi_idx}.npz"))
         np.savez_compressed(
             save_path,
             phi=phi,

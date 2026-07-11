@@ -1,0 +1,28 @@
+task:
+  dt_ms: 5
+  pre_ms: 10
+  cue_ms: 10
+  input_size: 30
+  cue_channels: 10
+  cue_rate_hz: 40.0
+  noise_rate_hz: 10.0
+  intervention_fraction: 0.10
+  intervention_margin: 0.05
+  train_delays_ms: [20]
+  eval_delays_ms: [20]
+  train_intervention_counts: [0, 1]
+  eval_intervention_counts: [0, 1]
+model:
+  hidden_size: 8
+  recurrent: false
+  threshold: 1.0
+  output_tau_ms: 20.0
+train:
+  steps: 1
+  batch_size: 4
+  learning_rate: 0.005
+  rate_target: 0.10
+  rate_weight: 0.05
+  grad_clip: 1.0
+  seeds: [1]
+  device: cpu

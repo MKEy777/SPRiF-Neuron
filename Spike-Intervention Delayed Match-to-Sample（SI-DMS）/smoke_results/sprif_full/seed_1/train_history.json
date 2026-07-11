@@ -1,0 +1,10 @@
+[
+  {
+    "step": 1,
+    "loss": 0.6523028016090393,
+    "accuracy": 0.75,
+    "natural_rate": 0.0,
+    "delay_ms": 20,
+    "intervention_count": 0
+  }
+]

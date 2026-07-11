@@ -53,7 +53,7 @@ class ActFun_adp(torch.autograd.Function):
     
 act_fun_adp = ActFun_adp.apply    
     
-def mem_update_adp(inputs, mem, spike, tau_adp, b, tau_m, dt=1, isAdapt=1,device=None):
+def mem_update_adp(inputs, mem, spike, tau_adp, b, tau_m, dt=1, isAdapt=1,device=None, b_j0=None):
     """
     This function updates the membrane potential and adaptation variable of a spiking neural network.
 Inputs:
@@ -87,7 +87,8 @@ Finally, the adaptation variable spike is updated using the activation function 
         beta = 0.
 
     b = ro * b + (1 - ro) * spike
-    B = b_j0_value + beta * b
+    _b_j0 = b_j0_value if b_j0 is None else b_j0
+    B = _b_j0 + beta * b
 
     mem = mem * alpha + (1 - alpha) * R_m * inputs - B * spike * dt
     inputs_ = mem - B

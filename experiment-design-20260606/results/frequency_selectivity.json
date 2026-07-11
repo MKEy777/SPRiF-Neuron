@@ -1,0 +1,212 @@
+[
+  {
+    "dataset": "GSC",
+    "frequency": "f1_0.01pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0016,
+    "ASRNN_delta_acc": 0.0001
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f1_0.01pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0022,
+    "ASRNN_delta_acc": 0.0016
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f1_0.01pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0034,
+    "ASRNN_delta_acc": 0.0077
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f2_0.05pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0005,
+    "ASRNN_delta_acc": 0.0011
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f2_0.05pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0022,
+    "ASRNN_delta_acc": 0.0018
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f2_0.05pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0011,
+    "ASRNN_delta_acc": 0.0001
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f3_0.10pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0012,
+    "ASRNN_delta_acc": -0.0025
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f3_0.10pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0006,
+    "ASRNN_delta_acc": -0.0008
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f3_0.10pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0041,
+    "ASRNN_delta_acc": 0.0
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f4_0.25pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0,
+    "ASRNN_delta_acc": -0.0034
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f4_0.25pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0019,
+    "ASRNN_delta_acc": -0.0034
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f4_0.25pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0019,
+    "ASRNN_delta_acc": 0.0007
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f5_0.50pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0011,
+    "ASRNN_delta_acc": -0.0014
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f5_0.50pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0017,
+    "ASRNN_delta_acc": -0.0026
+  },
+  {
+    "dataset": "GSC",
+    "frequency": "f5_0.50pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": -0.0003,
+    "ASRNN_delta_acc": -0.0007
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f1_0.01pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0212,
+    "ASRNN_delta_acc": 0.0111
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f1_0.01pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0949,
+    "ASRNN_delta_acc": 0.0959
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f1_0.01pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.2504,
+    "ASRNN_delta_acc": 0.2388
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f2_0.05pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0084,
+    "ASRNN_delta_acc": 0.0033
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f2_0.05pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0374,
+    "ASRNN_delta_acc": 0.0206
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f2_0.05pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0992,
+    "ASRNN_delta_acc": 0.0555
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f3_0.10pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0015,
+    "ASRNN_delta_acc": 0.0018
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f3_0.10pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0051,
+    "ASRNN_delta_acc": 0.0063
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f3_0.10pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0172,
+    "ASRNN_delta_acc": 0.0101
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f4_0.25pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.0006,
+    "ASRNN_delta_acc": 0.0012
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f4_0.25pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.0005,
+    "ASRNN_delta_acc": 0.0052
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f4_0.25pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0014,
+    "ASRNN_delta_acc": 0.0089
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f5_0.50pi",
+    "amplitude": "low",
+    "SPRiF_delta_acc": 0.001,
+    "ASRNN_delta_acc": 0.0012
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f5_0.50pi",
+    "amplitude": "med",
+    "SPRiF_delta_acc": 0.001,
+    "ASRNN_delta_acc": 0.005
+  },
+  {
+    "dataset": "QTDB",
+    "frequency": "f5_0.50pi",
+    "amplitude": "high",
+    "SPRiF_delta_acc": 0.0011,
+    "ASRNN_delta_acc": 0.0075
+  }
+]

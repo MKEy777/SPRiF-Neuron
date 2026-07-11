@@ -6,9 +6,7 @@
 |------|------|---------|
 | `table1_main_results.json` | ✅ 已填入 (5 datasets, 7 baselines + SPRiF) | 2026-07-01 |
 | `table2_ablation_results.json` | ✅ 已填入 (PS-MNIST, GSC, ECG × 4 variants) | 2026-07-01 |
-| `table3_noise_robustness.json` | ❌ 待实验 (R1) | — |
-| `table4_sequence_noise.json` | ❌ 待实验 (R2) | — |
-| `table5_frequency_selectivity.json` | ❌ 待实验 (R3) | — |
+
 
 ## 数据来源
 
@@ -76,10 +74,6 @@
 诊断分析脚本自动输出 PNG 到对应子目录。直接将图片文件复制到此处即可。
 每个子目录下有 `MANIFEST.md` 列出期望的文件名。
 
-### 训练日志 → training_logs/
-
-将各实验的训练曲线、超参数、checkpoint 路径记录于此。
-
 ---
 
 ## 文件清单
@@ -88,14 +82,12 @@
 |------|-----------|---------|
 | `table1_main_results.json` | Table 1: Main Results | 主对比实验 (5 datasets) |
 | `table2_ablation_results.json` | Table 2: Mechanism Ablations | 消融 A/B/C × 3 数据集 |
-| `table3_noise_robustness.json` | Table 3: Noise Robustness | 鲁棒性 R1 |
-| `table4_sequence_noise.json` | Table 4: Sequence Length × Noise | 鲁棒性 R2 |
-| `table5_frequency_selectivity.json` | Table 5: Frequency Selectivity | 鲁棒性 R3 |
+
 | `figures/param_visualization/` | 参数分布图 (Fig X) | 诊断分析 3.1 + 3.5 |
 | `figures/trajectory_analysis/` | 轨迹分析图 (Fig X) | 诊断分析 3.2 |
 | `figures/impulse_analysis/` | 时间核分析图 (Fig X) | 诊断分析 3.3 |
 | `figures/reset_analysis/` | Reset 方向分析图 (Fig X) | 诊断分析 3.4 |
-| `training_logs/` | 训练曲线 / 超参 (Appendix) | 全部实验 |
+
 
 ---
 
@@ -106,14 +98,7 @@
 
 2. ✅ 消融 A/B/C × 3 数据集 → table2_ablation_results.json 已填入
 
-3. 跑完鲁棒性 R1 (GSC + QTDB)
-   → 打开 table3_noise_robustness.json，填入噪声下的 accuracy
 
-4. 跑完鲁棒性 R2 (GSC + QTDB)
-   → 打开 table4_sequence_noise.json，填入序列长度+噪声下的 accuracy
-
-5. 跑完鲁棒性 R3 (GSC + QTDB)
-   → 打开 table5_frequency_selectivity.json，填入频率选择性下的 ΔAcc
 
 6. 跑完诊断分析脚本
    → 将生成的 PNG/CSV/NPZ 复制到 figures/ 对应子目录
@@ -121,3 +106,16 @@
 7. 告诉我 "结果已填入"
    → 我会读取所有 JSON + 图片，开始写论文
 ```
+
+---
+
+## SI-DMS evidence replacement (2026-07-11)
+
+SI-DMS replaces **only** the former `trajectory_visualization` experiment. Main benchmark results, standard mechanism ablations, `trajectory_analysis`, impulse analysis, reset analysis, frequency selectivity, noise robustness, and sequence noise remain active.
+
+- Active plan: `../si-dms-experiment-plan.md`
+- Result templates: `si_dms/`
+- Figure contract: `figures/si_dms/MANIFEST.md`
+- Archived predecessor: `../legacy/trajectory_visualization/`
+
+The archive is provenance-only. It must not support a reset claim when the recorded trajectory has no real spike or no nonzero reset residual.

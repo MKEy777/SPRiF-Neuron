@@ -98,7 +98,7 @@ Any single competitor may share one or two of these features, but none combines 
 
 **Literature basis**: PSN (Fang NeurIPS 2023) removes reset entirely for parallelization — different philosophy. All LIF variants (LIF, PLIF, AdLIF, GLIF) reset the same membrane potential that integrates memory. BRF/PRF reset the resonating membrane. No known work keeps a dedicated memory state untouched by reset.
 
-**Strongest defense**: Slow state trajectory visualization (Analysis 2 in experiment plan) — direct visual evidence.
+**Strongest defense**: SI-DMS controlled spike intervention. Full SPRiF is compared with the merged-state variant on identical delay-by-intervention grids, and selected neurons are forced across threshold before the model's real reset executes. This tests memory retention after actual spike/reset events rather than inferring reset behavior from a zero-spike trajectory.
 
 ### C3: Constrained spectral structure > unconstrained state expansion [Confidence: MODERATE]
 > SPRiF's slow state uses a structured spectral parametrization (block-diagonal: real decay + 2D rotation) rather than an unconstrained recurrent matrix. This provides interpretable dynamics parameters (α,ρ,ω) and empirically outperforms equivalent-capacity unconstrained recurrence.

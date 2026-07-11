@@ -2,7 +2,7 @@
 SPRiF Robustness Experiment R3: Frequency Selectivity (SPRiF-unique).
 
 Injects sinusoidal perturbations at 5 frequencies x 3 amplitudes into test inputs.
-Compares SPRiF vs LIF accuracy degradation as a function of perturbation frequency.
+Compares SPRiF vs ASRNN accuracy degradation as a function of perturbation frequency.
 This experiment directly tests whether SPRiF's learned spectral parameters (omega)
 provide frequency-selective noise filtering.
 
@@ -21,6 +21,7 @@ Usage:
 
 import glob
 import json
+import math
 import os
 import subprocess
 import sys
@@ -142,7 +143,12 @@ def _load_gsc_models(task_dir: str):
     from asrnn_gsc import ASRNNGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    _gsc_candidates = [
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+        os.path.join(task_abs, "data", "SpeechCommands"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     models = {}
 
@@ -153,7 +159,7 @@ def _load_gsc_models(task_dir: str):
         if not os.path.exists(data_root):
             raise FileNotFoundError("GSC data not found.")
         _train_subprocess(task_dir, "train.py", [
-            "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+            "--data-root", os.path.relpath(data_root, task_abs),
             "--epochs", "150", "--batch-size", "200", "--seed", "42", "--hidden-sizes", "300",
         ])
         ckpt = _find_checkpoint(task_abs, prefix)
@@ -163,9 +169,9 @@ def _load_gsc_models(task_dir: str):
     print(f"  {prefix}: {os.path.basename(ckpt)}")
     sprif_model = SPRiFGSCNet(
         input_size=120, hidden_sizes=[300], num_classes=12,
-        dropout=0.0, recurrent_flags=(True,),
+        dropout=0.15, recurrent_flags=(True,),
         neuron_kwargs={
-            "threshold": 0.8, "init_std": 0.15,
+            "threshold": 0.8, "init_std": 0.1,
             "tau_alpha_range": (10.0, 80.0),
             "tau_rho_range": (4.0, 30.0),
             "tau_eta_range": (0.8, 8.0),
@@ -182,7 +188,7 @@ def _load_gsc_models(task_dir: str):
         if not os.path.exists(data_root):
             raise FileNotFoundError("GSC data not found.")
         _train_subprocess(task_dir, "train_asrnn.py", [
-            "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+            "--data-root", os.path.relpath(data_root, task_abs),
             "--epochs", "30", "--batch-size", "32", "--seed", "0", "--hidden-size", "256",
         ])
         ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
@@ -293,7 +299,12 @@ def _build_gsc_numpy_loader(task_dir: str):
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    _gsc_candidates = [
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+        os.path.join(task_abs, "data", "SpeechCommands"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     testing_words = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -360,10 +371,17 @@ def _build_ecg_numpy_loader(task_dir: str):
 def _eval_gsc_np(model, x_np, y_np, device, batch_size=200):
     """Evaluate GSC model on numpy (N, 101, 120) data."""
     total_correct, total = 0, len(y_np)
+    is_asrnn = model.__class__.__name__.startswith("ASRNN")
     for i in range(0, len(y_np), batch_size):
         x_b = torch.from_numpy(x_np[i:i + batch_size]).float().to(device)
         y_b = torch.from_numpy(y_np[i:i + batch_size]).long().to(device)
-        logits, _ = model(x_b)
+        if is_asrnn:
+            # ASRNN expects (B, 3, T, 40); unpack the 120-dim features.
+            B, T, _ = x_b.shape
+            x_a = x_b.reshape(B, T, 3, 40).permute(0, 2, 1, 3).contiguous()
+            logits = model(x_a)
+        else:
+            logits, _ = model(x_b)
         total_correct += (logits.argmax(dim=-1) == y_b).sum().item()
     return total_correct / total
 
@@ -415,7 +433,7 @@ def run_frequency_experiment(
     # Baseline (clean)
     acc_spare_clean = eval_fn(spare_model, x_clean, y, device)
     acc_lif_clean = eval_fn(lif_model, x_clean, y, device)
-    print(f"  Clean — SPRiF: {acc_spare_clean:.4f}  LIF: {acc_lif_clean:.4f}")
+    print(f"  Clean — SPRiF: {acc_spare_clean:.4f}  ASRNN: {acc_lif_clean:.4f}")
 
     for freq_label, freq_norm in FREQUENCIES:
         for amp_label, amplitude in AMPLITUDES:
@@ -430,9 +448,9 @@ def run_frequency_experiment(
                 "frequency": freq_label,
                 "amplitude": amp_label,
                 "SPRiF_delta_acc": round(d_s, 4),
-                "LIF_delta_acc": round(d_l, 4),
+                     "ASRNN_delta_acc": round(d_l, 4),
             })
-            print(f"    {freq_label} {amp_label}: SPRiF Δ={d_s:.4f}  LIF Δ={d_l:.4f}")
+            print(f"    {freq_label} {amp_label}: SPRiF Δ={d_s:.4f}  ASRNN Δ={d_l:.4f}")
 
     return results, acc_spare_clean, acc_lif_clean
 
@@ -464,12 +482,12 @@ def plot_frequency_selectivity(all_results: List[dict], out_dir: str):
 
             x = np.arange(len(freq_labels))
             sprim_d = [by_freq[f]["SPRiF_delta_acc"] for f in freq_labels]
-            lif_d = [by_freq[f]["LIF_delta_acc"] for f in freq_labels]
+            lif_d = [by_freq[f]["ASRNN_delta_acc"] for f in freq_labels]
 
             ax.plot(x, sprim_d, color="#2b83ba", marker="o", linewidth=2,
                     markersize=8, label="SPRiF")
             ax.plot(x, lif_d, color="#e41a1c", marker="s", linewidth=2,
-                    markersize=8, label="LIF")
+                    markersize=8, label="ASRNN")
             ax.axhline(0, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
             ax.set_xticks(x)
             ax.set_xticklabels(freq_labels, fontsize=8, rotation=30)
@@ -481,7 +499,7 @@ def plot_frequency_selectivity(all_results: List[dict], out_dir: str):
             if row_idx == 0 and col_idx == 0:
                 ax.legend(frameon=True, fontsize=9)
 
-    fig.suptitle("SPRiF vs LIF Frequency Selectivity", y=1.01, fontweight="bold")
+    fig.suptitle("SPRiF vs ASRNN Frequency Selectivity", y=1.01, fontweight="bold")
     fig.tight_layout()
 
     save_path = os.path.join(out_dir, "frequency_selectivity.png")
@@ -510,6 +528,21 @@ DATASET_CONFIG = {
 }
 
 
+def _sync_module_device(model: nn.Module, device) -> None:
+    """Recursively set the .device attribute on every submodule.
+
+    ASRNN's SRNN layers (spike_dense / spike_rnn) build their state and decay
+    tensors using a stored string self.device (fixed to "cpu" at construction).
+    Calling model.to(cuda) only relocates registered Parameters/buffers, leaving
+    self.device pointing at cpu, which triggers a device mismatch in
+    mem_update_adp. Patching the attribute makes those tensors land on `device`.
+    """
+    dev_str = str(device)
+    for m in model.modules():
+        if hasattr(m, "device"):
+            m.device = dev_str
+
+
 def main():
     out_dir = os.path.dirname(os.path.abspath(__file__))
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -528,6 +561,7 @@ def main():
             sprim, lifm = config["load_models"](config["task_dir"])
             sprim.to(device)
             lifm.to(device)
+            _sync_module_device(lifm, device)
 
             print("Loading test data...")
             x_clean, y = config["build_numpy_loader"](config["task_dir"])

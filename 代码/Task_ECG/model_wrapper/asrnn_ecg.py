@@ -141,34 +141,28 @@ class ASRNNECGNet(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass.
+        Forward pass with per-timestep classification (dense supervision).
 
         Args:
             x: Input tensor of shape (batch, seq_length, input_dim)
-               For ECG: (batch, ~300-600, 5)
 
         Returns:
-            Log-softmax output of shape (batch, num_classes)
+            Logits of shape (batch, num_classes, seq_length) — one prediction
+            per input timestep, aligned with SPRiF ECG training convention.
         """
         batch_size, seq_num, input_dim = x.shape
 
         # Initialize states
-        hidden_mem = hidden_spike = (torch.rand(batch_size, self.hidden_size) * b_j0).to(self.device)
-        output_mem = output_spike = (torch.rand(batch_size, self.num_classes) * b_j0).to(self.device)
+        hidden_mem = hidden_spike = (torch.rand(batch_size, self.hidden_size, device=self.device) * b_j0)
+        output_mem = output_spike = (torch.rand(batch_size, self.num_classes, device=self.device) * b_j0)
         b_h = b_o = b_j0
 
-        # Extended sequence with zeros for readout
-        max_iters = seq_num + 500  # Extra steps for readout integration
+        step_logits = []
 
-        output_sum = torch.zeros(batch_size, self.num_classes).to(self.device)
+        for i in range(seq_num):
+            input_x = x[:, i, :]
 
-        for i in range(max_iters):
-            if i < seq_num:
-                input_x = x[:, i, :]
-            else:
-                input_x = torch.zeros(batch_size, input_dim).to(self.device)
-
-            # Update hidden layer
+            # Hidden adaptive LIF
             h_input = self.i2h(input_x.float()) + self.h2h(hidden_spike)
             hidden_mem, hidden_spike, theta_h, b_h = mem_update_ecg(
                 h_input, hidden_mem, hidden_spike,
@@ -176,7 +170,7 @@ class ASRNNECGNet(nn.Module):
                 isAdapt=0, dt=dt, device=self.device
             )
 
-            # Update output layer
+            # Output adaptive LIF (used as classifier readout via membrane potential)
             o_input = self.h2o(hidden_spike)
             output_mem, output_spike, theta_o, b_o = mem_update_ecg(
                 o_input, output_mem, output_spike,
@@ -184,13 +178,11 @@ class ASRNNECGNet(nn.Module):
                 isAdapt=1, dt=dt, device=self.device
             )
 
-            # Accumulate output after sub_seq_length
-            if i >= self.sub_seq_length:
-                output_sum += output_mem
+            step_logits.append(output_mem)  # raw logits per step
 
-        # Apply log-softmax
-        output = F.log_softmax(output_sum, dim=1)
-        return output
+        # Stack to [B, T, C] then permute to [B, C, T] to match nn.CrossEntropyLoss
+        logits = torch.stack(step_logits, dim=1).permute(0, 2, 1).contiguous()
+        return logits
 
     def forward_step_by_step(self, x: torch.Tensor) -> tuple:
         """

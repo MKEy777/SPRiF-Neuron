@@ -1,0 +1,165 @@
+\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
+\usepackage[submission]{aaai2027}  % DO NOT CHANGE THIS
+\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
+\usepackage{graphicx} % DO NOT CHANGE THIS
+\urlstyle{rm} % DO NOT CHANGE THIS
+\def\UrlFont{\rm}  % DO NOT CHANGE THIS
+\usepackage{natbib}  % DO NOT CHANGE AND DO NOT ADD ANY OPTIONS
+\usepackage{caption} % DO NOT CHANGE AND DO NOT ADD ANY OPTIONS
+\frenchspacing  % DO NOT CHANGE THIS
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+
+\setcounter{secnumdepth}{2}
+
+% Anonymous technical appendix submitted as a standalone PDF.
+\title{Technical Appendix for\\
+SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron}
+\author{Anonymous Submission}
+\affiliations{}
+
+\begin{document}
+
+\maketitle
+
+% Keep the main paper self-contained. This appendix may only provide
+% supporting details, complete results, and reproducibility information.
+
+\section{Supplementary Overview}
+\label{supp:sec:overview}
+% Briefly map each supplementary section to the corresponding main-paper claim.
+
+\section{Complete SPRiF Dynamics}
+\label{supp:sec:dynamics}
+
+\subsection{Slow Spectral State}
+\label{supp:sec:slow-state}
+% Provide expanded derivations and parameter constraints.
+
+\subsection{Fast Discharge State and Projective Reset}
+\label{supp:sec:fast-state}
+% Provide the complete ordered state update and reset identities.
+
+\subsection{Surrogate Gradient}
+\label{supp:sec:surrogate}
+% State the exact forward threshold and backward surrogate definition.
+
+\subsection{Initialization, Stability, and Computational Cost}
+\label{supp:sec:initialization-cost}
+% Report initialization ranges, constraints, parameter counts, and complexity.
+
+\section{Benchmark and Preprocessing Details}
+\label{supp:sec:benchmarks}
+
+\subsection{Sequential and Permuted MNIST}
+\label{supp:sec:mnist}
+
+\subsection{QTDB}
+\label{supp:sec:qtdb}
+
+\subsection{Google Speech Commands}
+\label{supp:sec:gsc}
+
+\subsection{Spiking Heidelberg Digits}
+\label{supp:sec:shd}
+
+\section{Training and Reproducibility Details}
+\label{supp:sec:training}
+
+\subsection{Architectures and Optimization}
+\label{supp:sec:architectures}
+
+\subsection{Seeds, Model Selection, and Reporting}
+\label{supp:sec:seeds}
+
+\subsection{Compute Environment}
+\label{supp:sec:compute}
+% Preserve anonymity; do not include user names or identifying filesystem paths.
+
+\section{Complete Benchmark Results}
+\label{supp:sec:benchmark-results}
+% Add full per-seed results, variance estimates, parameter counts, firing rates,
+% and efficiency measurements only after verification.
+
+\section{Complete Mechanism Ablations}
+\label{supp:sec:ablations}
+
+\subsection{Slow--Fast State Separation}
+\label{supp:sec:ablation-merged}
+% Full SPRiF versus the merged-state variant.
+
+\subsection{Learned Projective versus Scalar Reset}
+\label{supp:sec:ablation-reset}
+% Full SPRiF versus the fixed lambda=0 variant.
+
+\subsection{Additional Spectral Ablations}
+\label{supp:sec:ablation-spectral}
+% Optional secondary analyses that are not part of the two core SI-DMS claims.
+
+\section{SI-DMS Protocol}
+\label{supp:sec:sidms}
+
+\subsection{Task Generation and Temporal Structure}
+\label{supp:sec:sidms-task}
+
+\subsection{Controlled Spike Intervention}
+\label{supp:sec:sidms-intervention}
+
+\subsection{Model Controls and Fairness}
+\label{supp:sec:sidms-fairness}
+
+\subsection{Complete Delay-by-Intervention Results}
+\label{supp:sec:sidms-results}
+% Insert complete multi-seed grids only after the formal run.
+
+\section{SI-DMS Integrity Audits}
+\label{supp:sec:sidms-integrity}
+
+\subsection{Forced-Spike Hit Rate}
+\label{supp:sec:forced-hit}
+
+\subsection{Reset-Residual Identities}
+\label{supp:sec:reset-residual}
+
+\subsection{Slow-State Insulation}
+\label{supp:sec:slow-insulation}
+
+\subsection{Natural Firing-Rate Control}
+\label{supp:sec:natural-rate}
+
+\section{Additional Dynamical and Robustness Analyses}
+\label{supp:sec:additional-analysis}
+
+\subsection{Impulse Responses and Temporal Kernels}
+\label{supp:sec:impulse}
+
+\subsection{Frequency Selectivity}
+\label{supp:sec:frequency}
+
+\subsection{Learned Reset Directions}
+\label{supp:sec:lambda}
+
+\subsection{Noise and Sequence Robustness}
+\label{supp:sec:robustness}
+
+\section{Failure Cases and Limitations}
+\label{supp:sec:failures}
+% State the case-selection rule and include non-cherry-picked failure regimes.
+
+\section{Reproducibility Checklist}
+\label{supp:sec:reproducibility}
+% Record data versions, preprocessing, seeds, hyperparameters, checkpoints,
+% evaluation commands, and artifact checks without identity-revealing paths.
+
+% Uncomment after the appendix contains citations.
+% \bibliography{sprif2027}
+
+\end{document}

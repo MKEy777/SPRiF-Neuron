@@ -1,0 +1,20 @@
+[
+  {
+    "model": "sprif_lambda0",
+    "seed": 1,
+    "delay_ms": 20,
+    "intervention_count": 0,
+    "accuracy": 0.75,
+    "natural_rate": 0.0,
+    "forced_hit_rate": 0.0
+  },
+  {
+    "model": "sprif_lambda0",
+    "seed": 1,
+    "delay_ms": 20,
+    "intervention_count": 1,
+    "accuracy": 0.0,
+    "natural_rate": 0.0,
+    "forced_hit_rate": 1.0
+  }
+]

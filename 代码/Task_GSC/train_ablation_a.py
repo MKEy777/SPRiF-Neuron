@@ -36,7 +36,7 @@ DEFAULT_CONFIG = {
     "num_workers": 8, "weight_decay": 1e-4, "grad_clip": 10.0, "seed": 42,
     "data_root": "/root/autodl-tmp/dataset/SpeechCommands/speech_commands_v0.02",
     "cache_root": "/root/autodl-tmp/dataset/SpeechCommands/cache_power_to_db",
-    "hidden_sizes": [300], "recurrent_flags": [True], "mode": "srnn", "dropout": 0.0,
+    "hidden_sizes": [300], "recurrent_flags": [True], "mode": "srnn", "dropout": 0.15,
     "input_size": 120, "num_classes": 12, "n_mels": 40, "seq_len": 101,
     "wav_size": 16000, "sr": 16000, "n_fft": int(30e-3 * 16000),
     "hop_length": int(10e-3 * 16000), "fmin": 20, "fmax": 4000, "delta_order": 2,
@@ -134,6 +134,7 @@ def run_experiment(params, train_loader, valid_loader, device):
                                    weight_decay=config["weight_decay"])
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
     best_val_acc, patience_counter = 0.0, 0
+    best_ckpt_path = None
 
     for epoch in range(1, config["epochs"] + 1):
         model.train()
@@ -171,7 +172,13 @@ def run_experiment(params, train_loader, valid_loader, device):
             hs_str = "hs" + "".join(str(h) for h in config["hidden_sizes"])
             save_name = (f"SPRiFGSCNetAblationA_{hs_str}_bs{config['batch_size']}"
                          f"_lr{config['lr']}_seed{config['seed']}_acc{best_val_acc:.4f}.pth")
+            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
+                try:
+                    os.remove(best_ckpt_path)
+                except OSError:
+                    pass
             torch.save(model.state_dict(), save_name)
+            best_ckpt_path = save_name
         else:
             patience_counter += 1
             if patience_counter >= config["patience"]:

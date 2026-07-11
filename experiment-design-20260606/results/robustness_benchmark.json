@@ -1,0 +1,98 @@
+[
+  {
+    "dataset": "GSC",
+    "condition": "clean",
+    "SPRiF_accuracy": 0.9483,
+    "ASRNN_accuracy": 0.924
+  },
+  {
+    "dataset": "GSC",
+    "condition": "additive_sigma_0.01",
+    "SPRiF_accuracy": 0.9487,
+    "ASRNN_accuracy": 0.9238
+  },
+  {
+    "dataset": "GSC",
+    "condition": "additive_sigma_0.05",
+    "SPRiF_accuracy": 0.9487,
+    "ASRNN_accuracy": 0.9267
+  },
+  {
+    "dataset": "GSC",
+    "condition": "additive_sigma_0.10",
+    "SPRiF_accuracy": 0.9488,
+    "ASRNN_accuracy": 0.9269
+  },
+  {
+    "dataset": "GSC",
+    "condition": "subtractive_p_0.05",
+    "SPRiF_accuracy": 0.9462,
+    "ASRNN_accuracy": 0.9201
+  },
+  {
+    "dataset": "GSC",
+    "condition": "subtractive_p_0.10",
+    "SPRiF_accuracy": 0.9457,
+    "ASRNN_accuracy": 0.9137
+  },
+  {
+    "dataset": "GSC",
+    "condition": "subtractive_p_0.20",
+    "SPRiF_accuracy": 0.9347,
+    "ASRNN_accuracy": 0.8867
+  },
+  {
+    "dataset": "GSC",
+    "condition": "mixed",
+    "SPRiF_accuracy": 0.943,
+    "ASRNN_accuracy": 0.9142
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "clean",
+    "SPRiF_accuracy": 0.8711,
+    "ASRNN_accuracy": 0.8408
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "additive_sigma_0.01",
+    "SPRiF_accuracy": 0.8711,
+    "ASRNN_accuracy": 0.8408
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "additive_sigma_0.05",
+    "SPRiF_accuracy": 0.8679,
+    "ASRNN_accuracy": 0.8323
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "additive_sigma_0.10",
+    "SPRiF_accuracy": 0.8578,
+    "ASRNN_accuracy": 0.8258
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "subtractive_p_0.05",
+    "SPRiF_accuracy": 0.8673,
+    "ASRNN_accuracy": 0.8365
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "subtractive_p_0.10",
+    "SPRiF_accuracy": 0.8657,
+    "ASRNN_accuracy": 0.8342
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "subtractive_p_0.20",
+    "SPRiF_accuracy": 0.85,
+    "ASRNN_accuracy": 0.8105
+  },
+  {
+    "dataset": "QTDB",
+    "condition": "mixed",
+    "SPRiF_accuracy": 0.8614,
+    "ASRNN_accuracy": 0.8284
+  }
+]

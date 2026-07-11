@@ -5,17 +5,7 @@
 
 ---
 
-## param_visualization/ (Analysis 3.1 + 3.5)
 
-**来源脚本**: `代码/experiments/param_visualization/param_visualize.py`
-
-| 期望文件 | 格式 | 说明 |
-|---------|------|------|
-| `param_distributions.png` | PNG | 跨任务 α/ρ/ω KDE 直方图叠加 |
-| `param_per_layer.png` | PNG | 逐层 α/ρ/ω 分面直方图 |
-| `param_per_task.csv` | CSV | 全量数据: task, layer, neuron, alpha, rho, omega |
-
----
 
 ## trajectory_analysis/ (Analysis 3.2)
 
@@ -36,8 +26,14 @@
 |---------|------|------|
 | `impulse_response_gallery.png` | PNG | 采样神经元冲激响应线图 |
 | `frequency_response.png` | PNG | \|FFT\| 频域响应 |
-| `lif_comparison.png` | PNG | SPRiF vs LIF 时间核对比 |
+
 | `impulse_kernel_stats.csv` | CSV | task, layer, neuron, alpha, omega, tau_effective |
+
+---
+
+## si_dms/ — active replacement for trajectory_visualization
+
+SI-DMS replaces only the former `trajectory_visualization/` package. The separate `trajectory_analysis/`, impulse, and reset analyses remain active. Required outputs and evidence gates are defined in `si_dms/MANIFEST.md`. Archived trajectory-visualization files are provenance-only and cannot support reset arrows without recorded spikes and reset residuals.
 
 ---
 

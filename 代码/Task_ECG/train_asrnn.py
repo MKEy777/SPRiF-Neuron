@@ -30,6 +30,7 @@ from model_wrapper.asrnn_ecg import ASRNNECGNet
 def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epochs, device, dims):
     """Training loop for ECG."""
     best_acc = 0.0
+    best_ckpt_path = None
 
     for epoch in range(epochs):
         model.train()
@@ -42,20 +43,24 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
             labels = labels.view(-1, dims["samples"]).long().to(device)
 
             optimizer.zero_grad()
-            predictions = model(images)
+            logits = model(images)  # [B, C, T]
 
-            # Get prediction at the end of sequence
-            _, predicted = torch.max(predictions.data, 1)
-
-            # Compute loss using the last prediction
-            train_loss = criterion(predictions, labels[:, -1])
+            # Dense per-timestep cross-entropy (matches SPRiF train.py convention).
+            # Multiply by T so the gradient scale is equivalent to summing over
+            # timesteps (not averaging), otherwise Adam sees a T-fold shrunk signal.
+            l_task = criterion(
+                logits.permute(0, 2, 1).reshape(-1, logits.size(1)),
+                labels.reshape(-1),
+            )
+            train_loss = l_task * logits.size(2)
 
             train_loss.backward()
             train_loss_sum += train_loss.item()
             optimizer.step()
 
-            train_acc += (predicted == labels[:, -1]).sum()
-            sum_samples += predicted.numel()
+            predicted = logits.argmax(dim=1)  # [B, T]
+            train_acc += (predicted == labels).sum()
+            sum_samples += labels.numel()
 
         if scheduler:
             scheduler.step()
@@ -71,21 +76,27 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
             for images, labels in test_loader:
                 images = images.view(-1, dims["samples"], dims["input"]).to(device)
                 labels = labels.view(-1, dims["samples"]).long().to(device)
-                predictions = model(images)
-                _, predicted = torch.max(predictions.data, 1)
-                valid_acc += (predicted == labels[:, -1]).sum()
-                sum_samples_valid += predicted.numel()
+                logits = model(images)  # [B, C, T]
+                predicted = logits.argmax(dim=1)  # [B, T]
+                valid_acc += (predicted == labels).sum()
+                sum_samples_valid += labels.numel()
 
         valid_acc = valid_acc.data.cpu().numpy() / sum_samples_valid
 
         print(f'Epoch {epoch}: Train Loss: {train_loss_sum/len(train_loader):.4f}, '
               f'Train Acc: {train_acc:.4f}, Valid Acc: {valid_acc:.4f}')
 
-        # Save best model
-        if valid_acc > best_acc and train_acc > 0.80:
+        # Save best model (放宽阈值：只要验证准确率提升就保存)
+        if valid_acc > best_acc:
             best_acc = valid_acc
             save_path = f'ASRNNECGModel_acc{best_acc:.4f}.pth'
+            if best_ckpt_path is not None and best_ckpt_path != save_path and os.path.exists(best_ckpt_path):
+                try:
+                    os.remove(best_ckpt_path)
+                except OSError:
+                    pass
             torch.save(model.state_dict(), save_path)
+            best_ckpt_path = save_path
             print(f'Saved best model: {save_path}')
 
     return best_acc
@@ -99,7 +110,7 @@ def main():
                         help='Path to test MAT file')
     parser.add_argument('--epochs', type=int, default=250,
                         help='Number of training epochs')
-    parser.add_argument('--batch-size', type=int, default=64,
+    parser.add_argument('--batch-size', type=int, default=128,
                         help='Batch size')
     parser.add_argument('--lr', type=float, default=1e-2,
                         help='Learning rate')
@@ -155,7 +166,7 @@ def main():
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     # Optimizer and scheduler
-    criterion = nn.NLLLoss()
+    criterion = nn.CrossEntropyLoss()
 
     base_params = [
         model.i2h.weight, model.i2h.bias,

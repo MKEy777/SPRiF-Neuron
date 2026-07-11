@@ -51,7 +51,7 @@ DEFAULT_CONFIG = {
     "hidden_sizes": [300],
     "recurrent_flags": [True],
     "mode": "srnn",
-    "dropout": 0.0,
+    "dropout": 0.15,
 
     "input_size": 120,
     "num_classes": 12,
@@ -195,6 +195,7 @@ def run_experiment(params, train_loader, valid_loader, device):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
 
     best_val_acc = 0.0
+    best_ckpt_path = None
     patience_counter = 0
 
     for epoch in range(1, config["epochs"] + 1):
@@ -248,7 +249,13 @@ def run_experiment(params, train_loader, valid_loader, device):
                 f"SPRiFGSCNetAblationB_{hs_str}_bs{config['batch_size']}"
                 f"_lr{config['lr']}_seed{config['seed']}_acc{best_val_acc:.4f}.pth"
             )
+            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
+                try:
+                    os.remove(best_ckpt_path)
+                except OSError:
+                    pass
             torch.save(model.state_dict(), save_name)
+            best_ckpt_path = save_name
         else:
             patience_counter += 1
             if patience_counter >= config["patience"]:

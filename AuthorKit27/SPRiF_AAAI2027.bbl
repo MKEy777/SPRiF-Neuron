@@ -1,5 +1,10 @@
-\begin{thebibliography}{30}
+\begin{thebibliography}{31}
 \providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Bai, Wang, and Yu(2026)}]{dgn}
+Bai, Q.; Wang, H.; and Yu, Q. 2026.
+\newblock {DGN}: A Brain-Inspired Gating Mechanism Unlocks Robust Computation in Spiking Neural Networks.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}.
 
 \bibitem[{Baronig et~al.(2025)}]{adlif}
 Baronig, M.; et~al. 2025.
@@ -10,6 +15,26 @@ Baronig, M.; et~al. 2025.
 Deng, S.; et~al. 2022.
 \newblock {InfLoR-SNN}: Reducing Information Loss for Spiking Neural Networks.
 \newblock In \emph{European Conference on Computer Vision (ECCV)}.
+
+\bibitem[{Deng et~al.(2025)Deng, Liu, Wang, Chen, Wei, and Yu}]{hetsyn}
+Deng, Z.; Liu, Z.; Wang, J.; Chen, S.; Wei, X.; and Yu, Q. 2025.
+\newblock {HetSyn}: Versatile Timescale Integration in Spiking Neural Networks via Heterogeneous Synapses.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[{Ding et~al.(2024)Ding, Yu, Huang, and Liu}]{stochastic_gating}
+Ding, J.; Yu, Z.; Huang, T.; and Liu, J.~K. 2024.
+\newblock Enhancing the Robustness of Spiking Neural Networks with Stochastic Gating Mechanisms.
+\newblock In \emph{AAAI Conference on Artificial Intelligence}, volume~38, 492--502.
+
+\bibitem[{Ding et~al.(2025{\natexlab{a}})Ding, Yu, Liu, and Huang}]{neuromorphic_robustness}
+Ding, J.; Yu, Z.; Liu, J.~K.; and Huang, T. 2025{\natexlab{a}}.
+\newblock Neuromorphic Computing Paradigms Enhance Robustness through Spiking Neural Networks.
+\newblock \emph{Nature Communications}, 16: 10175.
+
+\bibitem[{Ding et~al.(2025{\natexlab{b}})Ding, Zuo, Jing, He, and Deng}]{mpssnn}
+Ding, Y.; Zuo, L.; Jing, M.; He, P.; and Deng, H. 2025{\natexlab{b}}.
+\newblock Rethinking Spiking Neural Networks from an Ensemble Learning Perspective.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}.
 
 \bibitem[{Fabre(2025)}]{silif}
 Fabre, O. 2025.
@@ -26,15 +51,36 @@ Fang, W.; et~al. 2023.
 \newblock Parallel Spiking Neurons with High Efficiency and Ability to Learn Long-term Dependencies.
 \newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}.
 
+\bibitem[{Fulleda-Garcia, Soldado-Magraner, and Margarit-Taul{\'{e}}(2026)}]{mtc}
+Fulleda-Garcia, A.; Soldado-Magraner, S.; and Margarit-Taul{\'{e}}, J.~M. 2026.
+\newblock Multi-Timescale Conductance Spiking Networks with Rich Firing Dynamics for Enhanced Temporal Processing.
+\newblock \emph{arXiv preprint}.
+\newblock ArXiv:2605.11835.
+
 \bibitem[{Higuchi et~al.(2024)}]{brf}
 Higuchi, K.; et~al. 2024.
 \newblock Balanced Resonate-and-Fire Neurons.
 \newblock In \emph{International Conference on Machine Learning (ICML)}.
 
-\bibitem[{Huang et~al.(2024)}]{clif}
-Huang, X.; et~al. 2024.
+\bibitem[{Huang et~al.(2024{\natexlab{a}})}]{clif}
+Huang, X.; et~al. 2024{\natexlab{a}}.
 \newblock {CLIF}: Complementary Leaky Integrate-and-Fire Neuron for Spiking Neural Networks.
 \newblock In \emph{International Conference on Machine Learning (ICML)}.
+
+\bibitem[{Huang et~al.(2024{\natexlab{b}})Huang, Liu, Feng, Lin, Ren, Fu, Zhou, Xing, and Cheng}]{prf}
+Huang, Y.; Liu, Z.; Feng, C.; Lin, X.; Ren, H.; Fu, H.; Zhou, Y.; Xing, H.; and Cheng, B. 2024{\natexlab{b}}.
+\newblock {PRF}: Parallel Resonate and Fire Neuron for Long Sequence Learning in {SNNs}.
+\newblock ArXiv:2410.03530.
+
+\bibitem[{Huang et~al.(2025)Huang, Meng, Liu, Chen, and Ma}]{arlif}
+Huang, Z.; Meng, W.; Liu, Q.; Chen, K.; and Ma, L. 2025.
+\newblock {AR-LIF}: Adaptive Reset Leaky Integrate-and-Fire Neuron for Spiking Neural Networks.
+\newblock ArXiv:2507.20746.
+
+\bibitem[{Idrees et~al.(2024)Idrees, Manookin, Rieke, Field, and Zylberberg}]{biophysical_adaptation}
+Idrees, S.; Manookin, M.~B.; Rieke, F.; Field, G.~D.; and Zylberberg, J. 2024.
+\newblock Biophysical Neural Adaptation Mechanisms Enable Artificial Neural Networks to Capture Dynamic Retinal Computation.
+\newblock \emph{Nature Communications}, 15: 5957.
 
 \bibitem[{Izhikevich(2001)}]{izhikevich_rf}
 Izhikevich, E.~M. 2001.
@@ -51,6 +97,16 @@ Lange, M.; et~al. 2021.
 \newblock Neural Heterogeneity Promotes Robust Learning.
 \newblock \emph{Nature Communications}, 12.
 
+\bibitem[{Li et~al.(2025)Li, Zeng, Xue, Zeng, Zhang, and Wang}]{rplif}
+Li, Y.; Zeng, X.; Xue, Z.; Zeng, P.; Zhang, Z.; and Wang, Y. 2025.
+\newblock Incorporating the Refractory Period into {SNNs} through Spike-Triggered Threshold Dynamics.
+\newblock In \emph{ACM International Conference on Multimedia}.
+
+\bibitem[{Salaj et~al.(2021)Salaj, Subramoney, Kraisnikovic, Bellec, Legenstein, and Maass}]{snnsfa}
+Salaj, D.; Subramoney, A.; Kraisnikovic, C.; Bellec, G.; Legenstein, R.; and Maass, W. 2021.
+\newblock Spike Frequency Adaptation Supports Network Computations on Temporally Dispersed Information.
+\newblock \emph{eLife}, 10: e65459.
+
 \bibitem[{Shen et~al.(2025)}]{spikingssms}
 Shen, G.; et~al. 2025.
 \newblock Learning Long Sequences with Sparse and Parallel Spiking State Space Models.
@@ -61,97 +117,15 @@ Stevenson, J.; and Kappel, D. 2023.
 \newblock Introducing the {Dendrify} Framework for Incorporating Dendrites to Spiking Neural Networks.
 \newblock \emph{Nature Communications}, 14.
 
-\bibitem[{TODO(2024{\natexlab{a}})}]{biophysical_adaptation}
-TODO. 2024{\natexlab{a}}.
-\newblock Biophysical Neural Adaptation Mechanisms Enable Artificial Networks to Match Input Statistics.
-\newblock \emph{Nature Communications}, 15.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2024{\natexlab{b}})}]{stochastic_gating}
-TODO. 2024{\natexlab{b}}.
-\newblock Enhancing the Robustness of Spiking Neural Networks with Stochastic Gating Mechanisms.
-\newblock In \emph{AAAI Conference on Artificial Intelligence}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2024{\natexlab{c}})}]{prf}
-TODO. 2024{\natexlab{c}}.
-\newblock {PRF}: Parallel Resonate and Fire Neuron for Long Sequence Learning in {SNNs}.
-\newblock ArXiv:2410.03530. TODO: fill author list.
-
-\bibitem[{TODO(2024{\natexlab{d}})}]{dhsnn}
-TODO. 2024{\natexlab{d}}.
-\newblock Temporal Dendritic Heterogeneity Incorporated with Spiking Neural Networks for Learning Multi-Timescale Dynamics.
-\newblock \emph{Nature Communications}, 15.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{a}})}]{arlif}
-TODO. 2025{\natexlab{a}}.
-\newblock {AR-LIF}: Adaptive Reset Leaky Integrate-and-Fire Neuron for Spiking Neural Networks.
-\newblock ArXiv:2507.20746. TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{b}})}]{dalif}
-TODO. 2025{\natexlab{b}}.
-\newblock {DA-LIF}: Dual Adaptive Leaky Integrate-and-Fire Model for Deep Spiking Neural Networks.
-\newblock \emph{IEEE}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{c}})}]{drf}
-TODO. 2025{\natexlab{c}}.
-\newblock Dendritic Resonate-and-Fire Neuron for Effective and Efficient Long Sequence Modeling.
-\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{d}})}]{hetsyn}
-TODO. 2025{\natexlab{d}}.
-\newblock {HetSyn}: Versatile Timescale Integration in Spiking Neural Networks via Heterogeneous Synapses.
-\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{e}})}]{rplif}
-TODO. 2025{\natexlab{e}}.
-\newblock Incorporating the Refractory Period into {SNNs} through Spike-Triggered Threshold Dynamics.
-\newblock In \emph{ACM International Conference on Multimedia}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{f}})}]{ltgate}
-TODO. 2025{\natexlab{f}}.
+\bibitem[{Tiwari and Chauhan(2025)}]{ltgate}
+Tiwari, A.; and Chauhan, A. 2025.
 \newblock Local Timescale Gates for Timescale-Robust Continual Spiking Neural Networks.
-\newblock ArXiv:2510.12843. TODO: fill author list.
+\newblock ArXiv:2510.12843.
 
-\bibitem[{TODO(2025{\natexlab{g}})}]{neuromorphic_robustness}
-TODO. 2025{\natexlab{g}}.
-\newblock Neuromorphic Computing Paradigms Enhance Robustness through Spiking Neural Networks.
-\newblock \emph{Nature Communications}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{h}})}]{mpssnn}
-TODO. 2025{\natexlab{h}}.
-\newblock Rethinking Spiking Neural Networks from an Ensemble Learning Perspective.
-\newblock In \emph{International Conference on Learning Representations (ICLR)}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2025{\natexlab{i}})}]{revisiting_reset}
-TODO. 2025{\natexlab{i}}.
-\newblock Revisiting Reset Mechanisms in {SNNs} for Sequential Modeling.
-\newblock ArXiv:2504.17751. TODO: fill author list.
-
-\bibitem[{TODO(2026{\natexlab{a}})}]{dgn}
-TODO. 2026{\natexlab{a}}.
-\newblock {DGN}: A Brain-Inspired Gating Mechanism Unlocks Robust Computation in Spiking Neural Networks.
-\newblock In \emph{International Conference on Learning Representations (ICLR)}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2026{\natexlab{b}})}]{mtc}
-TODO. 2026{\natexlab{b}}.
-\newblock Multi-Timescale Conductance Spiking Networks: A Sparse, Gradient-Trainable Framework.
-\newblock \emph{arXiv preprint}.
-\newblock TODO: fill author list.
-
-\bibitem[{TODO(2026{\natexlab{c}})}]{bimodal}
-TODO. 2026{\natexlab{c}}.
+\bibitem[{Wei et~al.(2026)Wei, Zhou, Liu, Zang, and Yu}]{bimodal}
+Wei, X.; Zhou, X.; Liu, X.; Zang, Y.; and Yu, Q. 2026.
 \newblock Recurrent Spiking Neural Networks with Bimodal Neuronal Time Scales for Learning Performance Enhancement.
-\newblock \emph{Neural Networks}.
-\newblock TODO: fill author list.
+\newblock \emph{Neural Networks}, 200: 108830.
 
 \bibitem[{Yao et~al.(2021)Yao, Zeng, Peng, Dong, Xiao, and Xu}]{asrnn}
 Yao, Z.; Zeng, R.; Peng, Q.; Dong, J.; Xiao, Z.; and Xu, G. 2021.
@@ -162,5 +136,25 @@ Yao, Z.; Zeng, R.; Peng, Q.; Dong, J.; Xiao, Z.; and Xu, G. 2021.
 Yin, B.; et~al. 2024.
 \newblock {TC-LIF}: A Two-Compartment Spiking Neuron Model for Long-Term Sequential Modelling.
 \newblock In \emph{AAAI Conference on Artificial Intelligence}.
+
+\bibitem[{Zhang et~al.(2025{\natexlab{a}})Zhang, Zhang, Wang, Wang, Wei, Ma, Wang, Yang, and Li}]{drf}
+Zhang, D.; Zhang, M.; Wang, S.; Wang, J.; Wei, W.; Ma, Z.; Wang, G.; Yang, Y.; and Li, H. 2025{\natexlab{a}}.
+\newblock Dendritic Resonate-and-Fire Neuron for Effective and Efficient Long Sequence Modeling.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[{Zhang(2025)}]{revisiting_reset}
+Zhang, E. 2025.
+\newblock Revisiting Reset Mechanisms in Spiking Neural Networks: Specialized Discretization for Binary Activated {RNN}.
+\newblock ArXiv:2504.17751.
+
+\bibitem[{Zhang et~al.(2025{\natexlab{b}})Zhang, Yu, Zhang, and Wang}]{dalif}
+Zhang, T.; Yu, K.; Zhang, J.; and Wang, H. 2025{\natexlab{b}}.
+\newblock {DA-LIF}: Dual Adaptive Leaky Integrate-and-Fire Model for Deep Spiking Neural Networks.
+\newblock \emph{IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 1--5.
+
+\bibitem[{Zheng et~al.(2024)Zheng, Zheng, Hu, Xiao, Wu, Yu, Liu, Li, and Deng}]{dhsnn}
+Zheng, H.; Zheng, Z.; Hu, R.; Xiao, B.; Wu, Y.; Yu, F.; Liu, X.; Li, G.; and Deng, L. 2024.
+\newblock Temporal Dendritic Heterogeneity Incorporated with Spiking Neural Networks for Learning Multi-Timescale Dynamics.
+\newblock \emph{Nature Communications}, 15: 277.
 
 \end{thebibliography}

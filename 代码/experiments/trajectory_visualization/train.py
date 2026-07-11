@@ -17,6 +17,7 @@ from config import (
     FIGURE_DIR, CHECKPOINT_DIR,
     T_CUE, BETA, LR, EPOCHS, BATCH_SIZE,
     TRAIN_N, VAL_N, GRAD_CLIP,
+    RUN_TAG,
     get_args,
 )
 from generate_data import generate_dataset, PhaseTrajectoryDataset
@@ -38,11 +39,11 @@ def train_one_epoch(
     n_batches = 0
 
     for x, probe_mask, target in loader:
-        x = x.to(device)
-        probe_mask = probe_mask.to(device)
-        target = target.to(device)
+        x = x.to(device, non_blocking=True)
+        probe_mask = probe_mask.to(device, non_blocking=True)
+        target = target.to(device, non_blocking=True)
 
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         readout_seq, spike_rate = model(x, probe_mask)
 
         # MSE loss 仅在 delay 阶段 (t >= T_CUE)
@@ -83,9 +84,9 @@ def validate(
     n_batches = 0
 
     for x, probe_mask, target in loader:
-        x = x.to(device)
-        probe_mask = probe_mask.to(device)
-        target = target.to(device)
+        x = x.to(device, non_blocking=True)
+        probe_mask = probe_mask.to(device, non_blocking=True)
+        target = target.to(device, non_blocking=True)
 
         readout_seq, spike_rate = model(x, probe_mask)
 
@@ -124,6 +125,24 @@ def train_model(
     scheduler = StepLR(optimizer, step_size=30, gamma=0.5)
     criterion = nn.MSELoss()
 
+    # ------ 诊断打印：定位 SR=0 问题 ------
+    print(f"[DIAG] {model_name} 超参: a_probe={args.a_probe} "
+          f"hidden={args.hidden_size} lr={args.lr} beta={BETA}")
+    if hasattr(model, "layer"):
+        w = model.layer.input_linear.weight
+        print(f"[DIAG] input_linear.weight |mean|={w.abs().mean():.4f} "
+              f"max={w.abs().max():.4f} threshold={float(model.layer.threshold)}")
+    model.eval()
+    with torch.no_grad():
+        x0, pm0, tgt0 = next(iter(train_loader))
+        x0, pm0 = x0.to(device), pm0.to(device)
+        _, sr0, diag = model(x0, pm0, return_diag=True)
+        print(f"[DIAG] {model_name} 初始化前向: SR={float(sr0):.6f}")
+        for k, v in diag.items():
+            print(f"[DIAG]   {k} = {v:.4f}")
+    model.train()
+    # -------------------------------------
+
     best_val_mse = float("inf")
     best_checkpoint = None
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -143,9 +162,10 @@ def train_model(
 
         if val_mse < best_val_mse:
             best_val_mse = val_mse
+            _tag_suffix = f"_{RUN_TAG}" if RUN_TAG else ""
             checkpoint_path = os.path.join(
                 CHECKPOINT_DIR,
-                f"TrajectoryViz_{model_name}_mse{best_val_mse:.4f}.pth",
+                f"TrajectoryViz_{model_name}{_tag_suffix}_mse{best_val_mse:.4f}.pth",
             )
             torch.save(model.state_dict(), checkpoint_path)
             best_checkpoint = checkpoint_path
@@ -167,30 +187,37 @@ def main():
 
     # 生成数据
     print("\nGenerating training data...")
-    train_samples = generate_dataset(TRAIN_N, jitter=True, seed=args.seed)
-    val_samples = generate_dataset(VAL_N, jitter=False, seed=args.seed + 1)
+    train_n = args.train_n if args.train_n is not None else TRAIN_N
+    val_n = args.val_n if args.val_n is not None else VAL_N
+    train_samples = generate_dataset(train_n, jitter=True, seed=args.seed)
+    val_samples = generate_dataset(val_n, jitter=False, seed=args.seed + 1)
+    pin = device.type == "cuda"
     train_loader = DataLoader(
         PhaseTrajectoryDataset(train_samples),
         batch_size=args.batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=args.num_workers,
+        pin_memory=pin,
+        persistent_workers=(args.num_workers > 0),
     )
     val_loader = DataLoader(
         PhaseTrajectoryDataset(val_samples),
         batch_size=args.batch_size,
         shuffle=False,
-        num_workers=0,
+        num_workers=args.num_workers,
+        pin_memory=pin,
+        persistent_workers=(args.num_workers > 0),
     )
     print(f"  Train: {len(train_samples)} samples, Val: {len(val_samples)} samples")
 
     # 训练 SPRiF
     if args.model in ["sprif", "both"]:
-        sprif_model = SPRiFTrajectoryNet(hidden_size=args.hidden_size)
+        sprif_model = SPRiFTrajectoryNet(hidden_size=args.hidden_size, a_probe=args.a_probe)
         train_model("SPRiF", sprif_model, train_loader, val_loader, args, device)
 
     # 训练 ASRNN
     if args.model in ["asrnn", "both"]:
-        asrnn_model = ASRNNTrajectoryNet(hidden_size=args.hidden_size)
+        asrnn_model = ASRNNTrajectoryNet(hidden_size=args.hidden_size, a_probe=args.a_probe)
         train_model("ASRNN", asrnn_model, train_loader, val_loader, args, device)
 
     print("\nTraining complete.")

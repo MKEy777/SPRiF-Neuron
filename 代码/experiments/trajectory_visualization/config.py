@@ -57,7 +57,7 @@ R_PROBE = 100.0        # probe 发放率
 # ---------------------------------------------------------------------------
 PROBE_TIMES = [180, 300, 420, 540, 660, 780]  # 6 个 probe 注入时刻 (ms)
 T_PROBE = 10            # probe 窗口时长 ms
-A_PROBE = 1.0           # probe 注入幅度（可调）
+A_PROBE = 3.0           # probe 注入幅度（可调，需足够大以诱发 spike）
 
 # ---------------------------------------------------------------------------
 # omega 选择
@@ -76,10 +76,10 @@ HIDDEN_SIZE = 64
 # ---------------------------------------------------------------------------
 # 训练参数
 # ---------------------------------------------------------------------------
-BETA = 1e-4             # firing rate 正则系数
-LR = 1e-3
+BETA = 0             # firing rate 正则系数
+LR = 2e-3
 EPOCHS = 100
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 TRAIN_N = 10000
 VAL_N = 1000
 JITTER_RANGE = (-20, 20)  # probe 时间抖动 U(-20,20) ms
@@ -90,6 +90,22 @@ GRAD_CLIP = 1.0
 # ---------------------------------------------------------------------------
 VIZ_PHIS = [0.0, math.pi / 2, math.pi, 3.0 * math.pi / 2]
 VIZ_OMEGA = 2.0 * math.pi / 100.0  # 中间频率
+
+
+RUN_TAG = os.environ.get("RUN_TAG", "").strip()
+
+
+def tagged(basename: str) -> str:
+    """给文件名插入 RUN_TAG 后缀。
+
+    tagged("main_figure_5panel.png") ->
+        RUN_TAG="fast_a4" -> "main_figure_5panel_fast_a4.png"
+        RUN_TAG=""        -> "main_figure_5panel.png"
+    """
+    if not RUN_TAG:
+        return basename
+    root, ext = os.path.splitext(basename)
+    return f"{root}_{RUN_TAG}{ext}"
 
 
 def get_args():
@@ -107,4 +123,10 @@ def get_args():
     parser.add_argument("--skip-train", action="store_true",
                         help="跳过训练，使用已有 checkpoint")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--num-workers", type=int, default=8,
+                        help="DataLoader worker 进程数")
+    parser.add_argument("--train-n", type=int, default=None,
+                        help="覆盖训练样本数（默认 TRAIN_N=10000）")
+    parser.add_argument("--val-n", type=int, default=None,
+                        help="覆盖验证样本数（默认 VAL_N=1000）")
     return parser.parse_args()

@@ -3,7 +3,7 @@ SPRiF Robustness Experiment R2: Sequence Length x Noise Coupling.
 
 Varies input sequence length and applies fixed additive noise (sigma=0.05).
 Tests whether SPRiF's spectral filtering provides sustained noise immunity
-across temporal scales, vs LIF's single-timescale accumulation.
+across temporal scales, vs ASRNN's single-timescale accumulation.
 
 Datasets: GSC (truncate mel frames), QTDB (resample time axis).
 
@@ -14,6 +14,7 @@ Usage:
 
 import glob
 import json
+import math
 import os
 import subprocess
 import sys
@@ -111,6 +112,20 @@ def resample_time(x: torch.Tensor, target_len: int) -> torch.Tensor:
     return x_resampled
 
 
+def resample_labels(y: torch.Tensor, target_len: int) -> torch.Tensor:
+    """Resample ECG per-timestep labels using nearest-neighbor.
+
+    y: (B, T_orig) integer class labels.
+    Returns y of shape (B, target_len). Nearest-neighbor keeps labels integer.
+    """
+    B, T_orig = y.shape
+    if T_orig == target_len:
+        return y
+    src_idx = torch.linspace(0, T_orig - 1, target_len)
+    idx = src_idx.round().long().clamp(0, T_orig - 1)
+    return y[:, idx]
+
+
 # ---------------------------------------------------------------------------
 # Loaders (same pattern as noise_benchmark.py)
 # ---------------------------------------------------------------------------
@@ -130,7 +145,12 @@ def _load_gsc_models(task_dir: str):
     from asrnn_gsc import ASRNNGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    _gsc_candidates = [
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+        os.path.join(task_abs, "data", "SpeechCommands"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     models = {}
 
@@ -141,7 +161,7 @@ def _load_gsc_models(task_dir: str):
         if not os.path.exists(data_root):
             raise FileNotFoundError("GSC data not found.")
         _train_subprocess(task_dir, "train.py", [
-            "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+            "--data-root", os.path.relpath(data_root, task_abs),
             "--epochs", "150", "--batch-size", "200", "--seed", "42", "--hidden-sizes", "300",
         ])
         ckpt = _find_checkpoint(task_abs, prefix)
@@ -151,9 +171,9 @@ def _load_gsc_models(task_dir: str):
     print(f"  {prefix}: {os.path.basename(ckpt)}")
     sprif_model = SPRiFGSCNet(
         input_size=120, hidden_sizes=[300], num_classes=12,
-        dropout=0.0, recurrent_flags=(True,),
+        dropout=0.15, recurrent_flags=(True,),
         neuron_kwargs={
-            "threshold": 0.8, "init_std": 0.15,
+            "threshold": 0.8, "init_std": 0.1,
             "tau_alpha_range": (10.0, 80.0),
             "tau_rho_range": (4.0, 30.0),
             "tau_eta_range": (0.8, 8.0),
@@ -170,7 +190,7 @@ def _load_gsc_models(task_dir: str):
         if not os.path.exists(data_root):
             raise FileNotFoundError("GSC data not found.")
         _train_subprocess(task_dir, "train_asrnn.py", [
-            "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+            "--data-root", os.path.relpath(data_root, task_abs),
             "--epochs", "30", "--batch-size", "32", "--seed", "0", "--hidden-size", "256",
         ])
         ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
@@ -287,7 +307,12 @@ def _build_gsc_raw_loader(task_dir: str, batch_size: int = 200):
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    _gsc_candidates = [
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+        os.path.join(task_abs, "data", "SpeechCommands"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     testing_words = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -349,12 +374,22 @@ def _build_ecg_raw_loader(task_dir: str, batch_size: int = 64):
 
 @torch.no_grad()
 def _eval_gsc_seqlen(model, x_tensor, y_tensor, device):
-    """Evaluate GSC model with pre-processed (B, T, 120) input."""
+    """Evaluate GSC model with pre-processed (B, T, 120) input.
+
+    SPRiF expects (B, T, 120) and returns (logits, aux).
+    ASRNN expects (B, 3, T, 40) and returns logits directly, so we reshape the
+    packed 120-dim features back to (3, 40) channels for it.
+    """
     total_correct = 0
     total = x_tensor.shape[0]
     x = x_tensor.to(device)
     y = y_tensor.to(device)
-    logits, _ = model(x)
+    if model.__class__.__name__.startswith("ASRNN"):
+        B, T, _ = x.shape
+        x_asrnn = x.reshape(B, T, 3, 40).permute(0, 2, 1, 3).contiguous()
+        logits = model(x_asrnn)
+    else:
+        logits, _ = model(x)
     total_correct += (logits.argmax(dim=-1) == y).sum().item()
     return total_correct / total
 
@@ -379,6 +414,19 @@ def _eval_ecg_seqlen(model, x_tensor, y_tensor, device):
 GSC_SEQ_LENS = [50, 75, 101]
 ECG_SEQ_LENS = [150, 300, 600, "original"]
 NOISE_SIGMA = 0.05
+
+
+def _sync_module_device(model: nn.Module, device) -> None:
+    """Patch every submodule's .device attribute to the runtime device.
+
+    ASRNN's SRNN layers create state/decay tensors from a stored string
+    self.device (fixed to "cpu"). model.to(cuda) only moves Parameters, so we
+    must also update self.device to avoid a device mismatch in mem_update_adp.
+    """
+    dev_str = str(device)
+    for m in model.modules():
+        if hasattr(m, "device"):
+            m.device = dev_str
 
 
 def run_gsc(spare_model, lif_model, raw_loader, device, rng) -> List[dict]:
@@ -413,12 +461,12 @@ def run_gsc(spare_model, lif_model, raw_loader, device, rng) -> List[dict]:
             "seq_len": seq_len,
             "SPRiF_clean": round(acc_spare_clean, 4),
             "SPRiF_noisy": round(acc_spare_noisy, 4),
-            "LIF_clean": round(acc_lif_clean, 4),
-            "LIF_noisy": round(acc_lif_noisy, 4),
+            "ASRNN_clean": round(acc_lif_clean, 4),
+            "ASRNN_noisy": round(acc_lif_noisy, 4),
         })
 
         print(f"    SPRiF: clean={acc_spare_clean:.4f} noisy={acc_spare_noisy:.4f}")
-        print(f"    LIF:   clean={acc_lif_clean:.4f} noisy={acc_lif_noisy:.4f}")
+        print(f"    ASRNN: clean={acc_lif_clean:.4f} noisy={acc_lif_noisy:.4f}")
 
     return results
 
@@ -434,10 +482,12 @@ def run_ecg(spare_model, lif_model, raw_loader, device, rng) -> List[dict]:
         for x_raw, y in all_batches:
             if seq_len == "original":
                 x_seq = x_raw
+                y_seq = y
             else:
                 x_seq = resample_time(x_raw, seq_len)
+                y_seq = resample_labels(y, seq_len)
             x_all.append(x_seq)
-            y_all.append(y)
+            y_all.append(y_seq)
         x_cat = torch.cat(x_all, dim=0)
         y_cat = torch.cat(y_all, dim=0)
 
@@ -458,12 +508,12 @@ def run_ecg(spare_model, lif_model, raw_loader, device, rng) -> List[dict]:
             "seq_len": seq_label,
             "SPRiF_clean": round(acc_spare_clean, 4),
             "SPRiF_noisy": round(acc_spare_noisy, 4),
-            "LIF_clean": round(acc_lif_clean, 4),
-            "LIF_noisy": round(acc_lif_noisy, 4),
+            "ASRNN_clean": round(acc_lif_clean, 4),
+            "ASRNN_noisy": round(acc_lif_noisy, 4),
         })
 
         print(f"    SPRiF: clean={acc_spare_clean:.4f} noisy={acc_spare_noisy:.4f}")
-        print(f"    LIF:   clean={acc_lif_clean:.4f} noisy={acc_lif_noisy:.4f}")
+        print(f"    ASRNN: clean={acc_lif_clean:.4f} noisy={acc_lif_noisy:.4f}")
 
     return results
 
@@ -483,7 +533,7 @@ def plot_sequence_noise(all_results: List[dict], out_dir: str):
     ax = axes[0]
     if gsc_results:
         x_gsc = [r["seq_len"] for r in gsc_results]
-        for model, color, marker in [("SPRiF", "#2b83ba", "o"), ("LIF", "#e41a1c", "s")]:
+        for model, color, marker in [("SPRiF", "#2b83ba", "o"), ("ASRNN", "#e41a1c", "s")]:
             clean_vals = [r[f"{model}_clean"] for r in gsc_results]
             noisy_vals = [r[f"{model}_noisy"] for r in gsc_results]
             ax.plot(x_gsc, clean_vals, color=color, marker=marker, linewidth=2,
@@ -500,7 +550,7 @@ def plot_sequence_noise(all_results: List[dict], out_dir: str):
     if qtdb_results:
         x_qtdb = list(range(len(qtdb_results)))
         labels_qtdb = [str(r["seq_len"]) for r in qtdb_results]
-        for model, color, marker in [("SPRiF", "#2b83ba", "o"), ("LIF", "#e41a1c", "s")]:
+        for model, color, marker in [("SPRiF", "#2b83ba", "o"), ("ASRNN", "#e41a1c", "s")]:
             clean_vals = [r[f"{model}_clean"] for r in qtdb_results]
             noisy_vals = [r[f"{model}_noisy"] for r in qtdb_results]
             ax.plot(x_qtdb, clean_vals, color=color, marker=marker, linewidth=2,
@@ -541,6 +591,7 @@ def main():
         sprim, lifm = _load_gsc_models("Task_GSC")
         sprim.to(device)
         lifm.to(device)
+        _sync_module_device(lifm, device)
         loader = _build_gsc_raw_loader("Task_GSC")
         results = run_gsc(sprim, lifm, loader, device, rng)
         all_results.extend(results)
@@ -553,6 +604,7 @@ def main():
         sprim, lifm = _load_ecg_models("Task_ECG")
         sprim.to(device)
         lifm.to(device)
+        _sync_module_device(lifm, device)
         loader = _build_ecg_raw_loader("Task_ECG")
         results = run_ecg(sprim, lifm, loader, device, rng)
         all_results.extend(results)

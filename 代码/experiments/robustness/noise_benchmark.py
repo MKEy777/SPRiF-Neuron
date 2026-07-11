@@ -136,7 +136,12 @@ def _load_gsc_models(task_dir: str):
     from asrnn_gsc import ASRNNGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    _gsc_candidates = [
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+        os.path.join(task_abs, "data", "SpeechCommands"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     models = {}
 
@@ -151,7 +156,7 @@ def _load_gsc_models(task_dir: str):
         _train_task(
             task_dir, "train.py",
             [
-                "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+                "--data-root", os.path.relpath(data_root, task_abs),
                 "--lr", "5e-3", "--epochs", "150", "--batch-size", "200",
                 "--seed", "42", "--hidden-sizes", "300",
                 "--neuron-threshold", "0.8", "--neuron-init-std", "0.15",
@@ -168,9 +173,9 @@ def _load_gsc_models(task_dir: str):
     print(f"  {prefix}: {os.path.basename(ckpt)}")
     sprif_model = SPRiFGSCNet(
         input_size=120, hidden_sizes=[300], num_classes=12,
-        dropout=0.0, recurrent_flags=(True,),
+        dropout=0.15, recurrent_flags=(True,),
         neuron_kwargs={
-            "threshold": 0.8, "init_std": 0.15,
+            "threshold": 0.8, "init_std": 0.1,
             "tau_alpha_range": (10.0, 80.0),
             "tau_rho_range": (4.0, 30.0),
             "tau_eta_range": (0.8, 8.0),
@@ -191,7 +196,7 @@ def _load_gsc_models(task_dir: str):
         _train_task(
             task_dir, "train_asrnn.py",
             [
-                "--data-root", "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02",
+                "--data-root", os.path.relpath(data_root, task_abs),
                 "--lr", "3e-3", "--epochs", "30", "--batch-size", "32",
                 "--seed", "0", "--hidden-size", "256",
             ],
@@ -221,7 +226,12 @@ def _build_gsc_test_loader(task_dir: str, batch_size: int = 200):
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
     task_abs = os.path.join(ROOT, task_dir)
-    data_root = os.path.join(task_abs, "autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
+    _gsc_candidates = [
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
+        os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.01"),
+        os.path.join(task_abs, "data", "SpeechCommands"),
+    ]
+    data_root = next((p for p in _gsc_candidates if os.path.exists(p)), _gsc_candidates[0])
 
     testing_words = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -401,14 +411,14 @@ def evaluate_ecg(model: nn.Module, loader, device, model_name="SPRiF"):
     total = 0
     for inputs, labels in loader:
         inputs = inputs.to(device)
-        # Get the last label for comparison
         labels = labels.to(device)
-        last_labels = labels[:, -1] if labels.dim() > 1 else labels
 
+        # Both SPRiF and ASRNN ECG models output [batch, num_classes, seq_len]
+        # (dense per-timestep supervision). Labels are [batch, seq_len].
         logits = model(inputs)
-        pred = logits.argmax(dim=1)
-        total_correct += pred.eq(last_labels).sum().item()
-        total += last_labels.numel()
+        pred = logits.argmax(dim=1)  # [batch, seq_len]
+        total_correct += pred.eq(labels).sum().item()
+        total += labels.numel()
     return total_correct / total if total > 0 else 0.0
 
 
@@ -452,7 +462,7 @@ class NoisyECGLoader:
         self.noise_args = noise_args
         self.rng = rng
         self._batches = []
-        for x, y in self._batches:
+        for x, y in self.base_loader:
             x_np = x.numpy()
             x_np = self.noise_fn(x_np, *self.noise_args, self.rng)
             self._batches.append((torch.from_numpy(x_np).float(), y))
@@ -501,6 +511,21 @@ DATASET_CONFIG = {
 }
 
 
+def _sync_module_device(model: nn.Module, device) -> None:
+    """Recursively set the .device attribute on every submodule.
+
+    ASRNN's SRNN layers (spike_dense / spike_rnn) build their state and decay
+    tensors using a stored string self.device (fixed to "cpu" at construction).
+    Calling model.to(cuda) only relocates registered Parameters/buffers, leaving
+    self.device pointing at cpu, which triggers a device mismatch in
+    mem_update_adp. Patching the attribute makes those tensors land on `device`.
+    """
+    dev_str = str(device)
+    for m in model.modules():
+        if hasattr(m, "device"):
+            m.device = dev_str
+
+
 def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
     """Run all noise conditions for one dataset. Returns list of result dicts."""
     print(f"\n{'='*60}")
@@ -514,6 +539,10 @@ def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
     sprif_model, asrnn_model = config["load_models"](config["task_dir"])
     sprif_model.to(device)
     asrnn_model.to(device)
+    # ASRNN's SRNN layers create state/decay tensors via self.device (a string set
+    # at construction time to "cpu"). .to(device) only moves Parameters, so we must
+    # also patch every submodule's .device attribute to match the runtime device.
+    _sync_module_device(asrnn_model, device)
 
     # Build base loader
     base_loader = config["build_loader"](config["task_dir"])

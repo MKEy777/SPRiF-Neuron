@@ -30,19 +30,19 @@ def get_args():
     # Training
     parser.add_argument("--lr", type=float, default=5e-3)
     parser.add_argument("--epochs", type=int, default=150)
-    parser.add_argument("--patience", type=int, default=40)
-    parser.add_argument("--batch-size", type=int, default=200)
+    parser.add_argument("--patience", type=int, default=60)
+    parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--num-workers", type=int, default=8)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--grad-clip", type=float, default=10.0)
+    parser.add_argument("--weight-decay", type=float, default=0)
+    parser.add_argument("--grad-clip", type=float, default=10)
     parser.add_argument("--seed", type=int, default=42)
     # Model
     parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[300])
-    parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument("--dropout", type=float, default=0.15)
     parser.add_argument("--num-classes", type=int, default=12)
     # Neuron
     parser.add_argument("--neuron-threshold", type=float, default=0.8)
-    parser.add_argument("--neuron-init-std", type=float, default=0.15)
+    parser.add_argument("--neuron-init-std", type=float, default=0.1)
     # Spectral parameters
     parser.add_argument("--tau-alpha-min", type=float, default=10.0)
     parser.add_argument("--tau-alpha-max", type=float, default=80.0)
@@ -53,8 +53,12 @@ def get_args():
     parser.add_argument("--omega-min", type=float, default=0.04)  # multiplied by pi
     parser.add_argument("--omega-max", type=float, default=0.40)  # multiplied by pi
     # Data
-    parser.add_argument("--data-root", type=str, default="/root/autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/speech_commands_v0.02")
-    parser.add_argument("--cache-root", type=str, default="/root/autodl-tmp/A-sprif/Task_GSC/dataset/SpeechCommands/cache_power_to_db")
+    parser.add_argument("--data-root", type=str,
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                             "dataset/SpeechCommands/speech_commands_v0.02"))
+    parser.add_argument("--cache-root", type=str,
+                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                             "dataset/SpeechCommands/cache_power_to_db"))
     # Mel-spectrogram
     parser.add_argument("--n-mels", type=int, default=40)
     parser.add_argument("--seq-len", type=int, default=101)
@@ -197,6 +201,7 @@ def main():
 
     # Training loop
     best_val_acc = 0.0
+    best_ckpt_path = None
     patience_counter = 0
 
     for epoch in range(1, args.epochs + 1):
@@ -243,7 +248,13 @@ def main():
                 f"SPRiFGSCNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_val_acc:.4f}.pth"
             )
+            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
+                try:
+                    os.remove(best_ckpt_path)
+                except OSError:
+                    pass
             torch.save(model.state_dict(), save_name)
+            best_ckpt_path = save_name
         else:
             patience_counter += 1
             if patience_counter >= args.patience:

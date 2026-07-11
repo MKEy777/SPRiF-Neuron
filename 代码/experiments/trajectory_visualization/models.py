@@ -5,6 +5,7 @@ SPRiF 和 ASRNN 对照网络，均支持 perturbation 注入。
 """
 import os
 import sys
+import math
 import torch
 import torch.nn as nn
 
@@ -25,24 +26,34 @@ from config import HIDDEN_SIZE, A_PROBE
 class SPRiFTrajectoryNet(nn.Module):
     """SPRiF 轨迹网络：慢状态 x_t 作为记忆载体，不被 spike 重置。"""
 
-    def __init__(self, input_size: int = 32, hidden_size: int = HIDDEN_SIZE):
+    def __init__(self, input_size: int = 32, hidden_size: int = HIDDEN_SIZE,
+                 a_probe: float = A_PROBE):
         super().__init__()
+        self.a_probe = a_probe
         self.layer = SPRiFNeuronLayer(
             input_size=input_size,
             hidden_size=hidden_size,
             recurrent=False,
-            threshold=1.0,
+     threshold=0.3,
+            # 任务需在 800ms delay 无输入下维持旋转：
+            # tau_rho 需足够大使 rho≈1（rho=exp(-1/tau_rho)），否则振荡分量指数衰减为 0
+            #   tau_rho=3000 -> rho=0.99967 -> rho^800≈0.77（维持振幅）
+            tau_rho_range=(300.0, 3000.0),
+            # omega 需覆盖任务频率 {2π/50, 2π/100, 2π/200}={0.126, 0.063, 0.031}
+            omega_range=(2.0 * math.pi / 300.0, 2.0 * math.pi / 40.0),
         )
         # readout 从慢状态 x_t [B,H,3] flatten 读
         self.readout = nn.Linear(hidden_size * 3, 2)
 
-    def forward(self, x: torch.Tensor, probe_mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, probe_mask: torch.Tensor,
+                return_diag: bool = False) -> torch.Tensor:
         """
         前向传播，支持 perturbation 注入。
 
-        Args:
+       Args:
             x: [B, T, 32] 输入脉冲
             probe_mask: [B, T] probe 注入掩码
+            return_diag: 若为 True，额外返回诊断 dict
 
         Returns:
             readout_seq: [B, T, 2] 输出轨迹
@@ -53,31 +64,56 @@ class SPRiFTrajectoryNet(nn.Module):
         state = self.layer.init_state(B, device=device, dtype=x.dtype)
         runtime = self.layer._precompute_runtime_params()
 
-        readout_seq = []
-        total_spikes = 0
+        # 一次性算完整段 input_linear（避免每步启动开销）
+        input_current_all = self.layer.input_linear(x)  # [B, T, H]
+        input_current_all = input_current_all + self.a_probe * probe_mask.unsqueeze(-1)
+
+        x_state_seq = []
+        spikes_seq = []
+        membrane_seq = []
 
         for t in range(T):
-            x_t = x[:, t, :]  # [B, 32]
-            probe_m = probe_mask[:, t]  # [B]
-
-            # 计算 input_current（含 perturbation）
-            input_current = self.layer.input_linear(x_t)
-            # probe_mask 广播到 [B, H]
-            input_current = input_current + A_PROBE * probe_m.unsqueeze(-1)
-
+            x_t = x[:, t, :]
             spike, membrane, state = self.layer.forward_step(
-                x_t, state, runtime, input_current=input_current
+                x_t, state, runtime, input_current=input_current_all[:, t, :]
             )
+            x_state_seq.append(state["x"])
+            spikes_seq.append(spike)
+            if return_diag:
+                membrane_seq.append(membrane)
 
-            # readout 从慢状态 x_t 读
-            x_state = state["x"]  # [B, H, 3]
-            readout = self.readout(x_state.reshape(B, -1))  # [B, 2]
-            readout_seq.append(readout)
+        x_state_seq = torch.stack(x_state_seq, dim=1)  # [B, T, H, 3]
+        # 一次性做 readout
+        readout_seq = self.readout(x_state_seq.reshape(B, T, -1))  # [B, T, 2]
 
-            total_spikes += spike.sum()
+        spikes_all = torch.stack(spikes_seq, dim=1)  # [B, T, H]
+        spike_rate = spikes_all.mean()
 
-        readout_seq = torch.stack(readout_seq, dim=1)  # [B, T, 2]
-        spike_rate = total_spikes / (B * T * self.layer.hidden_size)
+        if return_diag:
+            membrane_all = torch.stack(membrane_seq, dim=1)  # [B, T, H]
+            # 慢状态振荡分量振幅：验证 delay 末期是否衰减为 0
+            osc = x_state_seq[..., 1:3]  # [B,T,H,2] 振荡两分量
+            osc_amp = osc.pow(2).sum(-1).sqrt()  # [B,T,H] 振幅
+            T_all = x_state_seq.shape[1]
+            sp = self.layer.get_spectral_parameters()
+            diag = {
+                "threshold": float(self.layer.threshold),
+                "a_probe": float(self.a_probe),
+                "membrane_max": float(membrane_all.max()),
+                "membrane_mean": float(membrane_all.mean()),
+                "membrane_p99": float(membrane_all.flatten().quantile(0.99)),
+                "input_current_max": float(input_current_all.max()),
+                "input_current_mean": float(input_current_all.mean()),
+                "osc_amp_early": float(osc_amp[:, 100:120].mean()),
+                "osc_amp_late": float(osc_amp[:, T_all - 20:].mean()),
+                "rho_min": float(sp["rho"].min()),
+                "rho_max": float(sp["rho"].max()),
+                "omega_min": float(sp["omega"].min()),
+                "omega_max": float(sp["omega"].max()),
+                "probe_mask_sum": float(probe_mask.sum()),
+                "n_spikes": float(spikes_all.sum()),
+            }
+            return readout_seq, spike_rate, diag
 
         return readout_seq, spike_rate
 
@@ -100,7 +136,7 @@ class SPRiFTrajectoryNet(nn.Module):
 
         # 计算 input_current（含 perturbation）
         input_current = self.layer.input_linear(x_t)
-        input_current = input_current + A_PROBE * probe_mask_t.unsqueeze(-1)
+        input_current = input_current + self.a_probe * probe_mask_t.unsqueeze(-1)
 
         # 慢状态更新
         x_next = self.layer._slow_flow(x_state, input_current, runtime)
@@ -138,8 +174,10 @@ class SPRiFTrajectoryNet(nn.Module):
 class ASRNNTrajectoryNet(nn.Module):
     """ASRNN 轨迹网络：膜电位 mem 作为记忆载体，被 spike 重置。"""
 
-    def __init__(self, input_size: int = 32, hidden_size: int = HIDDEN_SIZE):
+    def __init__(self, input_size: int = 32, hidden_size: int = HIDDEN_SIZE,
+                 a_probe: float = A_PROBE):
         super().__init__()
+        self.a_probe = a_probe
         self.asrnn_layer = spike_dense(
             input_dim=input_size,
             output_dim=hidden_size,
@@ -155,13 +193,15 @@ class ASRNNTrajectoryNet(nn.Module):
         """初始化 ASRNN 内部状态。"""
         self.asrnn_layer.set_neuron_state(batch_size)
 
-    def forward(self, x: torch.Tensor, probe_mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, probe_mask: torch.Tensor,
+                return_diag: bool = False) -> torch.Tensor:
         """
         前向传播，支持 perturbation 注入。
 
         Args:
             x: [B, T, 32] 输入脉冲
             probe_mask: [B, T] probe 注入掩码
+            return_diag: 若为 True，额外返回诊断 dict
 
         Returns:
             readout_seq: [B, T, 2] 输出轨迹
@@ -175,17 +215,15 @@ class ASRNNTrajectoryNet(nn.Module):
         self.asrnn_layer.spike = self.asrnn_layer.spike.to(device)
         self.asrnn_layer.b = self.asrnn_layer.b.to(device)
 
-        readout_seq = []
-        total_spikes = 0
+        # 一次性算完整段 dense（避免每步启动开销）
+        d_input_all = self.asrnn_layer.dense(x.float())  # [B, T, H]
+        d_input_all = d_input_all + self.a_probe * probe_mask.unsqueeze(-1)
+
+        mem_seq = []
+        spikes_seq = []
 
         for t in range(T):
-            x_t = x[:, t, :]  # [B, 32]
-            probe_m = probe_mask[:, t]  # [B]
-
-            # 计算 d_input（含 perturbation）
-            d_input = self.asrnn_layer.dense(x_t.float())
-            # probe_mask 广播到 [B, H]
-            d_input = d_input + A_PROBE * probe_m.unsqueeze(-1)
+            d_input = d_input_all[:, t, :]
 
             # 调用 mem_update_adp
             mem, spike, _, b = mem_update_adp(
@@ -197,6 +235,7 @@ class ASRNNTrajectoryNet(nn.Module):
                 self.asrnn_layer.tau_m,
                 device=device,
                 isAdapt=1,
+                b_j0=0.3,
             )
 
             # 更新状态
@@ -204,14 +243,27 @@ class ASRNNTrajectoryNet(nn.Module):
             self.asrnn_layer.spike = spike
             self.asrnn_layer.b = b
 
-            # readout 从膜电位 mem 读
-            readout = self.readout(mem)  # [B, 2]
-            readout_seq.append(readout)
+            mem_seq.append(mem)
+            spikes_seq.append(spike)
 
-            total_spikes += spike.sum()
+        mem_all = torch.stack(mem_seq, dim=1)          # [B, T, H]
+        spikes_all = torch.stack(spikes_seq, dim=1)    # [B, T, H]
 
-        readout_seq = torch.stack(readout_seq, dim=1)  # [B, T, 2]
-        spike_rate = total_spikes / (B * T * self.asrnn_layer.output_dim)
+        readout_seq = self.readout(mem_all)             # [B, T, 2]
+        spike_rate = spikes_all.mean()
+
+        if return_diag:
+            diag = {
+                "a_probe": float(self.a_probe),
+                "mem_max": float(mem_all.max()),
+                "mem_mean": float(mem_all.mean()),
+                "mem_p99": float(mem_all.flatten().quantile(0.99)),
+                "d_input_max": float(d_input_all.max()),
+                "d_input_mean": float(d_input_all.mean()),
+                "probe_mask_sum": float(probe_mask.sum()),
+                "n_spikes": float(spikes_all.sum()),
+            }
+            return readout_seq, spike_rate, diag
 
         return readout_seq, spike_rate
 

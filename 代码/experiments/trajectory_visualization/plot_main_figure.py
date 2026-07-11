@@ -18,12 +18,12 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 
-from config import FIGURE_DIR, T_CUE, PROBE_TIMES, VIZ_PHIS
+from config import FIGURE_DIR, T_CUE, PROBE_TIMES, VIZ_PHIS, tagged
 
 
 def _load_trajectory(phi_idx: int) -> dict:
     """加载记录的轨迹数据。"""
-    path = os.path.join(FIGURE_DIR, f"trajectory_data_phi{phi_idx}.npz")
+    path = os.path.join(FIGURE_DIR, tagged(f"trajectory_data_phi{phi_idx}.npz"))
     if not os.path.exists(path):
         raise FileNotFoundError(f"Trajectory data not found: {path}")
     data = np.load(path)
@@ -148,7 +148,7 @@ def plot_time_domain_contrast(ax, data):
 
     # SPRiF slow state (x1)
     x1 = data["sprif_x_t"][t_start:t_end, :, 1].mean(axis=1)
-    ax.plot(t_rel, x1, "b-", linewidth=2, label="SPRiF $x^{\mathrm{osc}}_1$")
+    ax.plot(t_rel, x1, "b-", linewidth=2, label=r"SPRiF $x^{\mathrm{osc}}_1$")
 
     # SPRiF membrane
     sprif_mem = data["sprif_membrane"][t_start:t_end, :].mean(axis=1)
@@ -228,7 +228,7 @@ def plot_main_figure(phi_idx: int = 1):
     fig.suptitle(f"Phase Trajectory Visualization — φ = {phi:.4f}",
                  y=0.98, fontweight="bold", fontsize=14)
 
-    save_path = os.path.join(FIGURE_DIR, "main_figure_5panel.png")
+    save_path = os.path.join(FIGURE_DIR, tagged("main_figure_5panel.png"))
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved: {save_path}")
@@ -256,7 +256,7 @@ def plot_appendix_figures():
 
         fig.suptitle(f"Appendix — φ = {phi:.4f}", y=0.98, fontweight="bold", fontsize=14)
 
-        save_path = os.path.join(FIGURE_DIR, f"appendix_phi{phi_idx}.png")
+        save_path = os.path.join(FIGURE_DIR, tagged(f"appendix_phi{phi_idx}.png"))
         fig.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"Saved: {save_path}")
