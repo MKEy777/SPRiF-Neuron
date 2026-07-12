@@ -1,0 +1,69 @@
+References
+
+Bai, Q.; Wang, H.; and Yu, Q. 2026. DGN: A Brain-Inspired
+Gating Mechanism Unlocks Robust Computation in Spiking
+Neural Networks. In International Conference on Learning
+Representations (ICLR).
+
+Baronig, M.; et al. 2025. Advancing Spatio-Temporal Processing through Adaptation in Spiking Neural Networks. Nature Communications, 16.
+
+Deng, S.; et al. 2022. InfLoR-SNN: Reducing Information
+Loss for Spiking Neural Networks. In European Conference
+on Computer Vision (ECCV).
+
+Deng, Z.; Liu, Z.; Wang, J.; Chen, S.; Wei, X.; and Yu, Q.
+2025. HetSyn: Versatile Timescale Integration in Spiking
+Neural Networks via Heterogeneous Synapses. In Advances
+in Neural Information Processing Systems (NeurIPS).
+
+Ding, J.; Yu, Z.; Huang, T.; and Liu, J. K. 2024. Enhancing
+the Robustness of Spiking Neural Networks with Stochastic Gating Mechanisms. In AAAI Conference on Artificial
+Intelligence, volume 38, 492–502.
+
+Ding, J.; Yu, Z.; Liu, J. K.; and Huang, T. 2025a. Neuromorphic Computing Paradigms Enhance Robustness through
+Spiking Neural Networks. Nature Communications, 16:
+10175.
+
+Ding, Y.; Zuo, L.; Jing, M.; He, P.; and Deng, H. 2025b. Rethinking Spiking Neural Networks from an Ensemble Learning Perspective. In International Conference on Learning
+Representations (ICLR).
+
+Fabre, O. 2025. SiLIF: Structured State Space Model
+Dynamics and Parametrization for Spiking Neurons.
+ArXiv:2506.06374.
+Fang, W.; Chen, Y.; Ding, J.; Zhai, Z.; Yu, X.; Zhang, T.; and
+Huang, T. 2022. GLIF: A Unified Gated Leaky Integrateand-Fire Neuron for Spiking Neural Networks. In Advances
+in Neural Information Processing Systems (NeurIPS).
+Fang, W.; et al. 2023. Parallel Spiking Neurons with
+High Efficiency and Ability to Learn Long-term Dependencies. In Advances in Neural Information Processing Systems
+(NeurIPS).
+Fulleda-Garcia, A.; Soldado-Magraner, S.; and MargaritTaulé, J. M. 2026. Multi-Timescale Conductance Spiking
+Networks with Rich Firing Dynamics for Enhanced Temporal Processing. arXiv preprint. ArXiv:2605.11835.
+Higuchi, K.; et al. 2024. Balanced Resonate-and-Fire Neurons. In International Conference on Machine Learning
+(ICML).
+Huang, X.; et al. 2024a. CLIF: Complementary Leaky
+Integrate-and-Fire Neuron for Spiking Neural Networks. In
+International Conference on Machine Learning (ICML).
+Huang, Y.; Liu, Z.; Feng, C.; Lin, X.; Ren, H.; Fu, H.; Zhou,
+Y.; Xing, H.; and Cheng, B. 2024b. PRF: Parallel Resonate and Fire Neuron for Long Sequence Learning in SNNs.
+ArXiv:2410.03530.
+Huang, Z.; Meng, W.; Liu, Q.; Chen, K.; and Ma, L. 2025.
+AR-LIF: Adaptive Reset Leaky Integrate-and-Fire Neuron
+for Spiking Neural Networks. ArXiv:2507.20746.
+Idrees, S.; Manookin, M. B.; Rieke, F.; Field, G. D.; and
+Zylberberg, J. 2024. Biophysical Neural Adaptation Mechanisms Enable Artificial Neural Networks to Capture Dynamic Retinal Computation. Nature Communications, 15:
+5957.
+Izhikevich, E. M. 2001. Resonate-and-Fire Neurons. Neural
+Networks, 14(6-7): 883–894.
+Kamata, K.; Mukawa, Y.; Matsuda, S.; et al. 2022. A Surrogate Gradient Spiking Baseline for Speech Command Recognition. Frontiers in Neuroscience, 16.
+Lange, M.; et al. 2021. Neural Heterogeneity Promotes Robust Learning. Nature Communications, 12.
+Li, Y.; Zeng, X.; Xue, Z.; Zeng, P.; Zhang, Z.; and Wang,
+Y. 2025. Incorporating the Refractory Period into SNNs
+through Spike-Triggered Threshold Dynamics. In ACM International Conference on Multimedia.
+Salaj, D.; Subramoney, A.; Kraisnikovic, C.; Bellec, G.; Legenstein, R.; and Maass, W. 2021. Spike Frequency Adaptation Supports Network Computations on Temporally Dispersed Information. eLife, 10: e65459.
+Shen, G.; et al. 2025. Learning Long Sequences with Sparse
+and Parallel Spiking State Space Models. In AAAI Conference on Artificial Intelligence.
+Stevenson, J.; and Kappel, D. 2023. Introducing the Dendrify
+Framework for Incorporating Dendrites to Spiking Neural
+Networks. Nature Communications, 14.
+
+

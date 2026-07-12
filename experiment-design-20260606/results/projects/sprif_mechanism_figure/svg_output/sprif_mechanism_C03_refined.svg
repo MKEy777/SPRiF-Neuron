@@ -1,0 +1,601 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 640" width="1800" height="640" font-family="'Times New Roman', 'Liberation Serif', serif">
+
+  <!-- ============================================================ -->
+  <!-- DEFS: arrow markers and reusable styles                      -->
+  <!-- ============================================================ -->
+  <defs>
+    <!-- Black solid arrow -->
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+    <!-- Red solid arrow (reset) -->
+    <marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#C63D32"/>
+    </marker>
+    <!-- Teal arrow (slow state) -->
+    <marker id="arrTeal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#287C78"/>
+    </marker>
+    <!-- Orange arrow (fast state) -->
+    <marker id="arrOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#D17835"/>
+    </marker>
+    <!-- Gray dashed arrow (recurrence) -->
+    <marker id="arrGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6e6e6e"/>
+    </marker>
+
+    <style type="text/css">
+      .panelTitle { font-size: 16px; font-weight: 700; fill: #1a1a1a; }
+      .regionTitle { font-size: 13px; font-weight: 700; fill: #1a1a1a; }
+      .math { font-size: 14px; font-style: italic; fill: #1a1a1a; }
+      .mathB { font-size: 14px; font-style: italic; font-weight: 700; fill: #1a1a1a; }
+      .label { font-size: 12px; fill: #1a1a1a; }
+      .labelS { font-size: 11px; fill: #1a1a1a; }
+      .labelXS { font-size: 10px; fill: #4a4a4a; }
+      .eq { font-size: 12.5px; fill: #1a1a1a; }
+      .note { font-size: 11px; fill: #4a4a4a; font-style: italic; }
+      .flow { font-size: 13px; fill: #1a1a1a; font-style: italic; }
+      .red { fill: #C63D32; }
+      .teal { fill: #287C78; }
+      .orange { fill: #D17835; }
+      .gray { fill: #6e6e6e; }
+      .blk { fill: #1a1a1a; }
+    </style>
+  </defs>
+
+  <!-- ============================================================ -->
+  <!-- BACKGROUND                                                   -->
+  <!-- ============================================================ -->
+  <rect width="1800" height="640" fill="#FFFFFF"/>
+
+  <!-- Panel separators (thin, subtle) -->
+  <line x1="350" y1="30" x2="350" y2="610" stroke="#d8d8d8" stroke-width="0.8" stroke-dasharray="2 3"/>
+  <line x1="1410" y1="30" x2="1410" y2="610" stroke="#d8d8d8" stroke-width="0.8" stroke-dasharray="2 3"/>
+
+  <!-- ============================================================ -->
+  <!-- PANEL (a): MEMBRANE-CENTRIC LIF  x:[20, 340]                  -->
+  <!-- ============================================================ -->
+  <g id="panel-a">
+    <!-- Title -->
+    <text x="180" y="50" text-anchor="middle" class="panelTitle">(a) Membrane-centric LIF</text>
+
+    <!-- Subtle LIF region background -->
+    <rect x="30" y="70" width="300" height="480" rx="8" ry="8"
+          fill="#F2F4F7" fill-opacity="0.55" stroke="#9AA4B0" stroke-width="1"/>
+
+    <!-- I_t input -->
+    <text x="62" y="135" class="math">I<tspan font-size="10" baseline-shift="-2">t</tspan></text>
+    <circle cx="58" cy="142" r="2.5" fill="#1a1a1a"/>
+
+    <!-- beta v_{t-1} input -->
+    <text x="56" y="188" class="math">β v<tspan font-size="10" baseline-shift="-2">t−1</tspan></text>
+    <circle cx="58" cy="195" r="2.5" fill="#1a1a1a"/>
+
+    <!-- Arrows from inputs to summation node -->
+    <line x1="68" y1="143" x2="100" y2="167" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+    <line x1="72" y1="194" x2="100" y2="175" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+
+    <!-- Summation node -->
+    <circle cx="120" cy="170" r="16" fill="#FFFFFF" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="120" y="175" text-anchor="middle" class="math" font-size="15" font-weight="700">+</text>
+
+    <!-- v_tilde_t output -->
+    <line x1="136" y1="170" x2="185" y2="170" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="195" y="166" class="math">ṽ<tspan font-size="10" baseline-shift="-2">t</tspan></text>
+
+    <!-- Arrow to threshold node -->
+    <line x1="235" y1="170" x2="120" y2="250" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+    <text x="158" y="218" class="labelS">H(ṽ<tspan font-size="9" baseline-shift="-2">t</tspan> − θ)</text>
+
+    <!-- Threshold node (Heaviside) -->
+    <circle cx="120" cy="265" r="16" fill="#FFFFFF" stroke="#1a1a1a" stroke-width="1.4"/>
+    <text x="120" y="270" text-anchor="middle" class="math" font-size="13" font-weight="700">H</text>
+
+    <!-- z_t output -->
+    <line x1="136" y1="265" x2="195" y2="265" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arr)"/>
+    <text x="205" y="270" class="math">z<tspan font-size="10" baseline-shift="-2">t</tspan></text>
+
+    <!-- Same-time reset loop: from z_t back to summation (curved) -->
+    <path d="M 200 280 Q 200 340 140 340 Q 120 340 120 186"
+          fill="none" stroke="#C63D32" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#arrRed)"/>
+    <text x="175" y="332" class="eq red" font-style="italic">−θ z<tspan font-size="10" baseline-shift="-2">t</tspan></text>
+
+    <!-- Reset equation on the right side of the curve -->
+    <text x="120" y="392" text-anchor="middle" class="eq">v<tspan font-size="10" baseline-shift="-2">t</tspan> = ṽ<tspan font-size="10" baseline-shift="-2">t</tspan> − θ z<tspan font-size="10" baseline-shift="-2">t</tspan></text>
+
+    <!-- Comparison note (small, compact) -->
+    <rect x="50" y="418" width="260" height="36" rx="4" ry="4"
+          fill="#FFF6F4" stroke="#C63D32" stroke-width="0.9"/>
+    <text x="180" y="441" text-anchor="middle" class="eq red">Δv<tspan font-size="9" baseline-shift="-2">t</tspan><tspan font-style="italic">reset</tspan> = −θ z<tspan font-size="9" baseline-shift="-2">t</tspan></text>
+
+    <!-- Bottom caption -->
+    <text x="180" y="500" text-anchor="middle" class="note">One state integrates, fires, and resets.</text>
+
+    <!-- Decay trace under the loop (subtle, for visual rhythm) -->
+    <path d="M 45 525 Q 90 515 135 525 T 225 525 T 315 525"
+          fill="none" stroke="#9AA4B0" stroke-width="0.7" stroke-dasharray="1.5 2.5" opacity="0.6"/>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- PANEL (b): SPRiF FUNCTIONAL STATE DECOMPOSITION  x:[360,1400] -->
+  <!-- ============================================================ -->
+  <g id="panel-b">
+    <!-- Title -->
+    <text x="880" y="50" text-anchor="middle" class="panelTitle">(b) SPRiF: functional state decomposition</text>
+
+    <!-- ====== Top computation flow (single unified line) ====== -->
+    <g id="top-flow">
+      <!-- background bar -->
+      <rect x="400" y="68" width="960" height="40" rx="6" ry="6"
+            fill="#FAFBFC" stroke="#c8ccd1" stroke-width="0.8"/>
+      <text x="420" y="84" class="labelXS">top computation flow</text>
+
+      <!-- 7 nodes -->
+      <!-- I_t -->
+      <circle cx="470" cy="98" r="13" fill="#FFFFFF" stroke="#287C78" stroke-width="1.2"/>
+      <text x="470" y="102" text-anchor="middle" class="math" font-size="12">I<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <!-- x_t -->
+      <circle cx="590" cy="98" r="13" fill="#E7F4F2" stroke="#287C78" stroke-width="1.2"/>
+      <text x="590" y="102" text-anchor="middle" class="math" font-size="12">x<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <!-- Gx_t -->
+      <circle cx="710" cy="98" r="13" fill="#FFFFFF" stroke="#1a1a1a" stroke-width="1.2"/>
+      <text x="710" y="102" text-anchor="middle" class="math" font-size="12">G x<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <!-- u_tilde_t -->
+      <circle cx="830" cy="98" r="13" fill="#FFF0E5" stroke="#D17835" stroke-width="1.2"/>
+      <text x="830" y="102" text-anchor="middle" class="math" font-size="12">ũ<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <!-- v_t -->
+      <circle cx="950" cy="98" r="13" fill="#FFF0E5" stroke="#D17835" stroke-width="1.2"/>
+      <text x="950" y="102" text-anchor="middle" class="math" font-size="12">v<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <!-- z_t -->
+      <circle cx="1070" cy="98" r="13" fill="#FFF6F4" stroke="#C63D32" stroke-width="1.2"/>
+      <text x="1070" y="102" text-anchor="middle" class="math" font-size="12">z<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <!-- u_t -->
+      <circle cx="1190" cy="98" r="13" fill="#FFF0E5" stroke="#D17835" stroke-width="1.2"/>
+      <text x="1190" y="102" text-anchor="middle" class="math" font-size="12">u<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+
+      <!-- Right end: small note about reset (placed below the flow line, not on it) -->
+      <text x="1340" y="118" text-anchor="middle" class="labelXS" fill="#C63D32" font-style="italic">spike z<tspan font-size="8" baseline-shift="-2">t</tspan> drives the projective reset</text>
+
+      <!-- Arrows between nodes -->
+      <line x1="483" y1="98" x2="577" y2="98" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <line x1="603" y1="98" x2="697" y2="98" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <line x1="723" y1="98" x2="817" y2="98" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <line x1="843" y1="98" x2="937" y2="98" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <line x1="963" y1="98" x2="1057" y2="98" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <line x1="1083" y1="98" x2="1177" y2="98" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+    </g>
+
+    <!-- Region title bar -->
+    <g id="region-titles">
+      <text x="430" y="135" text-anchor="middle" class="regionTitle">Input current</text>
+      <text x="700" y="135" text-anchor="middle" class="regionTitle">Slow spectral memory</text>
+      <text x="700" y="149" text-anchor="middle" class="labelS" fill="#287C78">x<tspan font-style="italic" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="2" font-size="9">3</tspan>   (Eq. 4)</text>
+      <text x="970" y="135" text-anchor="middle" class="regionTitle">G projection</text>
+      <text x="970" y="149" text-anchor="middle" class="labelS">G ∈ ℝ<tspan baseline-shift="2" font-size="9">2×3</tspan>   (Eq. 6)</text>
+      <text x="1215" y="135" text-anchor="middle" class="regionTitle">Fast discharge state</text>
+      <text x="1215" y="149" text-anchor="middle" class="labelS" fill="#D17835">u<tspan font-style="italic" font-size="10">t</tspan> ∈ ℝ<tspan baseline-shift="2" font-size="9">2</tspan>   (Eq. 7)</text>
+    </g>
+
+    <!-- ====== B1. INPUT CURRENT  x:[370, 490]  y:[160, 540] ====== -->
+    <g id="b1-input">
+      <rect x="370" y="160" width="120" height="200" rx="8" ry="8"
+            fill="#F2F4F7" fill-opacity="0.45" stroke="#9AA4B0" stroke-width="0.9"/>
+
+      <!-- Equation box -->
+      <rect x="378" y="178" width="104" height="40" rx="4" ry="4"
+            fill="#FFFFFF" stroke="#1a1a1a" stroke-width="1"/>
+      <text x="430" y="195" text-anchor="middle" class="eq">I<tspan font-size="9" baseline-shift="-2">t</tspan> =</text>
+      <text x="430" y="210" text-anchor="middle" class="eq">W<tspan font-size="9" baseline-shift="-3">in</tspan> s<tspan font-size="9" baseline-shift="-2">t</tspan> + b</text>
+
+      <!-- Plus W_rec z_{t-1} -->
+      <text x="430" y="240" text-anchor="middle" class="eq">+ W<tspan font-size="9" baseline-shift="-3">rec</tspan> z<tspan font-size="9" baseline-shift="-2">t−1</tspan></text>
+
+      <!-- Recurrence loop (gray dashed) coming back from the right side of the panel -->
+      <path d="M 488 290 C 540 290 540 305 488 305"
+            fill="none" stroke="#6e6e6e" stroke-width="1" stroke-dasharray="3 2.5" marker-end="url(#arrGray)"/>
+      <text x="520" y="284" class="labelXS" fill="#6e6e6e">optional recurrence</text>
+
+      <!-- Small label note -->
+      <text x="430" y="332" text-anchor="middle" class="labelXS">input drives</text>
+      <text x="430" y="346" text-anchor="middle" class="labelXS">all downstream blocks</text>
+    </g>
+
+    <!-- Arrow from Input current into Slow spectral memory (via the y=200 bus that stays above the block) -->
+    <line x1="490" y1="260" x2="510" y2="260" stroke="#1a1a1a" stroke-width="1.2" marker-end="url(#arr)"/>
+    <!-- I_t bus: only a short stub entering the top of the slow-state block (no cross-through) -->
+    <line x1="510" y1="260" x2="510" y2="180" stroke="#1a1a1a" stroke-width="0.9" stroke-dasharray="2 2"/>
+    <line x1="510" y1="180" x2="540" y2="180" stroke="#1a1a1a" stroke-width="0.9" stroke-dasharray="2 2" marker-end="url(#arr)"/>
+    <text x="512" y="170" class="labelXS" fill="#6e6e6e">I<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+
+    <!-- ====== B2. SLOW SPECTRAL MEMORY  x:[500, 900]  y:[160, 540] ====== -->
+    <g id="b2-slow">
+      <rect x="500" y="160" width="400" height="380" rx="8" ry="8"
+            fill="#E7F4F2" fill-opacity="0.45" stroke="#287C78" stroke-width="1.2"/>
+
+      <!-- Three t-1 state nodes (left column) -->
+      <circle cx="530" cy="220" r="14" fill="#E7F4F2" stroke="#287C78" stroke-width="1.3"/>
+      <text x="530" y="224" text-anchor="middle" class="math" font-size="12">x<tspan font-size="8" baseline-shift="-2">t−1</tspan><tspan baseline-shift="2" font-size="8">0</tspan></text>
+
+      <circle cx="530" cy="310" r="14" fill="#E7F4F2" stroke="#287C78" stroke-width="1.3"/>
+      <text x="530" y="314" text-anchor="middle" class="math" font-size="12">x<tspan font-size="8" baseline-shift="-2">t−1</tspan><tspan baseline-shift="2" font-size="8">1</tspan></text>
+
+      <circle cx="530" cy="400" r="14" fill="#E7F4F2" stroke="#287C78" stroke-width="1.3"/>
+      <text x="530" y="404" text-anchor="middle" class="math" font-size="12">x<tspan font-size="8" baseline-shift="-2">t−1</tspan><tspan baseline-shift="2" font-size="8">2</tspan></text>
+
+      <!-- Three summation nodes (middle column) -->
+      <circle cx="660" cy="220" r="14" fill="#FFFFFF" stroke="#287C78" stroke-width="1.3"/>
+      <text x="660" y="224" text-anchor="middle" class="math" font-size="14" font-weight="700">+</text>
+
+      <circle cx="660" cy="310" r="14" fill="#FFFFFF" stroke="#287C78" stroke-width="1.3"/>
+      <text x="660" y="314" text-anchor="middle" class="math" font-size="14" font-weight="700">+</text>
+
+      <circle cx="660" cy="400" r="14" fill="#FFFFFF" stroke="#287C78" stroke-width="1.3"/>
+      <text x="660" y="404" text-anchor="middle" class="math" font-size="14" font-weight="700">+</text>
+
+      <!-- Three t state nodes (right column) -->
+      <circle cx="860" cy="220" r="14" fill="#E7F4F2" stroke="#287C78" stroke-width="1.6"/>
+      <text x="860" y="224" text-anchor="middle" class="mathB" font-size="12">x<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">0</tspan></text>
+
+      <circle cx="860" cy="310" r="14" fill="#E7F4F2" stroke="#287C78" stroke-width="1.6"/>
+      <text x="860" y="314" text-anchor="middle" class="mathB" font-size="12">x<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">1</tspan></text>
+
+      <circle cx="860" cy="400" r="14" fill="#E7F4F2" stroke="#287C78" stroke-width="1.6"/>
+      <text x="860" y="404" text-anchor="middle" class="mathB" font-size="12">x<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">2</tspan></text>
+
+      <!-- ===== Real decay mode (x^0 row, y=220) ===== -->
+      <line x1="544" y1="220" x2="646" y2="220" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+      <text x="595" y="213" text-anchor="middle" class="labelS" fill="#287C78" font-style="italic">α</text>
+      <line x1="600" y1="245" x2="655" y2="225" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+      <text x="608" y="255" class="labelS" fill="#287C78" font-style="italic">(1−α) I<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+      <line x1="674" y1="220" x2="846" y2="220" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+
+      <!-- Label: real decay mode -->
+      <text x="530" y="185" class="labelXS" fill="#287C78" font-weight="700">real decay mode</text>
+      <text x="530" y="197" class="labelXS" fill="#287C78">eigenvalue: α</text>
+
+      <!-- Small decay trace -->
+      <path d="M 685 248 Q 720 238 760 248 T 840 248"
+            fill="none" stroke="#287C78" stroke-width="0.8" stroke-dasharray="1.5 2" opacity="0.55"/>
+
+      <!-- ===== Rotational mode (x^1 and x^2, y=310 and y=400) ===== -->
+      <!-- Diagonal arrows for rotation -->
+      <line x1="544" y1="310" x2="649" y2="310" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+      <text x="590" y="303" text-anchor="middle" class="labelS" fill="#287C78" font-style="italic">ρ cos ω</text>
+
+      <line x1="540" y1="394" x2="652" y2="315" stroke="#287C78" stroke-width="1.1" marker-end="url(#arrTeal)"/>
+      <text x="572" y="354" class="labelS" fill="#287C78" font-style="italic">−ρ sin ω</text>
+
+      <line x1="540" y1="316" x2="652" y2="395" stroke="#287C78" stroke-width="1.1" marker-end="url(#arrTeal)"/>
+      <text x="572" y="372" class="labelS" fill="#287C78" font-style="italic">ρ sin ω</text>
+
+      <line x1="544" y1="400" x2="646" y2="400" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+      <text x="590" y="418" text-anchor="middle" class="labelS" fill="#287C78" font-style="italic">ρ cos ω</text>
+
+      <!-- Output arrows from summation to t nodes -->
+      <line x1="674" y1="310" x2="846" y2="310" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+      <line x1="674" y1="400" x2="846" y2="400" stroke="#287C78" stroke-width="1.2" marker-end="url(#arrTeal)"/>
+
+      <!-- CRITICAL: explicit (1−ρ) I_t → x_t^1 ONLY -->
+      <line x1="600" y1="335" x2="652" y2="315" stroke="#287C78" stroke-width="1.4" marker-end="url(#arrTeal)"/>
+      <rect x="500" y="278" width="120" height="20" rx="3" ry="3"
+            fill="#FFFFFF" stroke="#287C78" stroke-width="1"/>
+      <text x="560" y="292" text-anchor="middle" class="labelS" fill="#287C78" font-weight="700">(1−ρ) I<tspan font-size="8" baseline-shift="-2">t</tspan> → x<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">1</tspan> only</text>
+
+      <!-- "no direct input to x_t^2" note -->
+      <text x="700" y="438" class="labelXS" fill="#C63D32">no direct input to x<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">2</tspan></text>
+      <!-- X mark near x_t^2 input point -->
+      <g stroke="#C63D32" stroke-width="1.2" fill="none">
+        <line x1="652" y1="394" x2="660" y2="402"/>
+        <line x1="660" y1="394" x2="652" y2="402"/>
+      </g>
+
+      <!-- Label: damped rotation mode -->
+      <text x="780" y="280" class="labelXS" fill="#287C78" font-weight="700">damped rotation mode</text>
+      <text x="780" y="292" class="labelXS" fill="#287C78">eigenvalues: ρ e<tspan baseline-shift="2" font-size="8">±iω</tspan></text>
+
+      <!-- Damped spiral inset (small, decorative-but-scientific) -->
+      <g id="damped-spiral" transform="translate(830, 460)">
+        <circle cx="0" cy="0" r="32" fill="#FFFFFF" stroke="#287C78" stroke-width="0.8" stroke-dasharray="2 2" opacity="0.5"/>
+        <path d="M 0 0 m 0 -28
+                 a 28 28 0 1 1 -0.1 0
+                 m 0.1 -2
+                 a 24 24 0 1 0 0.1 0
+                 m -0.1 2
+                 a 20 20 0 1 1 -0.1 0
+                 m 0.1 -2
+                 a 16 16 0 1 0 0.1 0
+                 m -0.1 2
+                 a 12 12 0 1 1 -0.1 0
+                 m 0.1 -2
+                 a 8 8 0 1 0 0.1 0
+                 m -0.1 2
+                 a 4 4 0 1 1 -0.1 0"
+              fill="none" stroke="#287C78" stroke-width="1" opacity="0.75"
+              transform="rotate(-15)"/>
+        <circle cx="0" cy="0" r="1.5" fill="#287C78"/>
+        <text x="0" y="48" text-anchor="middle" class="labelXS" fill="#287C78">ρ e<tspan baseline-shift="2" font-size="7">±iω</tspan></text>
+      </g>
+
+      <!-- Δx_t^{reset} = 0 (bottom-left) -->
+      <text x="530" y="510" class="eq" fill="#287C78">Δx<tspan font-size="9" baseline-shift="-2">t</tspan><tspan font-style="italic">reset</tspan> = 0</text>
+
+      <!-- "no direct reset" cue: thin red dashed line from z_t region toward slow state, ending with red X -->
+      <line x1="1070" y1="118" x2="880" y2="180" stroke="#C63D32" stroke-width="0.9" stroke-dasharray="3 2.5" opacity="0.7"/>
+      <g stroke="#C63D32" stroke-width="1.4" fill="none">
+        <line x1="874" y1="174" x2="886" y2="186"/>
+        <line x1="886" y1="174" x2="874" y2="186"/>
+      </g>
+      <text x="920" y="170" class="labelXS" fill="#C63D32" font-style="italic">no direct reset</text>
+    </g>
+
+    <!-- ====== B3. G PROJECTION  x:[910, 1030]  y:[160, 540] ====== -->
+    <g id="b3-G">
+      <rect x="910" y="160" width="120" height="200" rx="8" ry="8"
+            fill="#FAFBFC" stroke="#1a1a1a" stroke-width="1"/>
+
+      <!-- G label -->
+      <text x="970" y="200" text-anchor="middle" class="mathB" font-size="22">G</text>
+      <text x="970" y="220" text-anchor="middle" class="labelS">6 proj. coeffs</text>
+
+      <!-- 3 inputs entering G from the left -->
+      <line x1="874" y1="220" x2="910" y2="240" stroke="#287C78" stroke-width="1" marker-end="url(#arrTeal)"/>
+      <line x1="874" y1="310" x2="910" y2="270" stroke="#287C78" stroke-width="1" marker-end="url(#arrTeal)"/>
+      <line x1="874" y1="400" x2="910" y2="300" stroke="#287C78" stroke-width="1" marker-end="url(#arrTeal)"/>
+
+      <!-- 2 outputs exiting G to the right -->
+      <line x1="1030" y1="240" x2="1056" y2="240" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <line x1="1030" y1="300" x2="1056" y2="400" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+
+      <text x="1062" y="237" class="math" font-size="12">(Gx<tspan font-size="8" baseline-shift="-2">t</tspan>)<tspan baseline-shift="2" font-size="8">0</tspan></text>
+      <text x="1062" y="402" class="math" font-size="12">(Gx<tspan font-size="8" baseline-shift="-2">t</tspan>)<tspan baseline-shift="2" font-size="8">1</tspan></text>
+
+      <!-- Small projection note -->
+      <text x="970" y="330" text-anchor="middle" class="labelXS">2 × 3</text>
+      <text x="970" y="342" text-anchor="middle" class="labelXS">linear map</text>
+    </g>
+
+    <!-- ====== B4. FAST DISCHARGE STATE  x:[1050, 1390]  y:[160, 540] ====== -->
+    <g id="b4-fast">
+      <rect x="1050" y="160" width="340" height="380" rx="8" ry="8"
+            fill="#FFF0E5" fill-opacity="0.45" stroke="#D17835" stroke-width="1.2"/>
+
+      <!-- ===== Upper lane: u^0  y center ≈ 240 ===== -->
+      <!-- u_{t-1}^0 input -->
+      <circle cx="1080" cy="220" r="13" fill="#FFF0E5" stroke="#D17835" stroke-width="1.2"/>
+      <text x="1080" y="224" text-anchor="middle" class="math" font-size="11">u<tspan font-size="7" baseline-shift="-2">t−1</tspan><tspan baseline-shift="2" font-size="7">0</tspan></text>
+
+      <!-- u_{t-1}^1 (for κ coupling) -->
+      <circle cx="1080" cy="260" r="13" fill="#FFF0E5" stroke="#D17835" stroke-width="1.2"/>
+      <text x="1080" y="264" text-anchor="middle" class="math" font-size="11">u<tspan font-size="7" baseline-shift="-2">t−1</tspan><tspan baseline-shift="2" font-size="7">1</tspan></text>
+
+      <!-- Summation for upper lane -->
+      <circle cx="1160" cy="230" r="14" fill="#FFFFFF" stroke="#D17835" stroke-width="1.3"/>
+      <text x="1160" y="234" text-anchor="middle" class="math" font-size="14" font-weight="700">+</text>
+
+      <!-- u_{t-1}^0 -> summation (η_0) -->
+      <line x1="1093" y1="220" x2="1147" y2="227" stroke="#D17835" stroke-width="1.1" marker-end="url(#arrOrange)"/>
+      <text x="1118" y="212" class="labelXS" fill="#D17835" font-style="italic">η<tspan baseline-shift="2" font-size="7">0</tspan></text>
+
+      <!-- u_{t-1}^1 -> summation (κ, EXPLICIT) -->
+      <path d="M 1093 256 Q 1120 250 1147 235" fill="none" stroke="#D17835" stroke-width="1.3" marker-end="url(#arrOrange)"/>
+      <text x="1115" y="260" class="labelS" fill="#D17832" font-weight="700" font-style="italic">κ</text>
+      <text x="1115" y="272" class="labelXS" fill="#D17832" font-weight="700">(u<tspan font-size="7" baseline-shift="2">1</tspan> → u<tspan font-size="7" baseline-shift="2">0</tspan> only)</text>
+
+      <!-- (Gx_t)^0 -> summation (from above) -->
+      <line x1="1100" y1="200" x2="1150" y2="222" stroke="#1a1a1a" stroke-width="1" marker-end="url(#arr)"/>
+      <text x="1115" y="193" class="labelXS">(Gx<tspan font-size="7" baseline-shift="-2">t</tspan>)<tspan baseline-shift="2" font-size="7">0</tspan></text>
+
+      <!-- ũ_t^0 output -->
+      <line x1="1174" y1="230" x2="1220" y2="230" stroke="#D17835" stroke-width="1.2" marker-end="url(#arrOrange)"/>
+      <text x="1228" y="226" class="math" font-size="13">ũ<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">0</tspan></text>
+      <!-- membrane readout label (CRITICAL) -->
+      <text x="1228" y="240" class="labelXS" fill="#C63D32" font-weight="700">membrane = ũ<tspan font-size="7" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="7">0</tspan></text>
+      <text x="1228" y="252" class="labelXS" fill="#C63D32">v<tspan font-size="7" baseline-shift="-2">t</tspan> = ũ<tspan font-size="7" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="7">0</tspan></text>
+
+      <!-- Arrow to H threshold -->
+      <line x1="1255" y1="230" x2="1300" y2="230" stroke="#1a1a1a" stroke-width="1.1" marker-end="url(#arr)"/>
+      <text x="1268" y="222" class="labelXS" font-style="italic">v<tspan font-size="7" baseline-shift="-2">t</tspan>−θ</text>
+
+      <!-- H node -->
+      <rect x="1300" y="214" width="36" height="32" rx="4" ry="4" fill="#FFFFFF" stroke="#1a1a1a" stroke-width="1.3"/>
+      <text x="1318" y="234" text-anchor="middle" class="math" font-size="12" font-weight="700">H</text>
+
+      <!-- z_t output -->
+      <line x1="1336" y1="230" x2="1370" y2="230" stroke="#C63D32" stroke-width="1.4" marker-end="url(#arrRed)"/>
+      <text x="1372" y="226" class="math red" font-size="13" font-weight="700">z<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+
+      <!-- ===== Lower lane: u^1  y center ≈ 400 ===== -->
+      <!-- u_{t-1}^1 input (also) -->
+      <circle cx="1080" cy="400" r="13" fill="#FFF0E5" stroke="#D17835" stroke-width="1.2"/>
+      <text x="1080" y="404" text-anchor="middle" class="math" font-size="11">u<tspan font-size="7" baseline-shift="-2">t−1</tspan><tspan baseline-shift="2" font-size="7">1</tspan></text>
+
+      <!-- Summation for lower lane -->
+      <circle cx="1160" cy="400" r="14" fill="#FFFFFF" stroke="#D17835" stroke-width="1.3"/>
+      <text x="1160" y="404" text-anchor="middle" class="math" font-size="14" font-weight="700">+</text>
+
+      <!-- u_{t-1}^1 -> lower summation (η_1) -->
+      <line x1="1093" y1="400" x2="1147" y2="400" stroke="#D17835" stroke-width="1.1" marker-end="url(#arrOrange)"/>
+      <text x="1118" y="392" class="labelXS" fill="#D17835" font-style="italic">η<tspan baseline-shift="2" font-size="7">1</tspan></text>
+
+      <!-- (Gx_t)^1 -> lower summation (from above) -->
+      <line x1="1100" y1="420" x2="1150" y2="403" stroke="#1a1a1a" stroke-width="1" marker-end="url(#arr)"/>
+      <text x="1115" y="432" class="labelXS">(Gx<tspan font-size="7" baseline-shift="-2">t</tspan>)<tspan baseline-shift="2" font-size="7">1</tspan></text>
+
+      <!-- ũ_t^1 output -->
+      <line x1="1174" y1="400" x2="1220" y2="400" stroke="#D17835" stroke-width="1.2" marker-end="url(#arrOrange)"/>
+      <text x="1228" y="396" class="math" font-size="13">ũ<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">1</tspan></text>
+      <text x="1228" y="416" class="labelXS" fill="#6e6e6e">no threshold here</text>
+
+      <!-- ===== Subtraction nodes (right side) ===== -->
+      <!-- Upper subtraction -->
+      <circle cx="1300" cy="270" r="14" fill="#FFFFFF" stroke="#C63D32" stroke-width="1.3"/>
+      <text x="1300" y="274" text-anchor="middle" class="math" font-size="15" font-weight="700" fill="#C63D32">−</text>
+
+      <!-- Lower subtraction -->
+      <circle cx="1300" cy="400" r="14" fill="#FFFFFF" stroke="#C63D32" stroke-width="1.3"/>
+      <text x="1300" y="404" text-anchor="middle" class="math" font-size="15" font-weight="700" fill="#C63D32">−</text>
+
+      <!-- Connection from ũ_t^0 down to upper subtraction -->
+      <path d="M 1248 236 Q 1265 250 1287 265" fill="none" stroke="#D17835" stroke-width="1.1" marker-end="url(#arrOrange)"/>
+
+      <!-- Connection from ũ_t^1 to lower subtraction -->
+      <line x1="1248" y1="400" x2="1286" y2="400" stroke="#D17835" stroke-width="1.1" marker-end="url(#arrOrange)"/>
+
+      <!-- u_t^0 output -->
+      <line x1="1314" y1="270" x2="1370" y2="270" stroke="#C63D32" stroke-width="1.2" marker-end="url(#arrRed)"/>
+      <text x="1372" y="266" class="mathB" font-size="13">u<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">0</tspan></text>
+
+      <!-- u_t^1 output -->
+      <line x1="1314" y1="400" x2="1370" y2="400" stroke="#C63D32" stroke-width="1.2" marker-end="url(#arrRed)"/>
+      <text x="1372" y="396" class="mathB" font-size="13">u<tspan font-size="8" baseline-shift="-2">t</tspan><tspan baseline-shift="2" font-size="8">1</tspan></text>
+
+      <!-- ===== B5. PROJECTIVE RESET (center, between lanes) ===== -->
+      <!-- Reset distribution operator -->
+      <rect x="1278" y="320" width="64" height="40" rx="4" ry="4"
+            fill="#FFF6F4" stroke="#C63D32" stroke-width="1.2"/>
+      <text x="1310" y="338" text-anchor="middle" class="mathB" font-size="11" fill="#C63D32">θ[1, λ<tspan font-size="8" baseline-shift="-2">j</tspan>]<tspan baseline-shift="2" font-size="8">T</tspan></text>
+      <text x="1310" y="352" text-anchor="middle" class="labelXS" fill="#C63D32">(Eq. 5)</text>
+
+      <!-- z_t enters the operator from above (via z_t) -->
+      <line x1="1310" y1="246" x2="1310" y2="320" stroke="#C63D32" stroke-width="1.3" marker-end="url(#arrRed)"/>
+
+      <!-- Branch 1: θ z_t to upper subtraction -->
+      <line x1="1290" y1="320" x2="1290" y2="284" stroke="#C63D32" stroke-width="1.3" marker-end="url(#arrRed)"/>
+      <text x="1240" y="305" class="labelS red" font-weight="700" font-style="italic">θ z<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+
+      <!-- Branch 2: λ_j θ z_t to lower subtraction -->
+      <line x1="1330" y1="360" x2="1330" y2="386" stroke="#C63D32" stroke-width="1.3" marker-end="url(#arrRed)"/>
+      <text x="1340" y="376" class="labelS red" font-weight="700" font-style="italic">λ<tspan font-size="8" baseline-shift="-2">j</tspan> θ z<tspan font-size="8" baseline-shift="-2">t</tspan></text>
+
+      <!-- Reset label -->
+      <text x="1380" y="345" class="labelXS" fill="#C63D32" font-weight="700">projective</text>
+      <text x="1380" y="357" class="labelXS" fill="#C63D32" font-weight="700">fast-state reset</text>
+
+      <!-- ===== Recurrence (t+1) — thin gray dashed, routed BELOW the reset operator ===== -->
+      <!-- From u_t^0 (1380, 278) -> down -> left under the operator -> up to u_{t-1}^0 (1080, 220) -->
+      <path d="M 1380 278 L 1380 455 L 1080 455 L 1080 233"
+            fill="none" stroke="#6e6e6e" stroke-width="0.8" stroke-dasharray="2.5 2" opacity="0.7"/>
+      <!-- From u_t^1 (1380, 392) -> down -> left under the operator -> up to u_{t-1}^1 (1080, 400) -->
+      <path d="M 1380 392 L 1380 470 L 1080 470 L 1080 413"
+            fill="none" stroke="#6e6e6e" stroke-width="0.8" stroke-dasharray="2.5 2" opacity="0.7"/>
+      <text x="1230" y="452" class="labelXS" fill="#6e6e6e" font-style="italic">t+1 recurrence (gray dashed)</text>
+
+      <!-- ===== Reset equation summary (bottom-right of panel b) ===== -->
+      <rect x="1080" y="490" width="290" height="40" rx="4" ry="4"
+            fill="#FFF6F4" fill-opacity="0.6" stroke="#C63D32" stroke-width="0.7"/>
+      <text x="1100" y="506" class="labelS" fill="#C63D32" font-weight="700">Δx<tspan font-size="8" baseline-shift="-2">reset</tspan> = 0</text>
+      <text x="1100" y="522" class="labelS" fill="#C63D32" font-weight="700">Δu<tspan font-size="8" baseline-shift="-2">reset</tspan> = −z<tspan font-size="7" baseline-shift="-2">t</tspan> θ [1, λ<tspan font-size="7" baseline-shift="-2">j</tspan>]<tspan baseline-shift="2" font-size="7">T</tspan></text>
+    </g>
+
+    <!-- Bottom-right of panel (b): equation summary -->
+    <!-- (already placed inside the fast discharge box) -->
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- PANEL (c): PROJECTIVE FAST-STATE RESET GEOMETRY  x:[1420, 1780] -->
+  <!-- ============================================================ -->
+  <g id="panel-c">
+    <!-- Title -->
+    <text x="1600" y="50" text-anchor="middle" class="panelTitle">(c) Projective fast-state reset</text>
+
+    <!-- Coordinate plane frame -->
+    <rect x="1440" y="80" width="320" height="420" rx="8" ry="8"
+          fill="#FAFBFC" fill-opacity="0.5" stroke="#9AA4B0" stroke-width="0.8"/>
+
+    <!-- Axes -->
+    <line x1="1475" y1="430" x2="1730" y2="430" stroke="#1a1a1a" stroke-width="1.2"/>
+    <line x1="1475" y1="430" x2="1475" y2="120" stroke="#1a1a1a" stroke-width="1.2"/>
+
+    <!-- Axis arrows -->
+    <polygon points="1730,430 1722,427 1722,433" fill="#1a1a1a"/>
+    <polygon points="1475,120 1472,128 1478,128" fill="#1a1a1a"/>
+
+    <!-- Axis labels -->
+    <text x="1740" y="434" class="math" font-size="14">u<tspan baseline-shift="2" font-size="9">0</tspan></text>
+    <text x="1465" y="118" text-anchor="end" class="math" font-size="14">u<tspan baseline-shift="2" font-size="9">1</tspan></text>
+    <text x="1490" y="445" class="labelXS" fill="#4a4a4a">membrane coordinate</text>
+    <text x="1465" y="140" text-anchor="end" class="labelXS" fill="#4a4a4a">auxiliary</text>
+    <text x="1465" y="152" text-anchor="end" class="labelXS" fill="#4a4a4a">discharge</text>
+    <text x="1465" y="164" text-anchor="end" class="labelXS" fill="#4a4a4a">coordinate</text>
+
+    <!-- Threshold vertical dashed line at u^0 = θ -->
+    <line x1="1620" y1="120" x2="1620" y2="430" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="1626" y="135" class="math" font-size="13">θ</text>
+    <text x="1626" y="150" class="labelXS" fill="#C63D32" font-style="italic">(when z<tspan font-size="8" baseline-shift="-2">t</tspan> = 1)</text>
+
+    <!-- Tick marks on u^0 axis -->
+    <line x1="1620" y1="427" x2="1620" y2="433" stroke="#1a1a1a" stroke-width="1"/>
+    <text x="1620" y="445" text-anchor="middle" class="labelXS">θ</text>
+
+    <!-- Origin label -->
+    <text x="1470" y="445" text-anchor="end" class="labelXS">0</text>
+
+    <!-- Pre-reset point ũ_t  (to the right of threshold) -->
+    <circle cx="1680" cy="220" r="4" fill="#D17835" stroke="#D17835" stroke-width="1"/>
+    <text x="1690" y="216" class="math" font-size="13" fill="#D17835">ũ<tspan font-size="9" baseline-shift="-2">t</tspan></text>
+
+    <!-- Post-reset point u_t (after applying reset vector) -->
+    <!-- u_t = ũ_t - θ z_t [1, λ_j]^T -->
+    <!-- horizontal: -θ z_t; vertical: -λ_j θ z_t  (with λ_j > 0) -->
+    <circle cx="1605" cy="320" r="4" fill="#C63D32" stroke="#C63D32" stroke-width="1"/>
+    <text x="1565" y="330" text-anchor="end" class="math" font-size="13" fill="#C63D32">u<tspan font-size="9" baseline-shift="-2">t</tspan></text>
+
+    <!-- Red reset vector from ũ_t to u_t -->
+    <line x1="1680" y1="220" x2="1605" y2="320" stroke="#C63D32" stroke-width="2" marker-end="url(#arrRed)"/>
+
+    <!-- Label for the reset vector -->
+    <text x="1675" y="265" class="labelS red" font-weight="700" font-style="italic">−z<tspan font-size="8" baseline-shift="-2">t</tspan> θ[1, λ<tspan font-size="8" baseline-shift="-2">j</tspan>]<tspan baseline-shift="2" font-size="8">T</tspan></text>
+
+    <!-- Dashed component guides -->
+    <!-- horizontal component from ũ_t down to threshold line (at y=220, x=1620) -->
+    <line x1="1680" y1="220" x2="1620" y2="220" stroke="#C63D32" stroke-width="0.8" stroke-dasharray="2 2" opacity="0.7"/>
+    <line x1="1620" y1="220" x2="1620" y2="320" stroke="#C63D32" stroke-width="0.8" stroke-dasharray="2 2" opacity="0.7"/>
+    <line x1="1620" y1="320" x2="1605" y2="320" stroke="#C63D32" stroke-width="0.8" stroke-dasharray="2 2" opacity="0.7"/>
+
+    <!-- Component labels -->
+    <text x="1650" y="215" class="labelXS red" font-style="italic">−θ z<tspan font-size="7" baseline-shift="-2">t</tspan></text>
+    <text x="1626" y="272" class="labelXS red" font-style="italic">−λ<tspan font-size="7" baseline-shift="-2">j</tspan> θ z<tspan font-size="7" baseline-shift="-2">t</tspan></text>
+
+    <!-- Small trajectory trace (pre-spike buildup, very subtle) -->
+    <path d="M 1500 415 Q 1540 380 1580 350 T 1680 220"
+          fill="none" stroke="#D17835" stroke-width="0.8" stroke-dasharray="1.5 2.5" opacity="0.5"/>
+    <text x="1505" y="425" class="labelXS" fill="#D17835" opacity="0.8">integrating</text>
+    <text x="1505" y="437" class="labelXS" fill="#D17835" opacity="0.8">trajectory</text>
+
+    <!-- Legend (tiny, inline) -->
+    <g transform="translate(1450, 510)">
+      <rect x="0" y="0" width="6" height="6" fill="#E7F4F2" stroke="#287C78" stroke-width="0.8"/>
+      <text x="11" y="6" class="labelXS">slow</text>
+      <rect x="55" y="0" width="6" height="6" fill="#FFF0E5" stroke="#D17835" stroke-width="0.8"/>
+      <text x="66" y="6" class="labelXS">fast</text>
+      <rect x="110" y="0" width="6" height="6" fill="#FFF6F4" stroke="#C63D32" stroke-width="0.8"/>
+      <text x="121" y="6" class="labelXS">reset</text>
+      <line x1="170" y1="3" x2="186" y2="3" stroke="#6e6e6e" stroke-width="1" stroke-dasharray="2 2"/>
+      <text x="191" y="6" class="labelXS">recurrence</text>
+    </g>
+
+    <!-- Bottom equations -->
+    <text x="1600" y="545" text-anchor="middle" class="eq" fill="#C63D32">Δu<tspan font-size="9" baseline-shift="-2">t</tspan><tspan font-style="italic">reset</tspan> = −z<tspan font-size="9" baseline-shift="-2">t</tspan> θ[1, λ<tspan font-size="8" baseline-shift="-2">j</tspan>]<tspan baseline-shift="2" font-size="8">T</tspan></text>
+    <text x="1600" y="565" text-anchor="middle" class="eq" fill="#287C78">Δx<tspan font-size="9" baseline-shift="-2">t</tspan><tspan font-style="italic">reset</tspan> = 0</text>
+    <text x="1600" y="595" text-anchor="middle" class="note">slow state is geometrically untouched by reset</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- Tiny global color-key (top-right, very compact)               -->
+  <!-- ============================================================ -->
+  <g id="global-legend" transform="translate(360, 595)">
+    <rect x="0" y="0" width="6" height="6" fill="#E7F4F2" stroke="#287C78" stroke-width="0.8"/>
+    <text x="11" y="6" class="labelXS">slow</text>
+    <rect x="48" y="0" width="6" height="6" fill="#FFF0E5" stroke="#D17835" stroke-width="0.8"/>
+    <text x="59" y="6" class="labelXS">fast</text>
+    <rect x="96" y="0" width="6" height="6" fill="#FFF6F4" stroke="#C63D32" stroke-width="0.8"/>
+    <text x="107" y="6" class="labelXS">reset</text>
+    <line x1="152" y1="3" x2="168" y2="3" stroke="#6e6e6e" stroke-width="1" stroke-dasharray="2 2"/>
+    <text x="173" y="6" class="labelXS">recurrence</text>
+    <rect x="240" y="0" width="6" height="6" fill="#F2F4F7" stroke="#9AA4B0" stroke-width="0.8"/>
+    <text x="251" y="6" class="labelXS">LIF (panel a)</text>
+  </g>
+
+</svg>

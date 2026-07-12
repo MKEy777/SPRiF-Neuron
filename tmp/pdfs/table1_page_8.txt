@@ -1,0 +1,29 @@
+Tiwari, A.; and Chauhan, A. 2025. Local Timescale Gates
+for Timescale-Robust Continual Spiking Neural Networks.
+ArXiv:2510.12843.
+Wei, X.; Zhou, X.; Liu, X.; Zang, Y.; and Yu, Q. 2026.
+Recurrent Spiking Neural Networks with Bimodal Neuronal
+Time Scales for Learning Performance Enhancement. Neural
+Networks, 200: 108830.
+Yao, Z.; Zeng, R.; Peng, Q.; Dong, J.; Xiao, Z.; and Xu, G.
+2021. Accurate and Efficient Time-Domain Classification
+with Adaptive Spiking Recurrent Neural Networks. Nature
+Machine Intelligence, 3: 912–922.
+Yin, B.; et al. 2024. TC-LIF: A Two-Compartment Spiking
+Neuron Model for Long-Term Sequential Modelling. In AAAI
+Conference on Artificial Intelligence.
+Zhang, D.; Zhang, M.; Wang, S.; Wang, J.; Wei, W.; Ma, Z.;
+Wang, G.; Yang, Y.; and Li, H. 2025a. Dendritic Resonateand-Fire Neuron for Effective and Efficient Long Sequence
+Modeling. In Advances in Neural Information Processing
+Systems (NeurIPS).
+Zhang, E. 2025. Revisiting Reset Mechanisms in Spiking
+Neural Networks: Specialized Discretization for Binary Activated RNN. ArXiv:2504.17751.
+Zhang, T.; Yu, K.; Zhang, J.; and Wang, H. 2025b. DA-LIF:
+Dual Adaptive Leaky Integrate-and-Fire Model for Deep
+Spiking Neural Networks. IEEE International Conference
+on Acoustics, Speech and Signal Processing (ICASSP), 1–5.
+Zheng, H.; Zheng, Z.; Hu, R.; Xiao, B.; Wu, Y.; Yu, F.; Liu,
+X.; Li, G.; and Deng, L. 2024. Temporal Dendritic Heterogeneity Incorporated with Spiking Neural Networks for
+Learning Multi-Timescale Dynamics. Nature Communications, 15: 277.
+
+

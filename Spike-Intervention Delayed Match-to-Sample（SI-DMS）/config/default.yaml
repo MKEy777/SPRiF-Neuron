@@ -24,5 +24,5 @@ train:
   rate_target: 0.10
   rate_weight: 0.05
   grad_clip: 1.0
-  seeds: [1, 2, 3]
+  seeds: [1,2,3]
   device: auto

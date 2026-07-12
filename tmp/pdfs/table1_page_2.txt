@@ -1,0 +1,99 @@
+poral processing without increasing network size or abandoning binary spike communication.
+We introduce SPRiF (Spectral Projective Reset Integrateand-Fire Neuron), a spiking neuron that addresses this question through functional state decomposition. SPRiF separates the neuron into two dynamically distinct components:
+a slow spectral memory state and a fast discharge state.
+The slow state integrates input through a constrained spectral structure—comprising a real exponential decay mode
+and a two-dimensional damped rotation mode—providing
+structured temporal filtering that extends beyond the singleexponential LIF memory trace. By design, the slow state is
+never reset by spike events, preserving continuous temporal
+memory across the spike train. The fast state receives projections from the slow state, produces the membrane readout,
+generates binary spikes via threshold crossing, and absorbs
+a novel projective reset along a learnable direction [1, λ]⊤
+in its two-dimensional state space. SPRiF is fully compatible with standard SNN training: it uses backpropagation
+through time (BPTT) with surrogate gradients, requiring no
+specialized optimization. This design realizes what we term
+the spike-never-resets-memory principle: spike events trigger corrections only on the fast discharge manifold, while
+the slow spectral memory evolves continuously and undisturbed.
+We emphasize that SPRiF’s functional decomposition is
+qualitatively different from existing multi-timescale neuron
+designs. Prior multi-timescale models assign different decay
+rates or time constants to parallel processing channels—a
+strategy we term rate decomposition—but all channels serve
+the same dynamical role (memory accumulation and readout)
+and are subject to the same reset. SPRiF instead assigns
+different dynamical functions to its two states, enforcing the
+separation structurally through the spectral constraint on the
+slow state and the projective reset on the fast state, rather
+than through heterogeneous time constants alone.
+We evaluate SPRiF across five temporal processing
+benchmarks spanning sequential image classification (SMNIST, PS-MNIST), physiological signal analysis (QTDB
+ECG), speech recognition (Google Speech Commands), and
+event-based digit recognition (Spiking Heidelberg Digits).
+SPRiF achieves the highest accuracy in our comparison
+on S-MNIST (99.28%), PS-MNIST (95.86%), and QTDB
+(88.43%), and ranks second on GSC (94.55% vs. 94.84%)
+and SHD (91.52% vs. 91.70%). Its parameter count is lower
+than the strongest compared result on four datasets and comparable on QTDB. Mechanism ablations across PS-MNIST,
+GSC, and QTDB isolate the contribution of rotation, state
+separation, and projective reset. Complementary trajectory
+and impulse-response analyses expose how these components alter the neuron’s internal dynamics rather than treating
+SPRiF as a black-box replacement.
+Contributions.
+1. We propose functional state decomposition for spiking
+neurons—separating temporal memory storage, spike
+readout, and post-spike reset into dynamically distinct
+state components, a principle that is orthogonal to existing rate-decomposition and single-state-reset approaches.
+
+2. We introduce a constrained spectral slow state with real
+exponential decay and damped rotation modes, providing interpretable, structured temporal filtering beyond the
+single-exponential LIF trace.
+3. We propose projective fast-state reset, a learnable directional reset mechanism that operates exclusively on the
+discharge state and leaves the memory state untouched.
+4. We provide empirical validation across five temporal
+benchmarks, three mechanism ablations, and dynamical
+analyses of state continuity and learned temporal kernels.
+Code will be released upon acceptance.
+
+2
+2.1
+
+Related Work
+
+Neuron Dynamics for Temporal Processing
+
+Extensions of the leaky integrate-and-fire (LIF) neuron enrich temporal dynamics through gated integration, conductance, adaptive thresholds, or improved surrogate-gradient
+training (Fang et al. 2022; Bai, Wang, and Yu 2026; Yao
+et al. 2021; Huang et al. 2024a; Kamata et al. 2022). Adaptive and multi-timescale models further introduce slow variables, heterogeneous synaptic or neuronal decays, conductance channels, or learnable temporal gates (Baronig et al.
+2025; Zhang et al. 2025b; Idrees et al. 2024; Wei et al. 2026;
+Deng et al. 2025; Fulleda-Garcia, Soldado-Magraner, and
+Margarit-Taulé 2026; Tiwari and Chauhan 2025). These approaches provide rate decomposition: parallel components
+evolve at different time constants, but their roles remain coupled to membrane readout and reset.
+Oscillatory and dendritic neurons offer complementary
+ways to enrich temporal selectivity. Resonate-and-fire variants use damped oscillations (Izhikevich 2001; Higuchi et al.
+2024; Huang et al. 2024b; Zhang et al. 2025a), whereas
+compartmental or heterogeneous models introduce dendritic
+structure and dynamics (Yin et al. 2024; Zheng et al. 2024;
+Stevenson and Kappel 2023; Lange et al. 2021). Structured
+state-space approaches have also been incorporated into spiking neurons (Fabre 2025; Shen et al. 2025). In contrast, SPRiF
+uses functional decomposition: a constrained spectral slow
+state retains continuous temporal memory, while a separate
+fast state performs membrane readout and discharge. Thus,
+the distinction is not only heterogeneous rates or spatial compartments, but structurally separated memory and spiking
+functions.
+
+2.2
+
+Reset and Functional State Separation
+
+Reset mechanisms have been softened, adapted, or removed
+to reduce post-spike information loss or enable parallel training (Deng et al. 2022; Li et al. 2025; Huang et al. 2025;
+Zhang 2025; Fang et al. 2023). However, these methods still
+modify—or reason about removing the reset of—the state
+that produces spikes. SPRiF instead confines a learnable
+projective reset to the fast discharge state, leaving the slow
+spectral state untouched; this preserves oscillatory phase and
+temporal context across spike events. Network-level temporal
+architectures, including temporal subnetworks and stochastic
+spike communication (Ding et al. 2025b, 2024, 2025a), are
+complementary to this neuron-level separation.
+
+

@@ -1,0 +1,162 @@
+3
+3.1
+
+Method
+
+From Membrane-Centric Dynamics to
+Functional Decomposition
+
+Let st denote the input to a layer at time t. A conventional
+LIF neuron maintains a scalar membrane state vt , produces a
+binary spike zt = H(vt −θ), and applies a post-spike correction to the same state. Ignoring reset, its history is weighted
+by a single exponential kernel. SPRiF instead maintains a
+three-dimensional slow state xt ∈ R3 and a two-dimensional
+fast state ut ∈ R2 . The slow state stores structured temporal
+context, whereas the fast state maps that context to a membrane potential and absorbs the reset. For a recurrent layer,
+the input current is
+
+where η0 , η1 ∈ (0, 1) are learned leak coefficients, κ couples
+the second fast coordinate to the first, and G ∈ R2×3 projects
+slow dynamics into the discharge space. The membrane is
+the first coordinate, vt = u
+e0t , and the forward spike remains
+binary:
+zt = H(vt − θ).
+(7)
+We train through the discontinuity with the multi-Gaussian
+surrogate used in prior recurrent SNN training (Yao et al.
+2021); the forward pass always uses the hard threshold.
+After a spike, SPRiF corrects only the fast state:
+ 
+1
+e t − zt θ
+ut = u
+,
+(8)
+λj
+
+where the recurrent term is omitted in feed-forward layers.
+Each neuron then follows the ordered computation It →
+e t → vt → zt → ut , where u
+e t is the pre-reset fast
+xt → u
+state. This ordering is important: the current slow state is
+computed before the spike, and reset never feeds back into it
+at the same step.
+
+where λj is learned independently for neuron j. Setting
+λj = 0 recovers scalar subtraction on the membrane coordinate, whereas nonzero values let reset modify both discharge
+coordinates along a learned direction. Crucially, Eq. (8) contains no xt term: a spike changes ut but leaves the memorybearing slow state intact. This structural property realizes the
+spike-never-resets-memory principle without removing reset
+or replacing binary communication.
+
+3.2
+
+3.4
+
+It = Win st + Wrec zt−1 + b,
+
+(1)
+
+Constrained Spectral Slow State
+
+The slow state contains one real decay mode and one damped
+rotational pair. Its update is
+xt = Axt−1 + BIt ,
+
+(2)
+
+with
+α
+A= 0
+0
+"
+
+0
+ρ cos ω
+ρ sin ω
+
+"
+#
+1−α
+B = 1−ρ .
+0
+
+#
+0
+−ρ sin ω ,
+ρ cos ω
+
+(3)
+
+The first coordinate is therefore an exponential trace, x0t =
+αx0t−1 + (1 − α)It , while (x1t , x2t ) form a damped rotation
+driven through the first oscillatory coordinate. We parameterize
+α = σ(αraw ),
+
+ρ = σ(ρraw ),
+
+ω = πσ(ωraw ),
+
+(4)
+
+so that α, ρ ∈ (0, 1) and ω ∈ (0, π). This constraint gives
+each parameter a direct dynamical meaning and prevents the
+slow transition from becoming an unconstrained recurrent
+matrix.
+The structure also makes the available temporal basis explicit. An input impulse contributes terms proportional to
+(1 − α)αk through the real mode and to (1 − ρ)ρk cos(kω)
+and (1 − ρ)ρk sin(kω) through the rotational pair after k
+steps. SPRiF can thus combine monotone and oscillatory
+traces within each neuron while retaining linear-time recurrence.
+
+3.3
+
+Fast Discharge State and Projective Reset
+
+The slow state is translated into a two-dimensional pre-reset
+fast state by
+u
+e0t = η0 u0t−1 + κu1t−1 + (Gxt )0 ,
+
+(5)
+
+u
+e1t = η1 u1t−1 + (Gxt )1 ,
+
+(6)
+
+Layer Construction, Training, and Cost
+
+A SPRiF layer applies Eqs. (1)–(8) independently to all neurons and emits the spike sequence [z1 , . . . , zT ]. Layers can be
+stacked, and recurrence is optional rather than part of the neuron definition. Sequence-level tasks use a linear readout over
+temporally aggregated hidden spikes; QTDB uses a timedistributed classifier; SHD uses a spiking readout whose
+membrane evidence is accumulated after a short warm-up.
+All parameters, including α, ρ, ω, G, κ, η, and λ, are optimized jointly with network weights by backpropagation
+through time.
+Relative to a scalar LIF neuron, SPRiF stores five state
+values and adds 13 neuron-wise dynamics parameters (three
+spectral parameters, two fast leaks, one coupling, six slowto-fast projection coefficients, and one reset coefficient). The
+structured state updates remain O(h) for a layer of width
+h; when recurrent connectivity is enabled, the shared O(h2 )
+matrix multiplication dominates both LIF and SPRiF variants. We report end-to-end parameter counts to expose this
+trade-off empirically.
+
+4
+4.1
+
+Experiments
+
+Benchmarks and Protocol
+
+We evaluate whether one neuron design transfers across
+five temporal regimes. S-MNIST and PS-MNIST present
+784 normalized pixels sequentially, with PS-MNIST applying one fixed random permutation. QTDB is a six-class
+ECG sequence-classification task. GSC uses 101-frame, 120dimensional mel-spectrogram features for 12-class keyword
+spotting. SHD contains 700-channel event sequences and
+20 spoken-digit classes. Accuracy is the evaluation metric
+throughout.
+The S-MNIST and PS-MNIST networks contain two recurrent SPRiF layers of widths 64 and 256 and are trained for
+150 epochs with Adam, batch size 512, learning rate 10−2 ,
+
+

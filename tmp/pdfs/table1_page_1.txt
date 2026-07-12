@@ -1,0 +1,68 @@
+SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron
+Anonymous submission
+
+Abstract
+In standard spiking neurons, the membrane potential accumulates input, triggers spikes, and receives the post-spike reset.
+This structural coupling makes the state that carries temporal
+context also absorb every reset. We introduce SPRiF (Spectral Projective Reset Integrate-and-Fire Neuron), which separates these functions through functional state decomposition.
+A constrained spectral slow state combines a real decay mode
+with a two-dimensional damped rotation and is never reset
+by spikes; a fast discharge state produces the membrane readout and receives a learnable projective reset along [1, λ]⊤ .
+Across S-MNIST, PS-MNIST, QTDB, Google Speech Commands (GSC), and Spiking Heidelberg Digits (SHD), SPRiF
+obtains the highest reported accuracy in our comparison on
+three benchmarks (99.28%, 95.86%, and 88.43%) and remains
+competitive on GSC (94.55%) and SHD (91.52%). Mechanism ablations show that removing rotation, merging the slow
+and fast states, and fixing the reset to a scalar direction reduce
+accuracy by up to 3.53, 5.04, and 1.03 points, respectively.
+State trajectories directly verify that spike-triggered discontinuities are confined to the fast state, while learned impulse
+responses exhibit heterogeneous decay and oscillatory kernels. These results support functional state decomposition as
+a practical neuron-level design principle for temporal SNNs.
+
+1
+
+Introduction
+
+Spiking neural networks (SNNs) process temporal information through discrete spike events, offering an event-driven
+computational paradigm with applications in speech recognition, physiological signal analysis, and event-based recognition. Unlike continuous-activation networks, the representational capacity of an SNN depends not only on its interlayer connectivity but critically on the internal dynamics of
+individual neurons: how each neuron accumulates input history, decides when to fire, and reorganizes its state after each
+spike event. For temporal tasks where the relevant information is distributed across multiple timescales—from milliseconds in speech phonemes to hundreds of timesteps in long
+permuted sequences—the design of neuron-level dynamics
+directly constrains what temporal patterns the network can
+retain and exploit.
+This is an anonymized submission for review purposes only. Distribution, citation, or public sharing of this manuscript is strictly
+prohibited. Copyright and publication details will appear in the
+final version if accepted.
+
+The leaky integrate-and-fire (LIF) neuron remains the
+dominant computational unit in SNNs due to its simplicity
+and compatibility with surrogate-gradient training. A rich
+lineage of extensions has substantially enriched the LIF dynamics: adaptive threshold models introduce slow auxiliary
+variables that modulate firing behavior (Baronig et al. 2025;
+Zhang et al. 2025b; Idrees et al. 2024); resonant and oscillatory neurons add damped subthreshold oscillations for
+frequency-selective processing (Higuchi et al. 2024; Huang
+et al. 2024b; Zhang et al. 2025a); multi-timescale designs
+equip neurons or synapses with heterogeneous decay rates
+(Wei et al. 2026; Deng et al. 2025; Fulleda-Garcia, SoldadoMagraner, and Margarit-Taulé 2026; Tiwari and Chauhan
+2025); and recent reset mechanism innovations redesign the
+post-spike state update to reduce information loss (Deng et al.
+2022; Huang et al. 2025; Li et al. 2025; Fang et al. 2023).
+Despite this diversity, all existing spiking neurons share a
+structural assumption: the state variable that triggers a
+spike is the same state variable that gets reset. In standard LIF, the membrane potential simultaneously accumulates past input, determines spike timing, and absorbs the
+reset—meaning every spike event partially erases the neuron’s temporal memory. Even neurons that add oscillatory dynamics (e.g., resonate-and-fire variants (Higuchi et al. 2024;
+Zhang et al. 2025a)) or adaptation variables (e.g., SE-adLIF
+(Baronig et al. 2025)) still reset the membrane potential that
+serves as the primary readout. Recent reset innovations—
+whether they soften the reset (Deng et al. 2022), make it
+adaptive (Huang et al. 2025), model it via threshold dynamics (Li et al. 2025), or eliminate it entirely for parallelization
+(Fang et al. 2023)—all operate on, or reason about, a single state that simultaneously stores memory and generates
+spikes.
+This structural coupling motivates the central question
+of this work: must the spike-triggering state and the
+memory-bearing state be the same variable? From a temporal modeling perspective, a spike is a discrete event signaling that the current state has reached a threshold; it necessitates a correction of the discharge-related state, but it does not
+logically require that all accumulated temporal memory be
+simultaneously weakened or erased. If the memory-carrying
+state could be structurally insulated from spike-triggered reset, the neuron would retain a richer record of input history
+across spike events—potentially enabling more faithful tem-
+
+

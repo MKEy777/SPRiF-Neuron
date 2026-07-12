@@ -15,15 +15,15 @@ import pandas as pd
 from matplotlib.collections import LineCollection
 
 
-WIDTH = 7.2
-HEIGHT = 3.8
-TEAL = "#238b8e"
-BLUE = "#3b6fb6"
-ORANGE = "#d97732"
-PURPLE = "#7961a8"
-RED = "#c84a43"
+WIDTH = 8.4
+HEIGHT = 4.8
+TEAL = "#1f4e5f"
+BLUE = "#2a6f9e"
+ORANGE = "#9c4d0e"
+PURPLE = "#5d3a8e"
+RED = "#8B0000"
 GRAY = "#666666"
-TASK_COLORS = {"ECG": "#5b8db8", "GSC": "#8f78b5", "pSMNIST": "#d28b45"}
+TASK_COLORS = {"ECG": "#0d3b5c", "GSC": "#5d3a8e", "pSMNIST": "#9c4d0e"}
 DISPLAY_TASK = {"ECG": "QTDB", "GSC": "GSC", "pSMNIST": "pSMNIST"}
 
 
@@ -32,16 +32,17 @@ def _set_style() -> None:
         {
             "font.family": "sans-serif",
             "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "sans-serif"],
-            "font.size": 6.2,
-            "axes.titlesize": 6.8,
-            "axes.labelsize": 6.2,
-            "xtick.labelsize": 5.5,
-            "ytick.labelsize": 5.5,
-            "legend.fontsize": 5.2,
+            "font.size": 9.0,
+            "axes.titlesize": 9.5,
+            "axes.labelsize": 9.0,
+            "xtick.labelsize": 8.0,
+            "ytick.labelsize": 8.0,
+            "legend.fontsize": 8.0,
             "axes.spines.right": False,
             "axes.spines.top": False,
-            "axes.linewidth": 0.6,
-            "lines.linewidth": 1.0,
+            "axes.linewidth": 0.8,
+            "lines.linewidth": 1.4,
+            "lines.markersize": 3.5,
             "svg.fonttype": "none",
             "pdf.fonttype": 42,
         }
@@ -65,7 +66,7 @@ def load_source_data(repo_root: Path) -> dict:
         ["layer1_slow", "layer1_membrane", "layer1_spikes", "highlight_spike_time", "highlight_neuron"],
     )
     controlled = _read_npz(
-        figures / "trajectory_visualization" / "trajectory_data_phi1.npz",
+        repo_root / "experiment-design-20260606" / "legacy" / "trajectory_visualization" / "trajectory_data_phi1.npz",
         ["sprif_x_t", "sprif_u_pre", "sprif_u_post", "sprif_spike", "probe_mask", "spectral_omega", "omega"],
     )
     reset_path = figures / "reset_analysis" / "lambda_stats.csv"
@@ -228,9 +229,9 @@ def _normalize_rows(values: np.ndarray) -> np.ndarray:
 def build_temporal_figure(data: dict):
     _set_style()
     fig = plt.figure(figsize=(WIDTH, HEIGHT))
-    outer = fig.add_gridspec(2, 12, left=0.065, right=0.985, bottom=0.14, top=0.95, height_ratios=[1.12, 0.88], hspace=0.72, wspace=1.1)
-    top = outer[0, :].subgridspec(1, 3, wspace=0.36)
-    bottom_left = outer[1, 0:8].subgridspec(1, 3, wspace=0.42)
+    outer = fig.add_gridspec(2, 12, left=0.065, right=0.985, bottom=0.16, top=0.94, height_ratios=[1.05, 0.95], hspace=0.55, wspace=1.0)
+    top = outer[0, :].subgridspec(1, 3, wspace=0.32)
+    bottom_left = outer[1, 0:8].subgridspec(1, 3, wspace=0.38)
     top_axes = [fig.add_subplot(top[0, i]) for i in range(3)]
     freq_axes = [fig.add_subplot(bottom_left[0, i]) for i in range(3)]
     ax_c = fig.add_subplot(outer[1, 8:12])
@@ -243,16 +244,20 @@ def build_temporal_figure(data: dict):
         slow = impulse[f"{key}_slow_resp"]
         alpha = impulse[f"{key}_alpha"]
         indices = _quantile_indices(alpha)
+        tcolor = TASK_COLORS[task]
         for color, idx in zip(colors, indices):
-            ax.plot(slow[idx, :, 0], color=color, linewidth=1.05, label=fr"$\alpha$={alpha[idx]:.2f}")
-            ax.plot(slow[idx, :, 1], color=color, linestyle=":", linewidth=0.65, alpha=0.9)
-        ax.axhline(0, color="#aaaaaa", linewidth=0.4)
+            ax.plot(slow[idx, :, 0], color=color, linewidth=1.4, label=fr"$\alpha$={alpha[idx]:.2f}")
+            ax.plot(slow[idx, :, 1], color=color, linestyle=":", linewidth=0.9, alpha=0.9)
+        ax.axhline(0, color="#aaaaaa", linewidth=0.5)
         ax.set_xlim(0, slow.shape[1] - 1)
-        ax.set_title(DISPLAY_TASK[task])
+        ax.set_title(DISPLAY_TASK[task], color=tcolor, fontweight="bold")
+        ax.spines["top"].set_visible(True)
+        ax.spines["top"].set_color(tcolor)
+        ax.spines["top"].set_linewidth(1.8)
         ax.set_xlabel("step")
         if col == 0:
             ax.set_ylabel("impulse response")
-            ax.legend(ncol=2, loc="upper right", columnspacing=0.6, handlelength=1.2)
+            ax.legend(ncol=2, loc="upper right", columnspacing=0.7, handlelength=1.4, frameon=True, framealpha=0.92)
             _panel(ax, "a")
         _clean(ax)
 
@@ -264,33 +269,48 @@ def build_temporal_figure(data: dict):
         lo, hi = np.quantile(spectra, [0.1, 0.9], axis=0)
         task_color = TASK_COLORS[task]
         freq_ax.fill_between(freqs, lo, hi, color=task_color, alpha=0.22, linewidth=0)
-        freq_ax.plot(freqs, median, color=task_color, linewidth=1.15)
+        freq_ax.plot(freqs, median, color=task_color, linewidth=1.6)
         freq_ax.set_xlim(0, 0.5)
         freq_ax.set_ylim(0, 1.03)
         freq_ax.set_xlabel("cycles / step")
         if col == 0:
             freq_ax.set_ylabel("normalized |FFT|")
             _panel(freq_ax, "b")
-        freq_ax.set_title(f"{DISPLAY_TASK[task]}: median, 10–90%")
+        freq_ax.set_title(DISPLAY_TASK[task], color=task_color, fontweight="bold")
         _clean(freq_ax)
 
     asrnn = data["asrnn"]
-    styles = [("GSC", TEAL), ("ECG", BLUE)]
+    task_marker = {"GSC": "o", "ECG": "s"}
+    styles = [("GSC", TASK_COLORS["GSC"]), ("ECG", TASK_COLORS["ECG"])]
+    max_len = 0
+    legend_handles = []
+    legend_labels = []
     for task, color in styles:
         sprif = asrnn[f"{task}_col2_sprif_x_real"].astype(float)
         baseline = asrnn[f"{task}_col2_asrnn_kernel"].astype(float)
         meta = asrnn[f"{task}_col2_meta"]
         sprif = sprif / (np.max(np.abs(sprif)) + 1e-12)
         baseline = baseline / (np.max(np.abs(baseline)) + 1e-12)
+        max_len = max(max_len, len(sprif), len(baseline))
         label = DISPLAY_TASK[task]
-        ax_c.plot(sprif, color=color, linewidth=1.25, label=f"{label} SPRiF (τ={meta[1]:.0f})")
-        ax_c.plot(baseline, color=color, linestyle="--", linewidth=1.0, label=f"{label} ASRNN (τ={meta[2]:.0f})")
-    ax_c.set_xlim(0, 99)
+        mk = task_marker[task]
+        h_sprif = ax_c.plot(sprif, color=color, linewidth=1.6, marker=mk, markevery=10,
+                            markerfacecolor="white", markeredgewidth=1.0, markeredgecolor=color)[0]
+        h_base = ax_c.plot(baseline, color=color, linestyle="--", linewidth=1.3, marker=mk, markevery=10,
+                           markerfacecolor=color, markeredgewidth=1.0, markeredgecolor=color)[0]
+        legend_handles.append(h_sprif)
+        legend_labels.append(f"{label} SPRiF  τ={meta[1]:.0f}")
+        legend_handles.append(h_base)
+        legend_labels.append(f"{label} ASRNN  τ={meta[2]:.0f}")
+    ax_c.set_xlim(0, max_len - 1)
     ax_c.set_ylim(-0.03, 1.03)
     ax_c.set_xlabel("step")
     ax_c.set_ylabel("normalized kernel")
-    ax_c.set_title("Slow-memory matched baseline")
-    ax_c.legend(loc="upper right", handlelength=1.5)
+    ax_c.set_title("SPRiF vs. ASRNN slow-decay kernels")
+    leg = ax_c.legend(legend_handles, legend_labels,
+                      loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=2,
+                      handlelength=1.6, frameon=True, framealpha=0.95,
+                      columnspacing=0.8, labelspacing=0.5, fontsize=7.5)
     _panel(ax_c, "c")
     _clean(ax_c)
     return fig
@@ -299,9 +319,9 @@ def build_temporal_figure(data: dict):
 def export_figure(fig, output_base: Path, dpi: int = 600) -> list[Path]:
     output_base.parent.mkdir(parents=True, exist_ok=True)
     paths = [output_base.with_suffix(ext) for ext in (".svg", ".pdf", ".png")]
-    fig.savefig(paths[0], facecolor="white")
-    fig.savefig(paths[1], facecolor="white")
-    fig.savefig(paths[2], dpi=dpi, facecolor="white")
+    fig.savefig(paths[0], facecolor="white", bbox_inches="tight", pad_inches=0.05)
+    fig.savefig(paths[1], facecolor="white", bbox_inches="tight", pad_inches=0.05)
+    fig.savefig(paths[2], dpi=dpi, facecolor="white", bbox_inches="tight", pad_inches=0.05)
     return paths
 
 

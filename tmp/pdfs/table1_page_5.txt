@@ -1,0 +1,246 @@
+Method
+
+SNN
+
+Network
+
+Parameters (K)
+
+Accuracy (%)
+
+S-MNIST
+
+GLIF (Fang et al. 2022)
+ASRNN (Yao et al. 2021)
+DH-SNN (Zheng et al. 2024)
+BRF (Higuchi et al. 2024)
+TC-LIF (Yin et al. 2024)
+SPRiF (ours)
+
+Y
+Y
+Y
+Y
+Y
+Y
+
+Rec
+Rec
+Rec
+Rec
+Rec
+Rec
+
+150
+150
+80
+69
+150
+67
+
+96.64
+98.70
+98.90
+99.10
+99.20
+99.28
+
+PS-MNIST
+
+GLIF (Fang et al. 2022)
+ASRNN (Yao et al. 2021)
+DH-SNN (Zheng et al. 2024)
+BRF (Higuchi et al. 2024)
+TC-LIF (Yin et al. 2024)
+SPRiF (ours)
+
+Y
+Y
+Y
+Y
+Y
+Y
+
+Rec
+Rec
+Rec
+Rec
+Rec
+Rec
+
+150
+150
+80
+69
+63/150
+67
+
+90.47
+94.30
+94.52
+95.20
+92.69/95.36
+95.86
+
+QTDB
+
+ASRNN (Yao et al. 2021)
+DH-SNN (Zheng et al. 2024)
+BRF (Higuchi et al. 2024)
+SE-adLIF (Baronig et al. 2025)
+SPRiF (ours)
+
+Y
+Y
+Y
+Y
+Y
+
+Rec
+Rec
+Rec
+Rec
+Rec
+
+1.80
+1.78
+1.73
+1.80
+1.77
+
+85.90
+86.35
+87.00
+86.88
+88.43
+
+GSC
+
+SNN-SFA (Salaj et al. 2021)
+ASRNN (Yao et al. 2021)
+RadLIF (Kamata et al. 2022)
+DH-SNN (Zheng et al. 2024)
+TC-LIF (Yin et al. 2024)
+SPRiF (ours)
+
+Y
+Y
+Y
+Y
+Y
+Y
+
+Rec
+Rec
+Rec
+Rec
+Rec
+Rec
+
+4190
+310
+1200
+130
+200
+130
+
+91.21
+92.10
+94.51
+93.80
+94.84
+94.55
+
+SHD
+
+Table 1: Comparison of model performance across five temporal benchmarks. “Rec” denotes a recurrent network, and parameters
+are reported in thousands (K). Bold and underlined entries denote the best and second-best reported accuracy within each dataset,
+respectively.
+Datasets
+
+Heterogeneous SNN (Lange et al. 2021)
+ASRNN (Yao et al. 2021)
+DH-SNN (Zheng et al. 2024)
+BRF (Higuchi et al. 2024)
+TC-LIF (Yin et al. 2024)
+MPS-SNN (Ding et al. 2025b)
+DGN (Bai, Wang, and Yu 2026)
+SPRiF (ours)
+
+Y
+Y
+Y
+Y
+Y
+Y
+Y
+Y
+
+Rec
+Rec
+Rec
+Rec
+Rec
+Rec
+Rec
+Rec
+
+110
+140
+50
+110
+140
+390
+220
+50
+
+82.50
+90.40
+91.34
+91.70
+88.91
+91.19
+87.78
+91.52
+
+Table 2: Mechanism ablations (accuracy, %). Each component contributes on all three datasets; merging memory and
+discharge causes the largest degradation.
+ω=0
+
+Merged
+
+λ=0
+
+PS-MNIST 95.82 92.29
+GSC
+94.55 93.83
+QTDB
+88.43 87.78
+
+93.44
+90.05
+83.39
+
+95.32
+94.22
+87.40
+
+Dataset
+
+Full
+
+state that is reset after a spike. A constrained spectral slow
+state supplies real and rotational memory modes, while a
+fast discharge state produces binary spikes and absorbs a
+learnable projective reset. Across five temporal benchmarks,
+this design is strongest in the reported comparison on three
+tasks and competitive on the other two with modest network
+size. Ablations identify slow/fast separation as the largest
+contributor, with consistent additional gains from rotation
+and projective reset; trajectory and impulse analyses make
+these mechanisms directly inspectable. The results position
+functional state decomposition as a reusable neuron-level design direction, while broader-scale and hardware evaluation
+
+remain open.
+
+

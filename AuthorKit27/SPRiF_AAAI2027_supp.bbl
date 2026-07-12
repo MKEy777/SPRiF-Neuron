@@ -1,0 +1,10 @@
+\begin{thebibliography}{1}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Yao et~al.(2021)Yao, Zeng, Peng, Dong, Xiao, and Xu}]{asrnn}
+Yao, Z.; Zeng, R.; Peng, Q.; Dong, J.; Xiao, Z.; and Xu, G. 2021.
+\newblock Accurate and Efficient Time-Domain Classification with Adaptive
+  Spiking Recurrent Neural Networks.
+\newblock \emph{Nature Machine Intelligence}, 3: 912--922.
+
+\end{thebibliography}

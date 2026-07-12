@@ -15,8 +15,7 @@ State = Dict[str, torch.Tensor]
 def _force(mem: torch.Tensor, threshold: torch.Tensor | float, mask: torch.Tensor,
            margin: float = 0.05):
     target = torch.as_tensor(threshold, device=mem.device, dtype=mem.dtype) + margin
-    delta = (target - mem).clamp_min(0).detach()
-    forced = mem + mask.to(mem.dtype) * delta
+    forced = torch.where(mask, target.expand_as(mem), mem)
     return forced, mask & (forced >= target - 1e-7)
 
 
@@ -146,8 +145,8 @@ class ASRNNCell(BaseCell):
 class BRFCell(BaseCell):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.omega = nn.Parameter(torch.full((self.hidden_size,), 20.0))
-        self.b_offset = nn.Parameter(torch.full((self.hidden_size,), 0.1))
+        self.omega = nn.Parameter(torch.full((self.hidden_size,), 10.0))
+        self.b_offset = nn.Parameter(torch.empty(self.hidden_size).uniform_(0.5, 3.0))
 
     def initial_state(self, batch, device):
         return {"u": self.zeros(batch, device), "v": self.zeros(batch, device),
