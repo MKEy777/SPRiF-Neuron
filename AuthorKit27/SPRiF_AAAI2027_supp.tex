@@ -19,7 +19,10 @@
 /TemplateVersion (2027.1)
 }
 
+\allowdisplaybreaks
 \setcounter{secnumdepth}{2}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
 
 \title{Technical Appendix for\\
 SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron}
@@ -29,307 +32,211 @@ SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron}
 \begin{document}
 
 \maketitle
+\raggedbottom
 
-\section{Supplementary Overview}
-\label{supp:sec:overview}
+\section{Supplementary Guide and Evidence Map}
+\label{supp:sec:guide}
 
-This technical appendix provides derivations, experimental details, and additional analyses that complement the main paper. Section~\ref{supp:sec:dynamics} specifies the complete SPRiF dynamics, stability constraints, and surrogate gradient. Section~\ref{supp:sec:benchmarks} describes preprocessing for all five benchmarks, and Section~\ref{supp:sec:training} reports architectures, hyperparameters, and compute details. Sections~\ref{supp:sec:benchmark-results} and \ref{supp:sec:ablations} provide context for the benchmark and ablation results reported in the main paper. Section~\ref{supp:sec:sidms} documents the SI-DMS protocol, reproduces the main-paper summary, and states implementation-level checks implied by the neuron update. Section~\ref{supp:sec:additional-analysis} presents impulse responses, learned reset directions, and two clearly delimited diagnostic evaluations: feature-space noise robustness and input-frequency perturbation sensitivity. The final sections state known failure cases and provide a reproducibility checklist.
+This technical appendix expands the evidence used in the main paper rather than introducing a second line of claims. It provides reproducibility details for the five benchmark results, exact definitions for the mechanism variants and SI-DMS intervention, and the formal SPRiF update plus dynamical-analysis protocols.
 
-\section{Complete SPRiF Dynamics}
-\label{supp:sec:dynamics}
+\paragraph{Consistency locks.}
+All sections preserve the main-paper contract: the slow spectral state is three-dimensional, the fast discharge state is two-dimensional, and each timestep follows $I_t\to\mathbf{x}_t\to\widetilde{\mathbf{u}}_t\to v_t\to z_t\to\mathbf{u}_t$. Projective reset acts directly only on the fast discharge state, with $\Delta\mathbf{x}_t^{\mathrm{reset}}=\mathbf{0}$; in recurrent layers, spikes may still affect the next slow-state update through the ordinary $W_{\mathrm{rec}}\mathbf{z}_t$ input pathway. We use the main-paper terms \emph{functional state decomposition}, \emph{slow spectral state}, \emph{fast discharge state}, and \emph{projective reset} without redefining them. Benchmark SPRiF entries are five-seed mean$\pm$standard deviation, SI-DMS entries are three-seed summaries, and cross-paper comparator entries remain descriptive comparisons.
 
-\subsection{Slow Spectral State}
-\label{supp:sec:slow-state}
-
-The slow state $\mathbf{x}_t \in \mathbb{R}^3$ evolves as
-\begin{equation}
-\mathbf{x}_t = A\mathbf{x}_{t-1} + B I_t,
-\label{eq:supp_slow}
-\end{equation}
-where the transition matrix $A$ and input vector $B$ are
-\begin{equation}
-A = \begin{bmatrix}
-\alpha & 0 & 0 \\
-0 & \rho\cos\omega & -\rho\sin\omega \\
-0 & \rho\sin\omega & \rho\cos\omega
-\end{bmatrix}, \quad
-B = \begin{bmatrix} 1-\alpha \\ 1-\rho \\ 0 \end{bmatrix}.
-\label{eq:supp_AB}
-\end{equation}
-The first coordinate implements a real exponential trace:
-\begin{equation}
-x_t^0 = \alpha x_{t-1}^0 + (1-\alpha)I_t.
-\label{eq:supp_real_mode}
-\end{equation}
-The second and third coordinates form a damped rotation driven through the first oscillatory coordinate:
-\begin{align}
-x_t^1 &= \rho\cos\omega \cdot x_{t-1}^1 - \rho\sin\omega \cdot x_{t-1}^2 + (1-\rho)I_t, \\
-x_t^2 &= \rho\sin\omega \cdot x_{t-1}^1 + \rho\cos\omega \cdot x_{t-1}^2.
-\label{eq:supp_rot_mode}
-\end{align}
-The eigenvalues of $A$ are $\alpha$ and $\rho e^{\pm i\omega}$. Stability requires them to lie strictly inside the unit circle, which we enforce through the parameterization
-\begin{equation}
-\alpha = \sigma(\alpha_{\mathrm{raw}}), \quad \rho = \sigma(\rho_{\mathrm{raw}}), \quad \omega = \pi\sigma(\omega_{\mathrm{raw}}),
-\label{eq:supp_param}
-\end{equation}
-where $\sigma(\cdot)$ is the logistic sigmoid. Hence $\alpha, \rho \in (0,1)$ and $\omega \in (0,\pi)$, so the spectral radius of $A$ is $\max(\alpha, \rho) < 1$. The input vector $B$ uses complementary weights $(1-\alpha)$ and $(1-\rho)$: under a constant input $I_t=c$, the real mode and the first oscillatory coordinate converge to $c$.
-
-The impulse response of the slow state to a unit input at $t=0$ (with $\mathbf{x}_{-1}=0$) is
-\begin{align}
-x_k^0 &= (1-\alpha)\alpha^k, \\
-x_k^1 &= (1-\rho)\rho^k\cos(k\omega), \\
-x_k^2 &= (1-\rho)\rho^k\sin(k\omega),
-\end{align}
-for $k \geq 0$. The real mode provides a monotone exponential trace, while the rotational pair provides damped oscillatory basis functions. Each neuron thus has access to three linearly independent temporal kernels.
-
-\subsection{Fast Discharge State and Projective Reset}
-\label{supp:sec:fast-state}
-
-The fast state $\mathbf{u}_t \in \mathbb{R}^2$ receives a projection of the slow state through $G \in \mathbb{R}^{2\times 3}$ and evolves as
-\begin{align}
-\widetilde{u}_t^0 &= \eta_0 u_{t-1}^0 + \kappa u_{t-1}^1 + (G\mathbf{x}_t)^0, \label{eq:supp_fast0} \\
-\widetilde{u}_t^1 &= \eta_1 u_{t-1}^1 + (G\mathbf{x}_t)^1, \label{eq:supp_fast1}
-\end{align}
-where $\eta_0, \eta_1 \in (0,1)$ are learned fast leak coefficients parameterized as $\eta_i = \sigma(\eta_{i,\mathrm{raw}})$, and $\kappa$ is an unconstrained coupling from the second fast coordinate to the first. The membrane potential is $v_t = \widetilde{u}_t^0$, and the spike is
-\begin{equation}
-z_t = H(v_t - \theta),
-\label{eq:supp_spike}
-\end{equation}
-where $H$ is the Heaviside step function and $\theta > 0$ is the firing threshold.
-
-Within each timestep, computation proceeds in the following order:
-\begin{enumerate}
-\item Compute input current $I_t = W_{\mathrm{in}}\mathbf{s}_t + W_{\mathrm{rec}}\mathbf{z}_{t-1} + b$.
-\item Update slow state: $\mathbf{x}_t = A\mathbf{x}_{t-1} + BI_t$.
-\item Compute pre-reset fast state: $\widetilde{\mathbf{u}}_t$ via Eqs.~\eqref{eq:supp_fast0}--\eqref{eq:supp_fast1}.
-\item Compute membrane and spike: $v_t = \widetilde{u}_t^0$, $z_t = H(v_t - \theta)$.
-\item Apply projective reset: $\mathbf{u}_t = \widetilde{\mathbf{u}}_t - z_t\theta[1, \lambda_j]^\top$.
-\end{enumerate}
-This ordering computes $\mathbf{x}_t$ before $z_t$ and confines the reset in step~5 to $\mathbf{u}_t$; $\mathbf{x}_t$ is never modified by reset.
-
-The projective reset can be written component-wise as
-\begin{align}
-u_t^0 &= \widetilde{u}_t^0 - z_t\theta, \\
-u_t^1 &= \widetilde{u}_t^1 - z_t\theta\lambda_j.
-\end{align}
-When $\lambda_j = 0$, reset reduces to scalar subtraction on the membrane coordinate. When $\lambda_j \neq 0$, it modifies both fast coordinates along the learned direction $[1, \lambda_j]^\top$, allowing the second coordinate to absorb part of the post-spike correction.
-
-\subsection{Surrogate Gradient}
-\label{supp:sec:surrogate}
-
-The forward pass uses the hard Heaviside function:
-\begin{equation}
-z_t = H(v_t - \theta) = \begin{cases} 1 & \text{if } v_t \geq \theta, \\ 0 & \text{otherwise.} \end{cases}
-\label{eq:supp_forward}
-\end{equation}
-The backward pass replaces the undefined derivative of $H$ with the multi-Gaussian (MG) surrogate~\cite{asrnn}:
-\begin{equation}
-\begin{aligned}
-\frac{\partial z_t}{\partial v_t} \approx \gamma\big[&a_0 \mathcal{N}(v_t-\theta;\, 0,\, \sigma_0^2) \\
-&{}- a_1\mathcal{N}(v_t-\theta;\, \mu_1,\, \sigma_1^2) \\
-&{}- a_1\mathcal{N}(v_t-\theta;\, -\mu_1,\, \sigma_1^2)\big],
-\end{aligned}
-\label{eq:supp_surrogate}
-\end{equation}
-where $\mathcal{N}(x;\,\mu,\sigma^2)$ denotes the Gaussian density with mean $\mu$ and variance $\sigma^2$. The parameters are: main Gaussian centered at $0$ with $\sigma_0 = 0.5$ and scale $a_0 = 1.15$; two side Gaussians centered at $\pm\mu_1 = \pm 0.5$ with $\sigma_1 = 3.0$ and scale $a_1 = 0.15$; and overall scale $\gamma = 0.5$. The side Gaussians widen the effective gradient window, enabling credit assignment even when the membrane is moderately below threshold.
-
-\subsection{Initialization, Stability, and Computational Cost}
-\label{supp:sec:initialization-cost}
-
-Spectral parameters are initialized from log-uniform distributions over time-constant ranges and then converted to the constrained parameterization. The initialization ranges are:
+\paragraph{Evidence map.}
+Each section below expands a specific main-paper element rather than introducing a second line of claims:
 \begin{itemize}
-\item Real decay time constant: $\tau_\alpha \in [10, 80]$ ms, with $\alpha = \exp(-1/\tau_\alpha)$.
-\item Rotational decay time constant: $\tau_\rho \in [4, 30]$ ms, with $\rho = \exp(-1/\tau_\rho)$.
-\item Fast leak time constant: $\tau_\eta \in [0.8, 8]$ ms, with $\eta_i = \exp(-1/\tau_\eta)$.
-\item Rotation frequency: $\omega \in [0.04\pi, 0.40\pi]$ rad/step.
+\item Main-paper Table~1 is expanded by the dataset encodings, architectures, optimization settings, and reporting rules in Sections~\ref{supp:sec:protocols}--\ref{supp:sec:reporting}; the SPRiF entries remain five-seed estimates and published comparator entries remain descriptive context.
+\item Main-paper Table~2 is expanded by the variant definitions in Section~\ref{supp:sec:variant-definitions}: A is $\omega=0$, B is the merged slow/fast state that changes both state role and total state dimension, and C is $\lambda=0$.
+\item The SI-DMS results are expanded by the task construction, shared controls, delay-by-$K$ coverage, and integrity audit in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}, with training intervention counts $K\in\{0,1,2,4\}$ and evaluation intervention counts $K\in\{0,1,2,4,8\}$.
+\item The S-MNIST loss-landscape diagnostic in Section~\ref{supp:sec:loss-landscape} compares one saved SPRiF checkpoint with one saved LIF checkpoint on a shared perturbation-coordinate grid. Because it uses one training seed and one random direction pair, it is treated as a checkpoint-level optimization diagnostic rather than a multi-seed generalization result.
+\item The mechanism and temporal-kernel figures are expanded by the reset identities and impulse/spectral protocols in Sections~\ref{supp:sec:dynamics}--\ref{supp:sec:analysis-protocols}.
+\item A fixed-checkpoint feature-perturbation diagnostic is reported separately in Section~\ref{supp:sec:perturbation-diagnostic}; it records how saved checkpoints respond under feature perturbations without adding a new benchmark, robustness ranking, or biological interpretation for $\lambda$.
 \end{itemize}
-The raw parameters $\alpha_{\mathrm{raw}}, \rho_{\mathrm{raw}}, \omega_{\mathrm{raw}}, \eta_{0,\mathrm{raw}}, \eta_{1,\mathrm{raw}}$ are initialized so that the sigmoid-transformed values fall within these ranges. After initialization, all parameters are optimized without clipping in their raw (unconstrained) space.
 
-Each SPRiF neuron stores 5 state values ($x^0, x^1, x^2, u^0, u^1$) and has 13 neuron-wise dynamics parameters: $\alpha_{\mathrm{raw}}, \rho_{\mathrm{raw}}, \omega_{\mathrm{raw}}$ (3 spectral), $\eta_{0,\mathrm{raw}}, \eta_{1,\mathrm{raw}}$ (2 fast leaks), $\kappa$ (1 coupling), $G \in \mathbb{R}^{2\times 3}$ (6 projection coefficients), and $\lambda$ (1 reset direction). The weight matrices $W_{\mathrm{in}}, W_{\mathrm{rec}}$ and bias $b$ are shared across the layer as in standard SNNs.
+\section{Experimental Protocols and Reporting}
+\label{supp:sec:protocols}
 
-The per-step computational cost of the state update is $O(h)$ for a layer of width $h$, since each neuron's state update involves only fixed-size matrix-vector operations. When recurrent connectivity is enabled, the $O(h^2)$ multiplication $W_{\mathrm{rec}}\mathbf{z}_{t-1}$ dominates for both LIF and SPRiF, so the relative overhead of the multi-state dynamics is small.
-
-\section{Benchmark and Preprocessing Details}
-\label{supp:sec:benchmarks}
-
-\subsection{Sequential and Permuted MNIST}
-\label{supp:sec:mnist}
-
-S-MNIST and PS-MNIST are derived from the MNIST handwritten digit dataset. Each $28\times 28$ grayscale image is flattened into a 784-dimensional sequence and normalized to $[0, 1]$. In S-MNIST, pixels are presented in raster order (top-left to bottom-right). In PS-MNIST, a single fixed random permutation is applied to the pixel order before presentation, and the same permutation is used for all training and test samples. The input at each timestep is a scalar pixel value. The task is 10-way digit classification from the final hidden state.
-
-\subsection{QTDB}
-\label{supp:sec:qtdb}
-
-The QTDB (QT Database) task involves 6-class ECG heartbeat classification. Each heartbeat is segmented from continuous ECG recordings, resampled to a fixed length, and presented as a one-dimensional time series. The task is to classify each heartbeat into one of six rhythm categories. The network produces a time-distributed prediction over the heartbeat sequence, and the final label is determined by majority vote or last-step classification.
-
-\subsection{Google Speech Commands}
-\label{supp:sec:gsc}
-
-Google Speech Commands (GSC) is a 12-class keyword spotting task. Each audio clip is converted to a 101-frame mel-spectrogram with 120-dimensional features per frame, yielding a $101 \times 120$ input sequence. The network processes the spectrogram frames sequentially and classifies the keyword via temporal mean pooling over hidden spikes followed by a linear readout.
-
-\subsection{Spiking Heidelberg Digits}
-\label{supp:sec:shd}
-
-The Spiking Heidelberg Digits (SHD) dataset contains 700-channel event sequences generated by a cochlear model applied to spoken digit recordings. There are 20 digit classes (0--9 in English and German). The input is a sparse spike train over 700 channels. The network uses a recurrent hidden layer followed by a 20-neuron SPRiF readout layer. The readout membrane potential is accumulated after a short warm-up period, and the class is determined by the readout neuron with the largest accumulated evidence.
-
-\section{Training and Reproducibility Details}
-\label{supp:sec:training}
+The five benchmark entries use task-standard inputs and readouts. S-MNIST and PS-MNIST use MNIST~\cite{lecun1998gradient} tensors read as 784-step pixel sequences; PS-MNIST applies a seed-generated random pixel permutation fixed within the run. QTDB uses the public QT Database~\cite{laguna1997database} and follows the ASRNN encoding protocol~\cite{asrnn}: two normalized ECG channels are converted by increasing and decreasing level-crossing events into four input event streams, and a time-distributed classifier predicts six waveform classes at each timestep. The released training scripts consume the encoded \texttt{QTDB\_train.mat} and \texttt{QTDB\_test.mat} files; this appendix does not claim to provide a raw QTDB-to-\texttt{.mat} converter. GSC uses one-second utterances from Google Speech Commands~\cite{warden2018speech}, represented as 40-bin mel features with first- and second-order deltas stacked over 101 frames, followed by temporal mean pooling over hidden spikes. SHD uses the 700-channel cochlea event sequences from the Spiking Heidelberg Digits dataset~\cite{cramer2022heidelberg}, with recurrent hidden processing and accumulated readout evidence after warm-up.
 
 \subsection{Architectures and Optimization}
 \label{supp:sec:architectures}
 
-Table~\ref{tab:supp_arch} summarizes the architecture and optimization settings for each benchmark, including per-dataset input and output dimensions.
+Table~\ref{tab:supp_arch} reports the task-specific network and optimization settings for the submitted SPRiF runs. Ranges for $\omega$ are expressed as multiples of $\pi$.
 
-\begin{table*}[t]
+\begin{table*}[tbp]
 \centering
-\small
-\setlength{\tabcolsep}{4pt}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lccccc}
 \toprule
 Item & S-MNIST & PS-MNIST & QTDB & GSC & SHD \\
 \midrule
-Input dim & 1 & 1 & 1 & 120 & 700 \\
-\midrule
+Input dim & 1 & 1 & 4 & 120 & 700 \\
 Output dim & 10 & 10 & 6 & 12 & 20 \\
-\midrule
-Layer & 2 Rec (64, 256) & 2 Rec (64, 256) & 1 Rec (36) & 1 Rec (300) & 1 Rec (64) \\
-\midrule
+Layer & 2 Rec (64, 256) & 2 Rec (64, 256) & 1 Rec (36) & 1 Rec (300) & 1 Rec (64) + readout \\
 Epochs & 150 & 150 & 250 & 150 & 100 \\
-\midrule
 Optimizer & Adam & Adam & Adam & AdamW & Adam \\
-\midrule
 Batch & 512 & 512 & 128 & 128 & 100 \\
-\midrule
 LR & 1e-2 & 1e-2 & 1e-2 & 5e-3 & 1e-2 \\
-\midrule
 Loss & CE & CE & CE & CE & CE \\
-\midrule
-Learning rate decay & 0.1 / 50 ep & 0.1 / 50 ep & 0.65 / 100 ep & 0.5 / 30 ep & 0.5 / 20 ep \\
-\midrule
-Learning rate decay type & StepLR & StepLR & StepLR & StepLR & StepLR \\
-\midrule
-Neuron threshold & 1.0 & 1.0 & 0.6 & 0.8 & 1.0 \\
-\midrule
-$\tau_\alpha$ (ms) & [20, 120] & [20, 120] & [20, 120] & [10, 80] & [20, 120] \\
-\midrule
-$\tau_\rho$ (ms) & [4, 30] & [4, 30] & [4, 30] & [4, 30] & [4, 30] \\
-\midrule
-$\tau_\eta$ (ms) & [0.8, 8] & [0.8, 8] & [0.8, 8] & [0.8, 8] & [0.8, 8] \\
-\midrule
-$\omega$ ($\times\pi$) & [0.02, 0.20] & [0.02, 0.20] & [0.02, 0.20] & [0.04, 0.40] & [0.02, 0.20] \\
-\midrule
+LR decay & 0.1 / 50 ep & 0.1 / 50 ep & 0.65 / 100 ep & 0.5 / 30 ep & 0.5 / 20 ep \\
+LR decay type & StepLR & StepLR & StepLR & StepLR & StepLR \\
+Threshold & 1.0 & 1.0 & 0.6 & 0.8 & 1.0 \\
+$\tau_\alpha$ (steps) & [2, 60] & [2, 60] & [20, 120] & [10, 80] & [10, 80] \\
+$\tau_\rho$ (steps) & [2, 40] & [2, 40] & [4, 30] & [4, 30] & [4, 30] \\
+$\tau_\eta$ (steps) & [0.8, 10] & [0.8, 10] & [0.8, 8] & [0.8, 8] & [0.8, 8] \\
+$\omega$ ($\times\pi$) & [0.04, 0.50] & [0.04, 0.50] & [0.02, 0.20] & [0.04, 0.40] & [0.04, 0.40] \\
+\bottomrule
 \end{tabular}
-\caption{Architecture and optimization settings per benchmark. ``Rec'' denotes a recurrent SPRiF layer. LR decay denotes the StepLR multiplier $\gamma$ and its step interval; loss is cross-entropy (CE) for all benchmarks.}
+\caption{Architecture and optimization settings for the SPRiF benchmark entries. ``Rec'' denotes a recurrent SPRiF layer, LR decay denotes the StepLR multiplier and interval, and CE denotes cross-entropy.}
 \label{tab:supp_arch}
 \end{table*}
 
-For S-MNIST and PS-MNIST, truncated BPTT is applied with a chunk length of 262 steps. The GSC network uses temporal mean pooling over hidden spikes before the linear readout. The QTDB network uses a time-distributed classifier. The SHD network accumulates readout membrane evidence after a warm-up period. All models use the multi-Gaussian surrogate gradient described in Section~\ref{supp:sec:surrogate}.
+For S-MNIST and PS-MNIST, truncated BPTT uses a chunk length of 262 steps. The GSC network uses temporal mean pooling over hidden spikes before the linear classifier. The QTDB network optimizes the time-distributed sequence loss. SHD accumulates readout evidence after the warm-up period. All models use the multi-Gaussian surrogate gradient described in Section~\ref{supp:sec:surrogate}.
+
+\FloatBarrier
 
 \subsection{Seeds, Model Selection, and Reporting}
-\label{supp:sec:seeds}
+\label{supp:sec:reporting}
 
-For each benchmark, the SPRiF result is reported as the mean and standard deviation of final test accuracy across five independently trained random seeds. All five runs use the same task-specific preprocessing, architecture, initialization scheme, and optimization schedule described above; only the stochastic training realization differs across runs. For PS-MNIST, the pixel permutation is fixed across seeds so that the five runs evaluate optimization variability under an identical input ordering. We report the final test accuracy from every run without selecting among multiple checkpoints. SI-DMS is a separate controlled experiment and is reported as a three-seed average. Published comparator entries in Table~1 are reproduced from their source studies and therefore do not constitute matched five-seed controls.
+All five benchmarks use the seed set $\{0,1,2,42,1111\}$. For each benchmark and seed, the checkpoint is selected according to validation accuracy, and Table~1 reports the mean and standard deviation of the resulting evaluation accuracies over the five independently seeded runs. Within a task, all runs use the same task-specific preprocessing, data splits, and architecture settings in Table~\ref{tab:supp_arch}; only the seeded training realization changes. Published comparator entries provide cross-paper context rather than matched controls. SI-DMS is a separate controlled mechanism experiment using seeds $\{1,2,3\}$ and is reported as a three-seed result.
 
 \subsection{Compute Environment}
 \label{supp:sec:compute}
 
-All experiments were run on commodity GPU hardware with standard deep learning frameworks. Training times range from minutes (QTDB) to several hours (PS-MNIST, GSC) per run depending on sequence length and network size. No distributed training or specialized hardware was required.
+Experiments were run on one NVIDIA GeForce RTX 2080 Ti GPU with 11~GB of memory and 12 vCPUs of an Intel Xeon Platinum 8255C CPU at 2.50~GHz. The software environment used Ubuntu 22.04, Python 3.12, PyTorch 2.3.0, and CUDA 12.1. Training times range from minutes for QTDB to several hours for PS-MNIST and GSC, depending on sequence length and network width. No distributed training or specialized neuromorphic hardware was used.
 
-\section{Complete Benchmark Results}
-\label{supp:sec:benchmark-results}
+\subsection{S-MNIST Loss-Landscape Diagnostic}
+\label{supp:sec:loss-landscape}
 
-Table~1 in the main paper reports the benchmark outcomes. The preceding dataset descriptions and Table~\ref{tab:supp_arch} provide the task-specific preprocessing, architecture, and optimization context required to reproduce the reported SPRiF settings. As stated in Section~\ref{supp:sec:seeds}, SPRiF entries are five-seed mean$\pm$standard-deviation estimates, whereas the published comparator entries follow their source-specific protocols; the cross-paper comparison is therefore descriptive rather than a matched significance test.
+We probe local parameter sensitivity around trained S-MNIST solutions using a two-dimensional random-plane visualization inspired by filter-normalized loss landscapes~\cite{li2018visualizing}. The SPRiF and LIF models use the same two recurrent layer widths, $[64,256]$, temporal-mean readout, normalized 784-step S-MNIST inputs, optimizer, learning-rate schedule, and seed. Their neuron dynamics differ, so the saved models contain 92,810 and 88,970 parameters, respectively; this is therefore an architecture-width-matched rather than parameter-count-matched comparison. The checkpoint metadata record test accuracies of 98.88\% for SPRiF and 95.19\% for LIF. These values identify the analyzed single-seed checkpoints and do not replace the five-seed benchmark summaries in the main paper.
 
-\section{Complete Mechanism Ablations}
-\label{supp:sec:ablations}
+For each checkpoint $\boldsymbol{\theta}^{\star}$, we generate two Gaussian random directions $\mathbf{d}_1$ and $\mathbf{d}_2$ using seeds 123 and 124. For every multidimensional parameter tensor $W$, its corresponding direction tensor $D$ is rescaled as $D\leftarrow D\lVert W\rVert_F/(\lVert D\rVert_F+10^{-10})$; one-dimensional parameters, including biases and neuron-wise dynamics parameters, are held fixed. We then evaluate
+\begin{equation}
+\mathcal{L}(a,b)=\mathcal{L}\!\left(\boldsymbol{\theta}^{\star}+a\mathbf{d}_1+b\mathbf{d}_2\right),
+\qquad (a,b)\in[-1,1]^2,
+\label{eq:supp_loss_landscape}
+\end{equation}
+on a $25\times25$ grid. Cross-entropy is estimated on the first four non-shuffled test mini-batches (2,048 images), with the 784-step sequence processed in chunks of 262 steps and the chunk-level logits averaged. Both models use the same coordinate range, grid resolution, and evaluation samples; the directions are normalized separately against each model's checkpoint tensors.
 
-Table~2 in the main paper reports the ablation outcomes. This section specifies the exact intervention represented by each column; it does not repeat the numerical comparison.
+Figure~\ref{fig:supp_loss_landscape} shows a broader low-loss neighborhood for the analyzed SPRiF checkpoint. At the unperturbed center, the estimated cross-entropy is 0.0575 for SPRiF and 0.2098 for LIF. Over the 625 sampled coordinates, the SPRiF slice has lower loss at 85.1\% of points, with mean losses of 10.69 versus 15.78 and maxima of 36.46 versus 50.85. Thus, under these norm-matched perturbations, this SPRiF solution is less sensitive along the sampled plane. The result is deliberately scoped to one checkpoint and one direction pair: it does not characterize the full high-dimensional landscape, isolate which SPRiF component creates the geometry, or by itself establish a causal link between flatness and generalization.
 
-\subsection{Slow--Fast State Separation}
-\label{supp:sec:ablation-merged}
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/loss_landscape_smnist.pdf}
+\caption{S-MNIST loss-landscape diagnostic for SPRiF (top row) and LIF (bottom row). The 2D contours and 3D surfaces show cross-entropy over the same $25\times25$ perturbation-coordinate grid, with a shared logarithmic color scale and common vertical range. Each model uses its own checkpoint-normalized random directions, while evaluation samples and grid coordinates are matched.}
+\label{fig:supp_loss_landscape}
+\end{figure*}
 
-The merged variant collapses the slow spectral state and fast discharge state into one three-dimensional state whose first coordinate is both the membrane readout and reset target. It therefore removes structural insulation between memory and discharge while retaining a three-dimensional state representation.
+\section{Mechanism Variants and SI-DMS Evaluation}
+\label{supp:sec:mechanism-sidms}
 
-\subsection{Learned Projective versus Scalar Reset}
-\label{supp:sec:ablation-reset}
+\subsection{Mechanism Variant Definitions}
+\label{supp:sec:variant-definitions}
 
-Setting $\lambda = 0$ reduces projective reset to scalar subtraction on the membrane coordinate and prevents reset from acting along the second fast coordinate.
+Table~2 in the main paper reports the ablation outcomes. Table~\ref{tab:supp_variant_defs} defines the exact intervention behind each column without repeating the main-paper numbers.
 
-\subsection{Additional Spectral Ablations}
-\label{supp:sec:ablation-spectral}
-
-Setting $\omega = 0$ removes rotational coupling while retaining the real decay path and full slow--fast state separation.
-
-\section{SI-DMS Protocol and Implementation-Level Checks}
-\label{supp:sec:sidms}
-
-The Spike-Intervention Delayed Match-to-Sample (SI-DMS) task tests whether a network can retain a cue through a delay during which selected hidden neurons are forced to spike. Table~\ref{tab:supp_sidms} summarizes the task construction, the controlled intervention, and the matched-control configuration; the implementation-level checks follow.
-
-\begin{table*}[t]
+\begin{table*}[tbp]
 \centering
 \small
-\begin{tabular}{lp{0.72\textwidth}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.17\textwidth}p{0.40\textwidth}p{0.33\textwidth}}
+\toprule
+Variant & Change relative to SPRiF full & Interpretation lock \\
+\midrule
+$\omega=0$ & Removes rotational coupling while retaining the real decay path and slow--fast state separation. & Tests spectral rotation, not state separation. \\
+\midrule
+Merged & Collapses the slow spectral state and fast discharge state into one three-dimensional state whose first coordinate is both membrane and reset target. & Tests the consequence of collapsing memory and discharge; it is not a pure reset-direction control and does not preserve the full model's total state dimensionality. \\
+\midrule
+$\lambda=0$ & Fixes the reset direction to $[1,0]^\top$, so reset subtracts only from the membrane coordinate. & Tests learned projective reset against scalar reset while preserving slow--fast separation. \\
+\bottomrule
+\end{tabular}
+\caption{Mechanism variants corresponding to the main-paper ablation table.}
+\label{tab:supp_variant_defs}
+\end{table*}
+
+\subsection{SI-DMS Protocol}
+\label{supp:sec:sidms-protocol}
+
+The Spike-Intervention Delayed Match-to-Sample (SI-DMS) task tests whether a network retains a cue through a delay while selected hidden units are forced to emit real spikes. Table~\ref{tab:supp_sidms} gives the protocol and matched-control configuration.
+
+\begin{table*}[tbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.20\textwidth}p{0.72\textwidth}}
 \toprule
 Item & Setting \\
 \midrule
-Input channels & 30 (10 left-cue, 10 right-cue, 10 noise), Poisson-encoded spike trains \\
+Input channels & 30 total: 10 left-cue channels, 10 right-cue channels, and 10 noise channels, encoded as Poisson spike trains. \\
 \midrule
-Pre-period & 50 ms (baseline silence, noise channels active) \\
+Pre-period & 50 ms baseline period with noise channels active. \\
 \midrule
-First / second cue & 100 ms each, a left or right cue via Poisson spike trains \\
+First / second cue & 100 ms each; each cue is left or right. \\
 \midrule
-Delay (train) & drawn from $\{200, 400, 800, 1600\}$ ms \\
+Delay (train) & Drawn from $\{200,400,800,1600\}$ ms. \\
 \midrule
-Delay (eval) & drawn from $\{200, 400, 800, 1600, 2500\}$ ms \\
+Delay (eval) & Drawn from $\{200,400,800,1600,2500\}$ ms. \\
 \midrule
-Target & binary: \emph{match} if the two cues are identical, else \emph{non-match} \\
+Target & Binary match/non-match label depending on whether the two cues are identical. \\
 \midrule
-Intervention & at $K$ random delay timesteps, 10\% of hidden neurons forced to spike; membrane set above threshold \emph{pre-threshold}, so the forced spike follows the normal path and triggers the standard reset \\
+Intervention & At $K$ random delay timesteps, the membrane coordinates of 10\% of hidden units are placed above threshold before spike computation; the resulting spike follows the model's ordinary reset rule. \\
 \midrule
-$K$ (train) & $\{0, 1, 2, 4\}$ \\
+$K$ (train) & $\{0,1,2,4\}$. \\
 \midrule
-$K$ (eval) & $\{0, 1, 2, 4, 8\}$ (includes a stress level unseen in training) \\
+$K$ (eval) & $\{0,1,2,4,8\}$, including $K=8$ as an unseen stress level. \\
 \midrule
-Shared mask & within each seed/delay/$K$ cell, all models use the same intervention mask \\
+Shared controls & Within each seed/delay/$K$ condition, models use matched batches, intervention masks, and evaluation probes. \\
 \midrule
-Hidden units & 64 \\
+Hidden units & 64. \\
 \midrule
-Architecture & feedforward (no recurrence) \\
+Architecture & Feedforward hidden layer; no recurrent hidden pathway. \\
 \midrule
-Threshold $\theta$ & 1.0 \\
+SPRiF variants & \texttt{sprif\_full}, \texttt{sprif\_lambda0}, and \texttt{sprif\_merged}. \\
 \midrule
-Training steps & 1000 \\
-\midrule
-Batch size & 256 \\
-\midrule
-Learning rate & 5e-3 \\
-\midrule
-Optimizer & Adam \\
-\midrule
-SPRiF variants & sprif\_full, sprif\_lambda0, sprif\_merged (differ only in neuron dynamics) \\
-\midrule
-Baselines & LIF, ASRNN, BRF (same hidden width, optimizer, batch, intervention masks) \\
-\midrule
-Forced-spike semantics & the intervention does not bypass reset or add a separate post-spike update \\
-\midrule
-Slow-state reset & $\Delta\mathbf{x}_t^{\mathrm{reset}}=\mathbf{0}$: an intervention modifies only the fast discharge state, never the slow spectral state directly \\
-\midrule
+Baselines & LIF, ASRNN, and BRF with the same hidden width, optimizer, batch structure, and intervention masks. \\
+\bottomrule
 \end{tabular}
-\caption{SI-DMS task construction, controlled intervention, and matched-control configuration. ``Pre-threshold'' indicates the forced spike follows the normal computation path and triggers the standard reset.}
+\caption{SI-DMS task construction, controlled intervention, and matched-control configuration.}
 \label{tab:supp_sidms}
 \end{table*}
 
-\subsection{Model Controls and Fairness}
-\label{supp:sec:sidms-fairness}
+\subsection{Condition-Level Grids}
+\label{supp:sec:sidms-grids}
 
-All SI-DMS models share the configuration in Table~\ref{tab:supp_sidms}. The three SPRiF variants differ only in their neuron dynamics as described in the main paper, and the external baselines (LIF, ASRNN, BRF) use the same hidden width, optimizer, batch structure, and intervention masks. Within a given seed, all models receive identical training batches, intervention masks, and evaluation probes. Table~3 in the main paper reports the three-seed clean and maximum-stress results; this appendix supplies the conditions needed to interpret that comparison without duplicating its numerical summary.
+The condition-level SI-DMS result artifact underlying the main-paper mechanism figure covers all six models, three seeds, five evaluation delays, and five intervention levels. The main-paper SI-DMS table summarizes only clean ($K=0$) and maximum-stress ($K=8$) conditions; the full evaluated grid is scoped here by its delay and intervention coverage, while the non-duplicated visualization remains in the main paper. This appendix entry therefore scopes the already-evaluated grid rather than contributing a new experiment, statistic, or robustness claim.
 
-\subsection{Implementation-Level Checks}
+\subsection{Model Controls and Integrity Audit}
 \label{supp:sec:sidms-integrity}
 
-At an intervention timestep, a selected membrane coordinate is placed above threshold before spike computation. Under the hard threshold rule in Eq.~\eqref{eq:supp_spike}, this yields $z_t=1$ and then applies the model's ordinary reset rule, so the intervention does not bypass reset or introduce a separate post-spike update. The SPRiF update satisfies the fast-state reset identity
+At an intervention timestep, the selected membrane coordinate is placed above threshold before spike computation. Under the hard threshold rule in Eq.~\eqref{eq:supp_spike}, this yields an actual spike and then applies the model's ordinary reset rule. The intervention therefore does not bypass reset and does not add a separate post-spike update.
+
+\begin{table*}[tbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.22\textwidth}p{0.33\textwidth}p{0.35\textwidth}}
+\toprule
+Audit item & Required behavior & Appendix status \\
+\midrule
+Coverage & Each model/seed evaluates every delay-by-$K$ cell. & Six models, three seeds, five delays, and five $K$ levels are covered in the saved formal evaluation files. \\
+\midrule
+Forced-spike hit & Every selected unit should spike when $K>0$. & The saved evaluation metrics record forced-hit rate $=1.0$ for all 360 intervention cells with $K>0$. \\
+\midrule
+Shared controls & Comparisons should not depend on model-specific probes. & Within a seed/delay/$K$ condition, batches and intervention masks are shared across models. \\
+\midrule
+Reset path & Forced spikes should trigger the same reset rule as ordinary spikes. & Interventions are applied pre-threshold; the resulting spike enters the standard reset update. \\
+\midrule
+SPRiF slow-state insulation & A forced spike must not directly edit the slow spectral state. & Eq.~\eqref{eq:supp_slow_insulation} states $\Delta\mathbf{x}_t^{\mathrm{reset}}=\mathbf{0}$; recurrent communication can only enter the next timestep through $W_{\mathrm{rec}}\mathbf{z}_t$ when recurrence is present. \\
+\bottomrule
+\end{tabular}
+\caption{SI-DMS integrity checks used to interpret the intervention results.}
+\label{tab:supp_sidms_integrity}
+\end{table*}
+
+For SPRiF, let the reset direction be $\mathbf{r}=[1,\lambda_j]^\top$, so the fast-state reset identity is
 \begin{equation}
-\mathbf{u}_t-\bigl(\widetilde{\mathbf{u}}_t-z_t\theta[1,\lambda_j]^\top\bigr)=\mathbf{0},
+\mathbf{u}_t-\bigl(\widetilde{\mathbf{u}}_t-z_t\theta\mathbf{r}\bigr)=\mathbf{0},
 \label{eq:supp_reset_residual}
 \end{equation}
 while the slow state has no reset update,
@@ -337,58 +244,173 @@ while the slow state has no reset update,
 \Delta\mathbf{x}_t^{\mathrm{reset}}=\mathbf{0}.
 \label{eq:supp_slow_insulation}
 \end{equation}
-These are structural identities of the stated update, not empirical residual statistics. They formalize the intended distinction: an intervention can change the fast discharge state through a real spike and reset, but it does not directly modify the slow spectral state at that timestep.
+These are structural identities of the stated update. They formalize the SI-DMS distinction: forced spikes can alter the fast discharge state through real spike-and-reset events, but they do not directly modify the slow spectral state at that timestep.
 
-\section{Additional Dynamical and Robustness Analyses}
-\label{supp:sec:additional-analysis}
+\section{Formal SPRiF Specification and Analysis Protocols}
+\label{supp:sec:dynamics}
+\setlength{\abovedisplayskip}{4pt plus 1pt minus 2pt}
+\setlength{\belowdisplayskip}{4pt plus 1pt minus 2pt}
+\setlength{\abovedisplayshortskip}{2pt plus 1pt minus 1pt}
+\setlength{\belowdisplayshortskip}{3pt plus 1pt minus 1pt}
 
-\subsection{Impulse Responses and Temporal Kernels}
-\label{supp:sec:impulse}
+\subsection{Slow Spectral State}
+\label{supp:sec:slow-state}
 
-For the impulse-response analysis in Figure~3 of the main paper, we inject a unit impulse into trained SPRiF neurons and record 100 steps of intrinsic slow-state evolution without further input. The analysis samples real and rotational coordinates across learned parameter quantiles and computes task-wise spectra from the real coordinate. No duplicate visualization is included here.
+The slow spectral state $\mathbf{x}_t\in\mathbb{R}^3$ evolves as
+\begin{equation}
+\mathbf{x}_t = A\mathbf{x}_{t-1} + B I_t,
+\label{eq:supp_slow}
+\end{equation}
+where
+\begin{equation}
+A =
+\begin{bmatrix}
+\alpha & 0 & 0 \\
+0 & \rho\cos\omega & -\rho\sin\omega \\
+0 & \rho\sin\omega & \rho\cos\omega
+\end{bmatrix}, \quad
+B =
+\begin{bmatrix}
+1-\alpha \\
+1-\rho \\
+0
+\end{bmatrix}.
+\label{eq:supp_AB}
+\end{equation}
+The first coordinate is a real exponential trace,
+\begin{equation}
+x_t^0 = \alpha x_{t-1}^0 + (1-\alpha)I_t,
+\label{eq:supp_real_mode}
+\end{equation}
+and the second and third coordinates form a damped rotational pair driven through the first oscillatory coordinate:
+\begin{align}
+x_t^1 &= \rho\cos\omega\, x_{t-1}^1 - \rho\sin\omega\, x_{t-1}^2 + (1-\rho)I_t, \\
+x_t^2 &= \rho\sin\omega\, x_{t-1}^1 + \rho\cos\omega\, x_{t-1}^2.
+\label{eq:supp_rot_mode}
+\end{align}
+The eigenvalues of $A$ are $\alpha$ and $\rho e^{\pm i\omega}$. We parameterize
+\begin{equation}
+\alpha=\sigma(\alpha_{\mathrm{raw}}),\quad
+\rho=\sigma(\rho_{\mathrm{raw}}),\quad
+\omega=\pi\sigma(\omega_{\mathrm{raw}}),
+\label{eq:supp_param}
+\end{equation}
+so $\alpha,\rho\in(0,1)$ and $\omega\in(0,\pi)$, giving spectral radius $\max(\alpha,\rho)<1$. These sigmoid parameterizations keep the slow spectral state strictly stable under the learned raw variables.
 
-\subsection{Learned Reset Directions}
-\label{supp:sec:lambda}
+Under a constant input $I_t=c$, the real mode converges to $c$. The rotational pair converges to the unique fixed point
+\begin{align}
+\mathbf{x}^{\mathrm{osc}}_\ast
+&=
+\bigl(I-\rho R_\omega\bigr)^{-1}
+\begin{bmatrix}
+(1-\rho)c \\
+0
+\end{bmatrix},
+\label{eq:supp_osc_fixed_point}\\
+R_\omega
+&=
+\begin{bmatrix}
+\cos\omega & -\sin\omega \\
+\sin\omega & \cos\omega
+\end{bmatrix}.
+\end{align}
+Thus the first oscillatory coordinate is not generally equal to $c$ when $\omega\neq0$.
 
-The learned $\lambda$ values are diverse across models. On PS-MNIST, GSC, and QTDB, per-neuron values span both signs and have interquartile ranges that do not collapse to zero. Their correlations with neuron-level firing rate, $\alpha$, and $\omega$ are weak ($|r| \leq 0.191$), so reset direction is not a simple function of firing rate or spectral parameters. The consistent degradation when $\lambda$ is fixed to zero (Section~\ref{supp:sec:ablation-reset}) supports the functional relevance of this diversity.
+For a unit input impulse at $t=0$ with $\mathbf{x}_{-1}=\mathbf{0}$, the slow-state impulse response isolates the two retention modes separately:
+\begin{align}
+x_k^0 &= (1-\alpha)\alpha^k, \\
+x_k^1 &= (1-\rho)\rho^k\cos(k\omega), \\
+x_k^2 &= (1-\rho)\rho^k\sin(k\omega),
+\end{align}
+for $k\geq0$. The real mode provides monotone retention, whereas the rotational pair provides damped phase dynamics.
 
-\subsection{Feature-Space Noise Robustness (Diagnostic)}
-\label{supp:sec:robustness}
+\subsection{Fast Discharge State and Projective Reset}
+\label{supp:sec:fast-state}
 
-We evaluate saved SPRiF and ASRNN checkpoints on the GSC and QTDB test sets after feature-space perturbation. The conditions comprise additive Gaussian noise with $\sigma\in\{0.01,0.05,0.10\}$, random feature zeroing with $p\in\{0.05,0.10,0.20\}$, and a mixed condition combining additive noise and zeroing. The same noise-generator seed is used for the paired model evaluations within a condition.
+The fast discharge state $\mathbf{u}_t\in\mathbb{R}^2$ receives a projection of the slow spectral state through $G\in\mathbb{R}^{2\times3}$:
+\begin{align}
+\widetilde{u}_t^0 &= \eta_0 u_{t-1}^0 + \kappa u_{t-1}^1 + (G\mathbf{x}_t)^0, \label{eq:supp_fast0} \\
+\widetilde{u}_t^1 &= \eta_1 u_{t-1}^1 + (G\mathbf{x}_t)^1, \label{eq:supp_fast1}
+\end{align}
+with $\eta_0,\eta_1\in(0,1)$ parameterized as sigmoid-transformed raw variables. The membrane potential is $v_t=\widetilde{u}_t^0$, and the spike is
+\begin{equation}
+z_t = H(v_t-\theta),
+\label{eq:supp_spike}
+\end{equation}
+where $H$ is the Heaviside step function.
 
-Figure~\ref{fig:supp_noise_diagnostic} reports the resulting condition-wise accuracies. It is a fixed-checkpoint diagnostic: its clean accuracies need not equal the five-seed benchmark statistics in Table~1, and the figure does not support a significance claim or an end-to-end robustness ranking. It instead records how the two saved models respond to the specified feature perturbations.
+Within each timestep, computation follows
+$I_t=W_{\mathrm{in}}\mathbf{s}_t+W_{\mathrm{rec}}\mathbf{z}_{t-1}+b
+\to \mathbf{x}_t=A\mathbf{x}_{t-1}+BI_t
+\to \widetilde{\mathbf{u}}_t
+\to v_t=\widetilde{u}_t^0
+\to z_t=H(v_t-\theta)
+\to \mathbf{u}_t=\widetilde{\mathbf{u}}_t-z_t\theta\mathbf{r}$.
+This order matches the main paper and confines the local reset update to the fast discharge state.
 
-\begin{figure*}[t]
+Component-wise, projective reset is
+\begin{align}
+u_t^0 &= \widetilde{u}_t^0 - z_t\theta, \\
+u_t^1 &= \widetilde{u}_t^1 - z_t\theta\lambda_j.
+\end{align}
+Setting $\lambda_j=0$ recovers scalar subtraction on the membrane coordinate; learned $\lambda_j$ allows reset to act along $[1,\lambda_j]^\top$ in the fast state.
+
+\subsection{Surrogate Gradient}
+\label{supp:sec:surrogate}
+
+The forward pass uses the hard threshold in Eq.~\eqref{eq:supp_spike}. During backpropagation, the threshold derivative is replaced by the multi-Gaussian surrogate~\cite{asrnn}:
+\begin{equation}
+\begin{aligned}
+\frac{\partial z_t}{\partial v_t} \approx \gamma\big[&
+a_0 \mathcal{N}(v_t-\theta;\,0,\sigma_0^2) \\
+&{}-a_1\mathcal{N}(v_t-\theta;\,\mu_1,\sigma_1^2) \\
+&{}-a_1\mathcal{N}(v_t-\theta;\,-\mu_1,\sigma_1^2)\big],
+\end{aligned}
+\label{eq:supp_surrogate}
+\end{equation}
+where $\sigma_0=0.5$, $a_0=1.15$, $\mu_1=0.5$, $\sigma_1=3.0$, $a_1=0.15$, and $\gamma=0.5$. The forward dynamics remain unchanged.
+
+\subsection{Initialization, State Size, and Cost}
+\label{supp:sec:initialization-cost}
+
+The task-specific initialization ranges are listed in Table~\ref{tab:supp_arch}. For each decay $q\in\{\alpha,\rho,\eta_0,\eta_1\}$, a time constant $\tau_q$ in steps is mapped to $q=\exp(-1/\tau_q)$ before conversion to its unconstrained raw parameter. Raw variables are initialized so that the transformed $\alpha$, $\rho$, $\eta_i$, and $\omega$ values fall in the listed ranges; after initialization, optimization proceeds in the unconstrained raw parameter space.
+
+Each SPRiF neuron stores five state values $(x^0,x^1,x^2,u^0,u^1)$ and has 13 neuron-wise dynamics parameters: $\alpha_{\mathrm{raw}}$, $\rho_{\mathrm{raw}}$, $\omega_{\mathrm{raw}}$, $\eta_{0,\mathrm{raw}}$, $\eta_{1,\mathrm{raw}}$, $\kappa$, the six entries of $G\in\mathbb{R}^{2\times3}$, and $\lambda$. The weight matrices $W_{\mathrm{in}}$ and $W_{\mathrm{rec}}$ and the bias $b$ follow the layer architecture.
+
+For a layer of width $h$, the local state update cost is $O(h)$ because each neuron uses fixed-size slow and fast states. When recurrent connectivity is enabled, the $O(h^2)$ multiplication $W_{\mathrm{rec}}\mathbf{z}_{t-1}$ dominates for both LIF-style recurrent SNNs and SPRiF layers.
+
+\subsection{Analysis Protocols}
+\label{supp:sec:analysis-protocols}
+
+For the impulse-response and temporal-kernel analyses in the main paper, we inject a unit impulse into trained SPRiF neurons and then record 100 steps of intrinsic slow-state evolution without further input. The four displayed SPRiF trajectories use the 10th, 40th, 70th, and 90th percentiles of learned $\alpha$. For the GSC and QTDB cross-model panels, the 90th-percentile SPRiF real mode is paired with the available trained ASRNN membrane kernel having the closest derived $\tau_m$, and each displayed kernel is normalized by its peak magnitude. Spectra from the real coordinate are aggregated across neurons. Because no subsequent input is applied and the slow state has no direct local reset term, the observed response shapes reflect the learned spectral parameters rather than later post-spike correction.
+
+The learned reset-direction analysis uses the $\lambda$ values shown in the main-paper mechanism figure. Across QTDB, GSC, and PS-MNIST, the reported $\lambda$ distributions span both signs, and the main-paper figure reports weak Pearson correlations with firing rate, $\alpha$, and $\omega$ ($|r|\leq0.191$). This appendix treats those observations as evidence that projective reset directions remain diverse in the fast discharge state; it does not attach a universal biological meaning to either sign of $\lambda$.
+
+\subsection{Feature-Perturbation Diagnostic}
+\label{supp:sec:perturbation-diagnostic}
+
+Figure~\ref{fig:supp_robustness_diagnostic} reports a fixed-checkpoint feature-space perturbation diagnostic on GSC and QTDB. Controlled input corruptions are widely used to probe non-adversarial robustness~\cite{hendrycks2019benchmarking}, while additive Gaussian jittering is a standard magnitude-domain transformation for time-series inputs~\cite{iwana2021empirical}. Motivated by these evaluation practices, we apply additive Gaussian noise, random feature zeroing, and their combination to saved SPRiF and ASRNN checkpoints, with matched perturbation settings within each condition. This diagnostic is not a replacement for the five-seed benchmark table in the main paper and is not used as a statistical robustness ranking; it records how the saved checkpoints respond under the specified feature perturbations.
+
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=0.98\textwidth]{../代码/experiments/robustness/robustness_benchmark.png}
-\caption{Feature-space noise robustness (diagnostic). SPRiF and ASRNN are evaluated on GSC and QTDB after additive Gaussian noise, random feature zeroing, or their combination. Each condition uses one saved checkpoint per model and a shared noise realization; this diagnostic is not a multi-seed comparison and is not directly comparable with Table~1.}
-\label{fig:supp_noise_diagnostic}
+\includegraphics[width=0.59\textwidth]{figures/robustness_benchmark.png}
+\caption{Feature-space perturbation diagnostic using saved checkpoints. SPRiF and ASRNN are evaluated on GSC and QTDB under additive Gaussian noise, random feature zeroing, and mixed perturbations. The clean values in this diagnostic come from the saved checkpoints used for the perturbation sweep and need not equal the five-seed benchmark summaries in the main paper.}
+\label{fig:supp_robustness_diagnostic}
 \end{figure*}
-
-\section{Failure Cases and Limitations}
-\label{supp:sec:failures}
-
-Two failure regimes are observed:
-
-\textbf{Long delays with high intervention.} On SI-DMS, the longest evaluation delay (2500 ms) combined with the highest intervention level ($K{=}8$) measurably degrades sprif\_full. Although the drop is small relative to the merged variant and external baselines, extreme stress can eventually overwhelm the slow-state trace through indirect pathways.
-
-\textbf{Merged variant collapse.} The sprif\_merged variant remains near chance under every intervention condition, including $K{=}0$ on SI-DMS. Without state separation, reset reaches the state used for memory, and the variant does not learn the DMS task structure. This failure mode is consistent with the benchmark ablations and distinguishes the merged architecture from the separated design.
-
-The five-seed benchmark results characterize within-method variability for SPRiF. They do not, however, convert the cross-paper comparison into a matched statistical test because the reference methods were evaluated under their respective published protocols.
 
 \section{Reproducibility Checklist}
 \label{supp:sec:reproducibility}
 
 \begin{itemize}
-\item \textbf{Data:} S-MNIST and PS-MNIST use the standard MNIST dataset. QTDB uses the publicly available QT Database. GSC uses the Google Speech Commands v1 dataset. SHD uses the Spiking Heidelberg Digits dataset. All datasets are publicly available.
-\item \textbf{Preprocessing:} MNIST pixels normalized to $[0,1]$; PS-MNIST uses a fixed random permutation (seed 0). QTDB heartbeats are segmented and resampled. GSC uses 101-frame, 120-dim mel-spectrograms. SHD uses 700-channel event sequences as provided.
-\item \textbf{Seeds and reporting:} Each main benchmark uses five independent random seeds, and SPRiF is reported as mean$\pm$standard deviation of final test accuracy. The PS-MNIST pixel permutation is fixed (seed 0) across the five runs. SI-DMS uses a separate three-seed average.
-\item \textbf{Hyperparameters:} Complete in Table~\ref{tab:supp_arch} and Section~\ref{supp:sec:sidms-fairness}.
-\item \textbf{Surrogate gradient:} Multi-Gaussian with parameters specified in Section~\ref{supp:sec:surrogate}.
-\item \textbf{Initialization:} Log-uniform time constants as specified in Section~\ref{supp:sec:initialization-cost}.
-\item \textbf{Code:} Will be released upon acceptance. No identifying paths or author information are included in this submission.
-\item \textbf{Implementation checks:} Section~\ref{supp:sec:sidms-integrity} states the forced-spike semantics and the reset--memory separation identities implied by the implemented update. No numerical residual or batch-hash statistic is reported here.
+\item \textbf{Data sources:} S-MNIST and PS-MNIST use MNIST; QTDB uses the public QT Database encoded following Yin et al.~\cite{asrnn}; GSC uses Google Speech Commands; SHD uses Spiking Heidelberg Digits. See Section~\ref{supp:sec:protocols}.
+\item \textbf{Preprocessing:} Dataset encodings, input dimensions, and readout conventions are summarized in Section~\ref{supp:sec:protocols}. QTDB is described as an encoded four-event-stream input; no raw QTDB conversion script is introduced here.
+\item \textbf{Architectures and hyperparameters:} Network widths, epochs, optimizer settings, learning-rate schedules, thresholds, and initialization ranges are listed in Table~\ref{tab:supp_arch}.
+\item \textbf{Seeds and reporting:} Main benchmarks use seeds $\{0,1,2,42,1111\}$ and report mean$\pm$standard deviation for SPRiF; checkpoints are selected by validation accuracy. SI-DMS uses seeds $\{1,2,3\}$; published comparator entries are descriptive cross-paper references. See Section~\ref{supp:sec:reporting}.
+\item \textbf{Surrogate gradient and dynamics:} The multi-Gaussian surrogate is specified in Section~\ref{supp:sec:surrogate}; the exact slow and fast updates are specified in Sections~\ref{supp:sec:slow-state} and \ref{supp:sec:fast-state}.
+\item \textbf{SI-DMS semantics:} Delay sets, $K$ sets, forced-spike semantics, shared controls, condition-level grids, and integrity checks are documented in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}.
+\item \textbf{Loss-landscape diagnostic:} The checkpoint selection, direction normalization, $25\times25$ grid, test subset, quantitative summaries, and single-slice interpretation boundary are documented in Section~\ref{supp:sec:loss-landscape}.
+\item \textbf{Analysis protocols:} The impulse-response, spectral-summary, learned-reset-direction interpretations, and fixed-checkpoint feature-perturbation diagnostic are scoped in Sections~\ref{supp:sec:analysis-protocols}--\ref{supp:sec:perturbation-diagnostic}.
+\item \textbf{Code availability:} An anonymized code archive accompanying the submission contains the five benchmark implementations, all analysis code used in the paper, and the SI-DMS implementation. The complete code will be released under the MIT License upon publication. No identifying paths or author information are included in the submitted archive.
 \end{itemize}
 
 \bibliography{sprif2027}

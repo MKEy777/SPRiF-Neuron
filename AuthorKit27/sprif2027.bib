@@ -4,6 +4,20 @@
 % Spiking Neuron Models Beyond Standard LIF
 % ============================================================
 
+@misc{lstmlif,
+  author       = {Zhang, Shimin and Qu, Yang and Ma, Chenxiang and Wu, Jibin and Li, Haizhou and Tan, Kay Chen},
+  title        = {Long Short-term Memory with Two-Compartment Spiking Neuron},
+  year         = {2023},
+  howpublished = {arXiv:2307.07231}
+}
+
+@misc{zhang2025reset,
+  author       = {Zhang, Enqi},
+  title        = {Revisiting Reset Mechanisms in Spiking Neural Networks for Sequential Modeling: Specialized Discretization for Binary Activated RNN},
+  year         = {2025},
+  howpublished = {arXiv:2504.17751}
+}
+
 @inproceedings{glif,
   author    = {Fang, Weiwei and Chen, Yanqi and Ding, Jianhao and Zhai, Zhaofei and Yu, Xing and Zhang, Tiejun and Huang, Tiejun},
   title     = {{GLIF}: A Unified Gated Leaky Integrate-and-Fire Neuron for Spiking Neural Networks},
@@ -16,6 +30,16 @@
   title     = {{DGN}: A Brain-Inspired Gating Mechanism Unlocks Robust Computation in Spiking Neural Networks},
   booktitle = {International Conference on Learning Representations (ICLR)},
   year      = {2026},
+}
+
+@article{sun2026dmp,
+  author  = {Sun, Pengfei and Su, Zhe and Achterberg, Jascha and Indiveri, Giacomo and Goodman, Dan F. M. and Akarca, Danyal},
+  title   = {Algorithm--Hardware Co-Design of Neuromorphic Networks with Dual Memory Pathways},
+  journal = {Nature Machine Intelligence},
+  volume  = {8},
+  pages   = {901--912},
+  year    = {2026},
+  doi     = {10.1038/s42256-026-01255-3},
 }
 
 @article{asrnn,
@@ -269,4 +293,86 @@
   pages     = {e65459},
   year      = {2021},
   doi       = {10.7554/eLife.65459},
+}
+
+@inproceedings{li2018visualizing,
+  author    = {Li, Hao and Xu, Zheng and Taylor, Gavin and Studer, Christoph and Goldstein, Tom},
+  title     = {Visualizing the Loss Landscape of Neural Nets},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {31},
+  pages     = {6391--6401},
+  year      = {2018},
+  url       = {https://proceedings.neurips.cc/paper/2018/hash/a41b3bb3e6b050b6c9067c67f663b915-Abstract.html},
+}
+
+% ============================================================
+% Benchmark and dataset sources
+% ============================================================
+
+@article{lecun1998gradient,
+  author  = {LeCun, Yann and Bottou, L{\'e}on and Bengio, Yoshua and Haffner, Patrick},
+  title   = {Gradient-Based Learning Applied to Document Recognition},
+  journal = {Proceedings of the IEEE},
+  volume  = {86},
+  number  = {11},
+  pages   = {2278--2324},
+  year    = {1998},
+  doi     = {10.1109/5.726791},
+  url     = {https://doi.org/10.1109/5.726791},
+}
+
+@inproceedings{laguna1997database,
+  author    = {Laguna, Pablo and Mark, Roger G. and Goldberger, Ary L. and Moody, George B.},
+  title     = {A Database for Evaluation of Algorithms for Measurement of {QT} and Other Waveform Intervals in the {ECG}},
+  booktitle = {Computers in Cardiology},
+  volume    = {24},
+  pages     = {673--676},
+  year      = {1997},
+  doi       = {10.1109/CIC.1997.648140},
+  url       = {https://physionet.org/content/qtdb/1.0.0/doc/},
+}
+
+@article{warden2018speech,
+  author  = {Warden, Pete},
+  title   = {Speech Commands: A Dataset for Limited-Vocabulary Speech Recognition},
+  journal = {CoRR},
+  volume  = {abs/1804.03209},
+  year    = {2018},
+  url     = {https://arxiv.org/abs/1804.03209},
+}
+
+@article{cramer2022heidelberg,
+  author  = {Cramer, Benjamin and Stradmann, Yannik and Schemmel, Johannes and Zenke, Friedemann},
+  title   = {The Heidelberg Spiking Data Sets for the Systematic Evaluation of Spiking Neural Networks},
+  journal = {IEEE Transactions on Neural Networks and Learning Systems},
+  volume  = {33},
+  number  = {7},
+  pages   = {2744--2757},
+  year    = {2022},
+  doi     = {10.1109/TNNLS.2020.3044364},
+  url     = {https://doi.org/10.1109/TNNLS.2020.3044364},
+}
+
+% ============================================================
+% Corruption and time-series perturbation protocols
+% ============================================================
+
+@inproceedings{hendrycks2019benchmarking,
+  author    = {Hendrycks, Dan and Dietterich, Thomas G.},
+  title     = {Benchmarking Neural Network Robustness to Common Corruptions and Perturbations},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2019},
+  url       = {https://openreview.net/forum?id=HJz6tiCqYm},
+}
+
+@article{iwana2021empirical,
+  author  = {Iwana, Brian Kenji and Uchida, Seiichi},
+  title   = {An Empirical Survey of Data Augmentation for Time Series Classification with Neural Networks},
+  journal = {PLOS ONE},
+  volume  = {16},
+  number  = {7},
+  pages   = {e0254841},
+  year    = {2021},
+  doi     = {10.1371/journal.pone.0254841},
+  url     = {https://doi.org/10.1371/journal.pone.0254841},
 }

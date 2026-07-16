@@ -337,7 +337,6 @@ def build_mechanism_figure(data: dict):
     ax_c.spines["left"].set_visible(False)
     ax_c.spines["bottom"].set_visible(False)
     ax_c.tick_params(axis="x", length=0)
-    _panel_label(ax_c, "c")
     _clean_grid(ax_c)
 
     # ── Panel (d): Violin plots of λ per task ──────────────────────────────

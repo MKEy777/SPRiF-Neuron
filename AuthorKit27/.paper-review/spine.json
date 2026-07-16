@@ -1,0 +1,45 @@
+{
+  "frozen_round": 0,
+  "anchors": [
+    {
+      "anchor_id": "A1",
+      "type": "problem",
+      "status": "frozen",
+      "text": "Conventional LIF dynamics thus couple temporal integration, spike generation, and reset in one state; post-spike correction directly perturbs the retained input trace.",
+      "passage_id": "1#p3#dbc720e4",
+      "located": true
+    },
+    {
+      "anchor_id": "A2",
+      "type": "method",
+      "status": "frozen",
+      "text": "Its slow spectral state combines one real exponential mode with a two-dimensional damped rotational mode to store temporal context without a direct local reset update.",
+      "passage_id": "1#p4#63a2ac0f",
+      "located": true
+    },
+    {
+      "anchor_id": "A3",
+      "type": "constraint",
+      "status": "frozen",
+      "text": "The direct local reset update therefore acts only on the fast path, although $W_{\\mathrm{rec}}\\mathbf{z}_t$ lets spikes influence the slow state at later timesteps in recurrent layers.",
+      "passage_id": "3.2#p1#5fdbe009",
+      "located": true
+    },
+    {
+      "anchor_id": "A4",
+      "type": "evidence",
+      "status": "frozen",
+      "text": "Because the published systems use task-specific architectures and training protocols, the table provides descriptive cross-paper context rather than a matched significance or efficiency comparison.",
+      "passage_id": "4.2#p1#365f0289",
+      "located": true
+    },
+    {
+      "anchor_id": "A5",
+      "type": "contribution",
+      "status": "frozen",
+      "text": "We formulate functional state decomposition, which separates temporal memory, spike readout, and post-spike reset.",
+      "passage_id": "1#p8#ddd91d47",
+      "located": true
+    }
+  ]
+}
