@@ -1,0 +1,45 @@
+task:
+  total_steps: 30
+  cue_steps: 8
+  phase_channels: 4
+  base_rate_hz: 60.0
+  modulation_hz: 30.0
+  dt_ms: 1.0
+  omega_periods: [12, 20]
+model:
+  hidden_size: 4
+  threshold: 0.3
+  recurrent: false
+  readout_tau_ms: 5.0
+training:
+  train_samples: 8
+  val_samples: 4
+  test_samples: 4
+  batch_size: 4
+  epochs: 1
+  patience: 1
+  learning_rate: 0.002
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  num_workers: 0
+intervention:
+  k: 2
+  gamma: 1.0
+  margin: 0.05
+  event_steps: [15, 22]
+  k_values: [1, 2]
+  gamma_values: [0.5, 1.0]
+  multi_event_counts: [0, 1, 2]
+evaluation:
+  auc_window: 3
+  recovery_window: 5
+  recovery_sustain: 2
+  clean_mse_max: 0.25
+  clean_radius_min: 0.5
+  bootstrap_samples: 50
+  test_seed: 2027
+  ood_periods: [15, 25]
+sprif_seeds: [1]
+baseline_seeds: [1]
+models: [sprif, lif, asrnn, brf]
+output_dir: ../../../experiment-design-20260606/results/phase_reset_causality_smoke

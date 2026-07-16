@@ -1,0 +1,13 @@
+{
+  "model": "sprif",
+  "seed": 1,
+  "best_epoch": 1,
+  "best_val_delay_mse": 0.6169333457946777,
+  "epochs": [
+    {
+      "epoch": 1,
+      "train_delay_mse": 0.652698814868927,
+      "val_delay_mse": 0.6169333457946777
+    }
+  ]
+}

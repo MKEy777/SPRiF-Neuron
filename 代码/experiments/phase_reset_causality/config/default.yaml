@@ -1,0 +1,47 @@
+task:
+  total_steps: 900
+  cue_steps: 100
+  phase_channels: 20
+  base_rate_hz: 30.0
+  modulation_hz: 25.0
+  dt_ms: 1.0
+  omega_periods: [50, 100, 200]
+model:
+  hidden_size: 64
+  threshold: 0.3
+  recurrent: false
+  readout_tau_ms: 20.0
+training:
+  train_samples: 10000
+  val_samples: 2000
+  test_samples: 2000
+  batch_size: 256
+  epochs: 80
+  patience: 15
+  learning_rate: 0.002
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  num_workers: 4
+  lr_step_size: 20
+  lr_gamma: 0.5
+intervention:
+  k: 8
+  gamma: 1.0
+  margin: 0.05
+  event_steps: [200, 350, 500, 650, 800]
+  k_values: [1, 2, 4, 8, 16]
+  gamma_values: [0.5, 1.0, 2.0]
+  multi_event_counts: [0, 1, 2, 4, 8]
+evaluation:
+  auc_window: 50
+  recovery_window: 100
+  recovery_sustain: 10
+  clean_mse_max: 0.25
+  clean_radius_min: 0.5
+  bootstrap_samples: 10000
+  test_seed: 2027
+  ood_periods: [75, 150]
+sprif_seeds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+baseline_seeds: [1, 2, 3, 4, 5]
+models: [sprif, lif, asrnn, brf]
+output_dir: ../../../experiment-design-20260606/results/phase_reset_causality

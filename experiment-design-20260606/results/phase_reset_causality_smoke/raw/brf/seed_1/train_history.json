@@ -1,0 +1,13 @@
+{
+  "model": "brf",
+  "seed": 1,
+  "best_epoch": 1,
+  "best_val_delay_mse": 0.5730617642402649,
+  "epochs": [
+    {
+      "epoch": 1,
+      "train_delay_mse": 0.6053589880466461,
+      "val_delay_mse": 0.5730617642402649
+    }
+  ]
+}

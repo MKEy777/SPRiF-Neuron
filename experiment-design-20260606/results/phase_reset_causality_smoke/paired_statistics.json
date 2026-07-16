@@ -1,0 +1,10 @@
+{
+  "n_seeds": 1,
+  "mean_slow_minus_fast_auc": 0.0,
+  "std_slow_minus_fast_auc": 0.0,
+  "bootstrap_ci95": [
+    0.0,
+    0.0
+  ],
+  "exact_sign_flip_p": 1.0
+}

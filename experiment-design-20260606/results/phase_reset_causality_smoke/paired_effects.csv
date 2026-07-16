@@ -1,0 +1,9 @@
+seed,k,gamma,event_step,fast_excess_auc,slow_excess_auc,slow_minus_fast_auc,dataset,sweep,event_count
+1,2,0.5,22,0.0,0.0,0.0,in_distribution,gamma_sweep,1
+1,1,1.0,22,0.0,0.0,0.0,in_distribution,k_sweep,1
+1,2,1.0,15,0.0,0.0,0.0,in_distribution,main,1
+1,2,1.0,22,0.0,0.0,0.0,in_distribution,main,1
+1,2,1.0,-1,0.0,0.0,0.0,in_distribution,multi_event,0
+1,2,1.0,-1,0.0,0.0,0.0,in_distribution,multi_event,1
+1,2,1.0,-1,0.0,0.0,0.0,in_distribution,multi_event,2
+1,2,1.0,22,3.725290298461914e-08,3.725290298461914e-08,0.0,unseen_frequency,ood_frequency,1
