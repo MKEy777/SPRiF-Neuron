@@ -1,16 +1,16 @@
 # Fdb version 4
-["bibtex SPRiF_AAAI2027_supp"] 1784050256.43394 "SPRiF_AAAI2027_supp.aux" "SPRiF_AAAI2027_supp.bbl" "SPRiF_AAAI2027_supp" 1784050259.28712 0
+["bibtex SPRiF_AAAI2027_supp"] 1784396449.6923 "SPRiF_AAAI2027_supp.aux" "SPRiF_AAAI2027_supp.bbl" "SPRiF_AAAI2027_supp" 1784397114.07247 0
   "./aaai2027.bst" 1783174507 30207 bd248dfe461b9b2fc7481a44feafe197 ""
-  "./sprif2027.bib" 1784045259 14572 8d869583b5acef05f755a716fc212f82 ""
-  "SPRiF_AAAI2027_supp.aux" 1784050258 3260 12dcf5ced960fb009a9f83c8e80a82b8 "pdflatex"
+  "./sprif2027.bib" 1784387936 16537 8b662b7b8d2215ba4ceb4803bed8c5de ""
+  "SPRiF_AAAI2027_supp.aux" 1784397110 3414 0faad62e4a4c8b2e4091fc96ce3c8797 "pdflatex"
   (generated)
   "SPRiF_AAAI2027_supp.bbl"
   "SPRiF_AAAI2027_supp.blg"
   (rewritten before read)
-["pdflatex"] 1784050256.8121 "SPRiF_AAAI2027_supp.tex" "SPRiF_AAAI2027_supp.pdf" "SPRiF_AAAI2027_supp" 1784050259.28763 0
-  "SPRiF_AAAI2027_supp.aux" 1784050258 3260 12dcf5ced960fb009a9f83c8e80a82b8 "pdflatex"
-  "SPRiF_AAAI2027_supp.bbl" 1784050256 2368 ee625e2b760af78946343f6c16a0e73c "bibtex SPRiF_AAAI2027_supp"
-  "SPRiF_AAAI2027_supp.tex" 1784050228 29925 4ac2c20f958221ad0cdb833aa75120fe ""
+["pdflatex"] 1784397094.63101 "SPRiF_AAAI2027_supp.tex" "SPRiF_AAAI2027_supp.pdf" "SPRiF_AAAI2027_supp" 1784397114.07616 0
+  "SPRiF_AAAI2027_supp.aux" 1784397110 3414 0faad62e4a4c8b2e4091fc96ce3c8797 "pdflatex"
+  "SPRiF_AAAI2027_supp.bbl" 1784396450 2315 bf4dbb14a8345749b84434112ae24ba0 "bibtex SPRiF_AAAI2027_supp"
+  "SPRiF_AAAI2027_supp.tex" 1784397069 34109 2de52401f28e3f8c26055e22ab59d693 ""
   "aaai2027.sty" 1783174507 16915 1b1c792e2acfbbd8b672259e267b95d8 ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc" 1783180186 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "c:/texlive/2026/texmf-dist/fonts/enc/dvips/newtx/ntx-ec-tlf.enc" 1783181931 2914 fdbc4a54b9bc76f4551b5303f2737d33 ""
@@ -134,8 +134,9 @@
   "c:/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1783184233 5587484 f8c68a611032439b64384a9c9a056676 ""
   "c:/texlive/2026/texmf-var/web2c/pdftex/pdflatex.fmt" 1783184283 3636415 2d25fbf53267ec56e39487e41f711224 ""
   "c:/texlive/2026/texmf.cnf" 1783184206 713 e69b156964470283e0530f5060668171 ""
-  "figures/loss_landscape_smnist.pdf" 1784048463 164692 908a0c87bd203eea939bb3e119659cc1 ""
+  "figures/loss_landscape_smnist.png" 1784393714 6053241 382f78d23f0907f170ff68dc88238345 ""
   "figures/robustness_benchmark.png" 1783858628 516047 dab733db62a7881a2686cdeb24034533 ""
+  "figures/si_dms_fraction_response.png" 1784382155 408103 41c12a0862bd329b75928ed8fdab55e8 ""
   (generated)
   "SPRiF_AAAI2027_supp.aux"
   "SPRiF_AAAI2027_supp.log"

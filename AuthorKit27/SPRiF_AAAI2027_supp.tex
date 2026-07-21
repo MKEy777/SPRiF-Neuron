@@ -32,7 +32,6 @@ SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron}
 \begin{document}
 
 \maketitle
-\raggedbottom
 
 \section{Supplementary Guide and Evidence Map}
 \label{supp:sec:guide}
@@ -47,7 +46,7 @@ Each section below expands a specific main-paper element rather than introducing
 \begin{itemize}
 \item Main-paper Table~1 is expanded by the dataset encodings, architectures, optimization settings, and reporting rules in Sections~\ref{supp:sec:protocols}--\ref{supp:sec:reporting}; the SPRiF entries remain five-seed estimates and published comparator entries remain descriptive context.
 \item Main-paper Table~2 is expanded by the variant definitions in Section~\ref{supp:sec:variant-definitions}: A is $\omega=0$, B is the merged slow/fast state that changes both state role and total state dimension, and C is $\lambda=0$.
-\item The SI-DMS results are expanded by the task construction, shared controls, delay-by-$K$ coverage, and integrity audit in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}, with training intervention counts $K\in\{0,1,2,4\}$ and evaluation intervention counts $K\in\{0,1,2,4,8\}$.
+\item The SI-DMS results are expanded by the recurrent task construction, paired-loss definition, intervention-fraction sweep, delay-by-$K$ coverage, and integrity audit in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}. Training uses $K\in\{0,1,2,4,8\}$ at a fixed 15\% intervention fraction; evaluation extends to $K\in\{16,32,40\}$ and fractions from 5\% to 50\%.
 \item The S-MNIST loss-landscape diagnostic in Section~\ref{supp:sec:loss-landscape} compares one saved SPRiF checkpoint with one saved LIF checkpoint on a shared perturbation-coordinate grid. Because it uses one training seed and one random direction pair, it is treated as a checkpoint-level optimization diagnostic rather than a multi-seed generalization result.
 \item The mechanism and temporal-kernel figures are expanded by the reset identities and impulse/spectral protocols in Sections~\ref{supp:sec:dynamics}--\ref{supp:sec:analysis-protocols}.
 \item A fixed-checkpoint feature-perturbation diagnostic is reported separately in Section~\ref{supp:sec:perturbation-diagnostic}; it records how saved checkpoints respond under feature perturbations without adding a new benchmark, robustness ranking, or biological interpretation for $\lambda$.
@@ -65,7 +64,7 @@ Table~\ref{tab:supp_arch} reports the task-specific network and optimization set
 
 \begin{table*}[tbp]
 \centering
-\footnotesize
+\small
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lccccc}
 \toprule
@@ -99,7 +98,7 @@ For S-MNIST and PS-MNIST, truncated BPTT uses a chunk length of 262 steps. The G
 \subsection{Seeds, Model Selection, and Reporting}
 \label{supp:sec:reporting}
 
-All five benchmarks use the seed set $\{0,1,2,42,1111\}$. For each benchmark and seed, the checkpoint is selected according to validation accuracy, and Table~1 reports the mean and standard deviation of the resulting evaluation accuracies over the five independently seeded runs. Within a task, all runs use the same task-specific preprocessing, data splits, and architecture settings in Table~\ref{tab:supp_arch}; only the seeded training realization changes. Published comparator entries provide cross-paper context rather than matched controls. SI-DMS is a separate controlled mechanism experiment using seeds $\{1,2,3\}$ and is reported as a three-seed result.
+All five benchmarks use the seed set $\{0,1,2,42,1111\}$. For each benchmark and seed, the checkpoint is selected according to validation accuracy, and Table~1 reports the mean and standard deviation of the resulting evaluation accuracies over the five independently seeded runs. Within a task, all runs use the same task-specific preprocessing, data splits, and architecture settings in Table~\ref{tab:supp_arch}; only the seeded training realization changes. Published comparator entries provide cross-paper context rather than matched controls. SI-DMS is a separate recurrent mechanism experiment using seeds $\{1,2,3\}$. For its summary statistics, each seed is first averaged over the five evaluation delays; the reported mean and sample standard deviation are then computed over the three seed-level values.
 
 \subsection{Compute Environment}
 \label{supp:sec:compute}
@@ -123,7 +122,7 @@ Figure~\ref{fig:supp_loss_landscape} shows a broader low-loss neighborhood for t
 
 \begin{figure*}[tbp]
 \centering
-\includegraphics[width=0.94\textwidth]{figures/loss_landscape_smnist.pdf}
+\includegraphics[width=0.94\textwidth]{figures/loss_landscape_smnist.png}
 \caption{S-MNIST loss-landscape diagnostic for SPRiF (top row) and LIF (bottom row). The 2D contours and 3D surfaces show cross-entropy over the same $25\times25$ perturbation-coordinate grid, with a shared logarithmic color scale and common vertical range. Each model uses its own checkpoint-normalized random directions, while evaluation samples and grid coordinates are matched.}
 \label{fig:supp_loss_landscape}
 \end{figure*}
@@ -158,7 +157,7 @@ $\lambda=0$ & Fixes the reset direction to $[1,0]^\top$, so reset subtracts only
 \subsection{SI-DMS Protocol}
 \label{supp:sec:sidms-protocol}
 
-The Spike-Intervention Delayed Match-to-Sample (SI-DMS) task tests whether a network retains a cue through a delay while selected hidden units are forced to emit real spikes. Table~\ref{tab:supp_sidms} gives the protocol and matched-control configuration.
+The Spike-Intervention Delayed Match-to-Sample (SI-DMS) task tests whether a recurrent network retains a cue through a delay while selected hidden units are forced to emit real spikes. Table~\ref{tab:supp_sidms} gives the protocol and matched-control configuration.
 
 \begin{table*}[tbp]
 \centering
@@ -180,31 +179,79 @@ Delay (eval) & Drawn from $\{200,400,800,1600,2500\}$ ms. \\
 \midrule
 Target & Binary match/non-match label depending on whether the two cues are identical. \\
 \midrule
-Intervention & At $K$ random delay timesteps, the membrane coordinates of 10\% of hidden units are placed above threshold before spike computation; the resulting spike follows the model's ordinary reset rule. \\
+Intervention & At $K$ random delay timesteps, selected membrane coordinates are placed above threshold before spike computation; each resulting spike follows the model's ordinary reset rule and recurrent pathway. \\
 \midrule
-$K$ (train) & $\{0,1,2,4\}$. \\
+Intervention fraction (train) & 15\% of the 64 hidden units at each intervention timestep. \\
 \midrule
-$K$ (eval) & $\{0,1,2,4,8\}$, including $K=8$ as an unseen stress level. \\
+Intervention fraction (eval) & $\{5,10,15,20,30,50\}\%$; the main-paper figure and table use the training-matched 15\% slice. \\
 \midrule
-Shared controls & Within each seed/delay/$K$ condition, models use matched batches, intervention masks, and evaluation probes. \\
+$K$ (train) & $\{0,1,2,4,8\}$. \\
+\midrule
+$K$ (eval) & $\{0,1,2,4,8,16,32,40\}$; $K\in\{16,32,40\}$ are unseen during training. \\
+\midrule
+Shared controls & Within each seed/delay/$K$/fraction condition, models use matched batches, intervention masks, and evaluation probes. \\
 \midrule
 Hidden units & 64. \\
 \midrule
-Architecture & Feedforward hidden layer; no recurrent hidden pathway. \\
+Architecture & One recurrent spiking hidden layer followed by a two-class non-spiking leaky readout. Previous hidden spikes enter the next hidden update through a learned $64\times64$ recurrent weight matrix. \\
+\midrule
+Optimization & 3,000 training steps; batch size 256; Adam with learning rate $3\times10^{-3}$; gradient clipping at 1.0. \\
+\midrule
+Rate regularization & Natural firing-rate target 0.10 with weight 0.05; intervention locations are excluded from the natural-rate term. \\
 \midrule
 SPRiF variants & \texttt{sprif\_full}, \texttt{sprif\_lambda0}, and \texttt{sprif\_merged}. \\
 \midrule
-Baselines & LIF, ASRNN, and BRF with the same hidden width, optimizer, batch structure, and intervention masks. \\
+Baselines & LIF, ASRNN, and BRF with the same recurrent hidden width, optimizer, batch structure, and intervention masks. \\
 \bottomrule
 \end{tabular}
 \caption{SI-DMS task construction, controlled intervention, and matched-control configuration.}
 \label{tab:supp_sidms}
 \end{table*}
 
+For reproducibility of the main paper's paired replay, we use the seed-1 SPRiF-full checkpoint and deterministic batch seed 0 at delay 1600 ms. Clean ($K=0$) and stressed ($K=8$, nominal 15\% intervention; 10 of 64 hidden units per event) conditions receive the exact same A--A input tensor. The two A cues share stimulus identity but are independently sampled realizations of that identity. All 80 selected unit--timestep pairs in the stressed condition produce forced spikes (80/80 forced hits). Both conditions have match targets and predictions, and each cue-2 window contains 203 natural hidden-layer spikes across all 64 units. The raster uses one shared set of ten units, selected jointly after excluding units naturally active in more than 40\% of delay steps. This pair is illustrative rather than a population statistic.
+
 \subsection{Condition-Level Grids}
 \label{supp:sec:sidms-grids}
 
-The condition-level SI-DMS result artifact underlying the main-paper mechanism figure covers all six models, three seeds, five evaluation delays, and five intervention levels. The main-paper SI-DMS table summarizes only clean ($K=0$) and maximum-stress ($K=8$) conditions; the full evaluated grid is scoped here by its delay and intervention coverage, while the non-duplicated visualization remains in the main paper. This appendix entry therefore scopes the already-evaluated grid rather than contributing a new experiment, statistic, or robustness claim.
+The condition-level result set covers six models, three seeds, five delays, eight intervention counts, and six positive-intervention fractions. Because clean accuracy is independent of intervention fraction, each model/seed file contains five clean rows and $5\times7\times6=210$ positive-intervention rows, for 215 rows per run and 3,870 rows in total. The main-paper figure selects the 15\% fraction before aggregating; it never pools the six fractions into one $K$ curve.
+
+For seed $s$, delay $d$, count $K$, and fraction $f$, we define the paired loss
+\begin{equation}
+\Delta\mathrm{Acc}_{s,d}(K,f)
+=\mathrm{Acc}_{s,d}(0)-\mathrm{Acc}_{s,d}(K,f).
+\label{eq:supp_sidms_drop}
+\end{equation}
+Clean accuracy is retained as a model-capability measure. Equation~\eqref{eq:supp_sidms_drop} separately quantifies the additional loss caused by the intervention within the same trained run and evaluation delay. Table~\ref{tab:supp_sidms_results} reports the training-range boundary $K=8$ and the unseen count $K=40$ at $f=15\%$.
+
+\begin{table*}[tbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}
+\toprule
+Model & Clean & $\mathrm{Acc}_{8}$ & $\Delta\mathrm{Acc}_{8}$ & $\mathrm{Acc}_{40}$ & $\Delta\mathrm{Acc}_{40}$ \\
+\midrule
+SPRiF full & $100.0{\pm}0.0$ & $100.0{\pm}0.0$ & $0.0{\pm}0.0$ & $99.8{\pm}0.2$ & $0.2{\pm}0.2$ \\
+SPRiF $\lambda{=}0$ & $99.4{\pm}0.0$ & $99.0{\pm}0.1$ & $0.4{\pm}0.1$ & $95.2{\pm}0.2$ & $4.2{\pm}0.2$ \\
+SPRiF merged & $88.1{\pm}1.4$ & $55.8{\pm}2.8$ & $32.3{\pm}1.4$ & $51.7{\pm}1.6$ & $36.4{\pm}2.7$ \\
+\midrule
+ASRNN & $100.0{\pm}0.0$ & $99.3{\pm}0.5$ & $0.6{\pm}0.5$ & $68.7{\pm}7.4$ & $31.2{\pm}7.4$ \\
+BRF & $79.3{\pm}1.4$ & $70.7{\pm}0.5$ & $8.6{\pm}1.4$ & $53.7{\pm}0.5$ & $25.6{\pm}1.2$ \\
+LIF & $74.9{\pm}23.0$ & $69.0{\pm}26.0$ & $5.9{\pm}8.2$ & $61.2{\pm}19.2$ & $13.7{\pm}10.2$ \\
+\bottomrule
+\end{tabular}
+\caption{SI-DMS accuracy and paired loss at the 15\% intervention fraction (mean$\pm$standard deviation over three seeds; percentage points). Each seed-level quantity is averaged over the five delays before cross-seed aggregation.}
+\label{tab:supp_sidms_results}
+\end{table*}
+
+Figure~\ref{fig:supp_sidms_fraction} holds $K=40$ fixed and varies the fraction of hidden neurons forced to spike at each event. At 20\%, SPRiF full and $\lambda=0$ have accuracies of 99.2\% and 94.2\%, respectively, whereas ASRNN has 58.1\%; the merged variant is near chance. BRF and LIF are shown together with their lower clean accuracies rather than normalized to a common starting point.
+
+\begin{figure*}[tbp]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/si_dms_fraction_response.png}
+\caption{SI-DMS fraction response at the unseen intervention count $K=40$. Curves are 3-seed means after averaging each seed over five delays; shaded bands show seed standard deviations. The point at 0\% is the clean condition, and 15\% is the intervention fraction used during training.}
+\label{fig:supp_sidms_fraction}
+\end{figure*}
 
 \subsection{Model Controls and Integrity Audit}
 \label{supp:sec:sidms-integrity}
@@ -219,13 +266,15 @@ At an intervention timestep, the selected membrane coordinate is placed above th
 \toprule
 Audit item & Required behavior & Appendix status \\
 \midrule
-Coverage & Each model/seed evaluates every delay-by-$K$ cell. & Six models, three seeds, five delays, and five $K$ levels are covered in the saved formal evaluation files. \\
+Coverage & Each model/seed evaluates every configured delay-by-$K$-by-fraction cell. & All 18 runs contain 215 rows, giving 3,870 saved condition rows. \\
 \midrule
-Forced-spike hit & Every selected unit should spike when $K>0$. & The saved evaluation metrics record forced-hit rate $=1.0$ for all 360 intervention cells with $K>0$. \\
+Forced-spike hit & Every selected unit should spike when $K>0$. & The saved evaluation metrics record forced-hit rate $=1.0$ for all 3,780 positive-intervention rows. \\
 \midrule
-Shared controls & Comparisons should not depend on model-specific probes. & Within a seed/delay/$K$ condition, batches and intervention masks are shared across models. \\
+Shared controls & Comparisons should not depend on model-specific probes. & Within a seed/delay/$K$/fraction condition, batches and intervention masks are shared across models. \\
 \midrule
 Reset path & Forced spikes should trigger the same reset rule as ordinary spikes. & Interventions are applied pre-threshold; the resulting spike enters the standard reset update. \\
+\midrule
+Recurrent path & Forced spikes should follow ordinary network communication. & The emitted spike is supplied to the learned recurrent pathway at the next timestep. \\
 \midrule
 SPRiF slow-state insulation & A forced spike must not directly edit the slow spectral state. & Eq.~\eqref{eq:supp_slow_insulation} states $\Delta\mathbf{x}_t^{\mathrm{reset}}=\mathbf{0}$; recurrent communication can only enter the next timestep through $W_{\mathrm{rec}}\mathbf{z}_t$ when recurrence is present. \\
 \bottomrule
@@ -248,10 +297,6 @@ These are structural identities of the stated update. They formalize the SI-DMS 
 
 \section{Formal SPRiF Specification and Analysis Protocols}
 \label{supp:sec:dynamics}
-\setlength{\abovedisplayskip}{4pt plus 1pt minus 2pt}
-\setlength{\belowdisplayskip}{4pt plus 1pt minus 2pt}
-\setlength{\abovedisplayshortskip}{2pt plus 1pt minus 1pt}
-\setlength{\belowdisplayshortskip}{3pt plus 1pt minus 1pt}
 
 \subsection{Slow Spectral State}
 \label{supp:sec:slow-state}
@@ -407,7 +452,7 @@ Figure~\ref{fig:supp_robustness_diagnostic} reports a fixed-checkpoint feature-s
 \item \textbf{Architectures and hyperparameters:} Network widths, epochs, optimizer settings, learning-rate schedules, thresholds, and initialization ranges are listed in Table~\ref{tab:supp_arch}.
 \item \textbf{Seeds and reporting:} Main benchmarks use seeds $\{0,1,2,42,1111\}$ and report mean$\pm$standard deviation for SPRiF; checkpoints are selected by validation accuracy. SI-DMS uses seeds $\{1,2,3\}$; published comparator entries are descriptive cross-paper references. See Section~\ref{supp:sec:reporting}.
 \item \textbf{Surrogate gradient and dynamics:} The multi-Gaussian surrogate is specified in Section~\ref{supp:sec:surrogate}; the exact slow and fast updates are specified in Sections~\ref{supp:sec:slow-state} and \ref{supp:sec:fast-state}.
-\item \textbf{SI-DMS semantics:} Delay sets, $K$ sets, forced-spike semantics, shared controls, condition-level grids, and integrity checks are documented in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}.
+\item \textbf{SI-DMS semantics:} Delay, $K$, and intervention-fraction grids; recurrent forced-spike semantics; paired-loss reporting; shared controls; and integrity checks are documented in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}.
 \item \textbf{Loss-landscape diagnostic:} The checkpoint selection, direction normalization, $25\times25$ grid, test subset, quantitative summaries, and single-slice interpretation boundary are documented in Section~\ref{supp:sec:loss-landscape}.
 \item \textbf{Analysis protocols:} The impulse-response, spectral-summary, learned-reset-direction interpretations, and fixed-checkpoint feature-perturbation diagnostic are scoped in Sections~\ref{supp:sec:analysis-protocols}--\ref{supp:sec:perturbation-diagnostic}.
 \item \textbf{Code availability:} An anonymized code archive accompanying the submission contains the five benchmark implementations, all analysis code used in the paper, and the SI-DMS implementation. The complete code will be released under the MIT License upon publication. No identifying paths or author information are included in the submitted archive.

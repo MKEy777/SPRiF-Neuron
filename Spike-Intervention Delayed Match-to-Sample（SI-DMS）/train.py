@@ -16,7 +16,8 @@ def main():
     def progress(row):
         if row["step"] == 1 or row["step"] % report_every == 0 or row["step"] == cfg.train.steps:
             print(f"  train {row['step']:>4}/{cfg.train.steps}  loss={row['loss']:.4f}  "
-                  f"acc={row['accuracy']:.3f}  delay={row['delay_ms']}  K={row['intervention_count']}", flush=True)
+                  f"acc={row['accuracy']:.3f}  "
+                  f"delay={row['delay_ms']}  K={row['intervention_count']}", flush=True)
     model, history = train_model(args.model, cfg, args.seed, progress=progress)
     out = Path(args.output) / args.model / f"seed_{args.seed}"; out.mkdir(parents=True, exist_ok=True)
     torch.save({"model": model.state_dict(), "config": cfg.to_dict(), "name": args.model}, out / "checkpoint.pt")

@@ -16,7 +16,8 @@ class DMSBatch:
 
 def make_batch(cfg: ExperimentConfig, batch_size: int, delay_ms: int,
                intervention_count: int, hidden_size: int, seed: int | None = None,
-               device: str | torch.device = "cpu") -> DMSBatch:
+               device: str | torch.device = "cpu",
+               fraction: float | None = None) -> DMSBatch:
     task = cfg.task
     if delay_ms < task.dt_ms or delay_ms % task.dt_ms:
         raise ValueError("delay_ms must be a positive multiple of dt_ms")
@@ -42,7 +43,8 @@ def make_batch(cfg: ExperimentConfig, batch_size: int, delay_ms: int,
             x[b, start:start + cue, lo:hi] = (
                 torch.rand((cue, task.cue_channels), generator=g) < cue_p).float()
     intervention = torch.zeros((batch_size, total, hidden_size), dtype=torch.bool)
-    n_neurons = max(1, round(hidden_size * task.intervention_fraction))
+    frac = task.intervention_fraction if fraction is None else fraction
+    n_neurons = max(1, round(hidden_size * frac))
     for b in range(batch_size):
         if intervention_count:
             times = torch.randperm(delay, generator=g)[:intervention_count] + pre + cue

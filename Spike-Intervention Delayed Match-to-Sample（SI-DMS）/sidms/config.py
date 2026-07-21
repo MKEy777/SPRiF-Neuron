@@ -14,7 +14,9 @@ class TaskConfig:
     cue_channels: int = 10
     cue_rate_hz: float = 40.0
     noise_rate_hz: float = 10.0
-    intervention_fraction: float = 0.10
+    intervention_fraction: float = 0.10   # 兼容旧配置的全局默认
+    train_intervention_fraction: float = 0.15   # 训练固定单值,隔离变量
+    eval_intervention_fractions: list[float] = field(default_factory=lambda: [0.05, 0.10, 0.15, 0.20, 0.30, 0.50])
     intervention_margin: float = 0.05
     train_delays_ms: list[int] = field(default_factory=lambda: [200, 400, 800, 1600])
     eval_delays_ms: list[int] = field(default_factory=lambda: [200, 400, 800, 1600, 2500])

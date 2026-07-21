@@ -13,6 +13,8 @@ class NetworkOutput:
     natural_rate_tensor: torch.Tensor
     total_rate_tensor: torch.Tensor
     forced_hit_rate_tensor: torch.Tensor
+    spikes: torch.Tensor | None = None      # batch×steps×hidden,可选,供栅格图
+    forced_hits: torch.Tensor | None = None # batch×steps×hidden,被强制发放位置
 
     @property
     def natural_rate(self): return float(self.natural_rate_tensor.detach())
@@ -27,8 +29,8 @@ class SIDMSNetwork(nn.Module):
         super().__init__()
         self.name, self.cfg = name, cfg
         h = cfg.model.hidden_size
-        cell_input = cfg.task.input_size + (h if cfg.model.recurrent else 0)
-        self.cell = build_cell(name, cell_input, h, cfg.task.dt_ms, cfg.model.threshold)
+        self.cell = build_cell(name, cfg.task.input_size, h, cfg.task.dt_ms,
+                               cfg.model.threshold, cfg.model.recurrent)
         self.readout = nn.Linear(h, 2)
         self.output_alpha = torch.exp(torch.tensor(
             -cfg.task.dt_ms / cfg.model.output_tau_ms))
@@ -40,8 +42,7 @@ class SIDMSNetwork(nn.Module):
         out_mem = torch.zeros(batch, 2, device=x.device)
         spikes, hits = [], []
         for t in range(steps):
-            cell_x = torch.cat((x[:, t], prev), -1) if self.cfg.model.recurrent else x[:, t]
-            prev, state, diag = self.cell.step(cell_x, state, intervention[:, t])
+            prev, state, diag = self.cell.step(x[:, t], state, intervention[:, t], prev)
             out_mem = self.output_alpha.to(x.device) * out_mem + (1 - self.output_alpha.to(x.device)) * self.readout(prev)
             spikes.append(prev)
             hits.append(diag["forced_hit"])
@@ -51,4 +52,5 @@ class SIDMSNetwork(nn.Module):
         natural_rate = (spike_tensor * natural).sum() / natural.sum().clamp_min(1)
         selected = intervention.sum()
         hit_rate = hit_tensor.sum().float() / selected.clamp_min(1)
-        return NetworkOutput(out_mem, natural_rate, spike_tensor.mean(), hit_rate)
+        return NetworkOutput(out_mem, natural_rate, spike_tensor.mean(), hit_rate,
+                             spikes=spike_tensor, forced_hits=hit_tensor)

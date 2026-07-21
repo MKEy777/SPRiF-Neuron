@@ -1,0 +1,222 @@
+\begin{thebibliography}{31}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Bai, Wang, and Yu(2026)}]{dgn}
+Bai, Q.; Wang, H.; and Yu, Q. 2026.
+\newblock {DGN}: A Brain-Inspired Gating Mechanism Unlocks Robust Computation
+  in Spiking Neural Networks.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Baronig et~al.(2025)Baronig, Ferrand, Sabathiel, and
+  Legenstein}]{adlif}
+Baronig, M.; Ferrand, R.; Sabathiel, S.; and Legenstein, R. 2025.
+\newblock Advancing Spatio-Temporal Processing through Adaptation in Spiking
+  Neural Networks.
+\newblock \emph{Nature Communications}, 16: 5776.
+
+\bibitem[{Bittar and Garner(2022)}]{radlif}
+Bittar, A.; and Garner, P.~N. 2022.
+\newblock A Surrogate Gradient Spiking Baseline for Speech Command Recognition.
+\newblock \emph{Frontiers in Neuroscience}, 16: 865897.
+
+\bibitem[{Deng et~al.(2025)Deng, Liu, Wang, Chen, Wei, and Yu}]{hetsyn}
+Deng, Z.; Liu, Z.; Wang, J.; Chen, S.; Wei, X.; and Yu, Q. 2025.
+\newblock {HetSyn}: Versatile Timescale Integration in Spiking Neural Networks
+  via Heterogeneous Synapses.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~38.
+
+\bibitem[{Ding et~al.(2024)Ding, Yu, Huang, and Liu}]{stochastic_gating}
+Ding, J.; Yu, Z.; Huang, T.; and Liu, J.~K. 2024.
+\newblock Enhancing the Robustness of Spiking Neural Networks with Stochastic
+  Gating Mechanisms.
+\newblock In \emph{AAAI Conference on Artificial Intelligence}, volume~38,
+  492--502.
+
+\bibitem[{Ding et~al.(2025{\natexlab{a}})Ding, Yu, Liu, and
+  Huang}]{neuromorphic_robustness}
+Ding, J.; Yu, Z.; Liu, J.~K.; and Huang, T. 2025{\natexlab{a}}.
+\newblock Neuromorphic Computing Paradigms Enhance Robustness through Spiking
+  Neural Networks.
+\newblock \emph{Nature Communications}, 16: 10175.
+
+\bibitem[{Ding et~al.(2025{\natexlab{b}})Ding, Zuo, Jing, He, and
+  Deng}]{mpssnn}
+Ding, Y.; Zuo, L.; Jing, M.; He, P.; and Deng, H. 2025{\natexlab{b}}.
+\newblock Rethinking Spiking Neural Networks from an Ensemble Learning
+  Perspective.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Fabre et~al.(2025)Fabre, Dudchenko, Bouhadjar, and Neftci}]{silif}
+Fabre, M.; Dudchenko, L.; Bouhadjar, Y.; and Neftci, E. 2025.
+\newblock {SiLIF}: Structured State Space Model Dynamics and Parametrization
+  for Spiking Neural Networks.
+\newblock ArXiv:2506.06374.
+
+\bibitem[{Fang et~al.(2023)Fang, Yu, Zhou, Chen, Chen, Ma, Masquelier, and
+  Tian}]{psn}
+Fang, W.; Yu, Z.; Zhou, Z.; Chen, D.; Chen, Y.; Ma, Z.; Masquelier, T.; and
+  Tian, Y. 2023.
+\newblock Parallel Spiking Neurons with High Efficiency and Ability to Learn
+  Long-term Dependencies.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~36.
+
+\bibitem[{Fulleda-Garcia, Soldado-Magraner, and
+  Margarit-Taul{\'{e}}(2026)}]{mtc}
+Fulleda-Garcia, A.; Soldado-Magraner, S.; and Margarit-Taul{\'{e}}, J.~M. 2026.
+\newblock Multi-Timescale Conductance Spiking Networks: A Sparse,
+  Gradient-Trainable Framework with Rich Firing Dynamics for Enhanced Temporal
+  Processing.
+\newblock In \emph{2026 Neuro Inspired Computational Elements (NICE)}, 1--9.
+  IEEE.
+
+\bibitem[{Guo et~al.(2022)Guo, Chen, Zhang, Wang, Liu, Tong, Ou, Huang, and
+  Ma}]{inflor}
+Guo, Y.; Chen, Y.; Zhang, L.; Wang, Y.; Liu, X.; Tong, X.; Ou, Y.; Huang, X.;
+  and Ma, Z. 2022.
+\newblock Reducing Information Loss for Spiking Neural Networks.
+\newblock In \emph{Computer Vision -- ECCV 2022}, 36--52. Springer Nature
+  Switzerland.
+
+\bibitem[{Higuchi et~al.(2024)Higuchi, Kairat, Bohte, and Otte}]{brf}
+Higuchi, S.; Kairat, S.; Bohte, S.; and Otte, S. 2024.
+\newblock Balanced Resonate-and-Fire Neurons.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine
+  Learning}, volume 235 of \emph{Proceedings of Machine Learning Research},
+  18305--18323. PMLR.
+
+\bibitem[{Huang et~al.(2024)Huang, Liu, Feng, Lin, Ren, Fu, Zhou, Xing, and
+  Cheng}]{prf}
+Huang, Y.; Liu, Z.; Feng, C.; Lin, X.; Ren, H.; Fu, H.; Zhou, Y.; Xing, H.; and
+  Cheng, B. 2024.
+\newblock {PRF}: Parallel Resonate and Fire Neuron for Long Sequence Learning
+  in Spiking Neural Networks.
+\newblock ArXiv:2410.03530.
+
+\bibitem[{Huang et~al.(2026)Huang, Meng, Liu, Chen, and Ma}]{arlif}
+Huang, Z.; Meng, W.; Liu, Q.; Chen, K.; and Ma, L. 2026.
+\newblock {AR-LIF}: Adaptive Reset Leaky Integrate-and-Fire Neuron for Spiking
+  Neural Networks.
+\newblock In \emph{ICASSP 2026 -- 2026 IEEE International Conference on
+  Acoustics, Speech and Signal Processing (ICASSP)}, 20322--20326. IEEE.
+
+\bibitem[{Izhikevich(2001)}]{izhikevich_rf}
+Izhikevich, E.~M. 2001.
+\newblock Resonate-and-Fire Neurons.
+\newblock \emph{Neural Networks}, 14(6-7): 883--894.
+
+\bibitem[{Li et~al.(2025)Li, Zeng, Xue, Zeng, Zhang, and Wang}]{rplif}
+Li, Y.; Zeng, X.; Xue, Z.; Zeng, P.; Zhang, Z.; and Wang, Y. 2025.
+\newblock Incorporating the Refractory Period into {SNNs} through
+  Spike-Triggered Threshold Dynamics.
+\newblock In \emph{Proceedings of the 33rd ACM International Conference on
+  Multimedia}, 10876--10885.
+
+\bibitem[{Pagkalos, Chavlis, and Poirazi(2023)}]{dendrify}
+Pagkalos, M.; Chavlis, S.; and Poirazi, P. 2023.
+\newblock Introducing the {Dendrify} Framework for Incorporating Dendrites to
+  Spiking Neural Networks.
+\newblock \emph{Nature Communications}, 14: 131.
+
+\bibitem[{Perez-Nieves et~al.(2021)Perez-Nieves, Leung, Dragotti, and
+  Goodman}]{heterogeneity}
+Perez-Nieves, N.; Leung, V. C.~H.; Dragotti, P.~L.; and Goodman, D. F.~M. 2021.
+\newblock Neural Heterogeneity Promotes Robust Learning.
+\newblock \emph{Nature Communications}, 12: 5791.
+
+\bibitem[{Salaj et~al.(2021)Salaj, Subramoney, Kraisnikovic, Bellec,
+  Legenstein, and Maass}]{snnsfa}
+Salaj, D.; Subramoney, A.; Kraisnikovic, C.; Bellec, G.; Legenstein, R.; and
+  Maass, W. 2021.
+\newblock Spike Frequency Adaptation Supports Network Computations on
+  Temporally Dispersed Information.
+\newblock \emph{eLife}, 10: e65459.
+
+\bibitem[{Shen et~al.(2025)Shen, Wang, Huang, Zhong, Guo, Lu, Zhang, and
+  Leng}]{spikingssms}
+Shen, S.; Wang, C.; Huang, R.; Zhong, Y.; Guo, Q.; Lu, Z.; Zhang, J.; and Leng,
+  L. 2025.
+\newblock {SpikingSSMs}: Learning Long Sequences with Sparse and Parallel
+  Spiking State Space Models.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~39, 20380--20388.
+
+\bibitem[{Sun et~al.(2026)Sun, Su, Achterberg, Indiveri, Goodman, and
+  Akarca}]{sun2026dmp}
+Sun, P.; Su, Z.; Achterberg, J.; Indiveri, G.; Goodman, D. F.~M.; and Akarca,
+  D. 2026.
+\newblock Algorithm--Hardware Co-Design of Neuromorphic Networks with Dual
+  Memory Pathways.
+\newblock \emph{Nature Machine Intelligence}, 8: 901--912.
+
+\bibitem[{Tiwari and Chauhan(2025)}]{ltgate}
+Tiwari, A.; and Chauhan, A. 2025.
+\newblock Local Timescale Gates for Timescale-Robust Continual Spiking Neural
+  Networks.
+\newblock ArXiv:2510.12843.
+
+\bibitem[{Wei et~al.(2026)Wei, Zhou, Liu, Zang, and Yu}]{bimodal}
+Wei, X.; Zhou, X.; Liu, X.; Zang, Y.; and Yu, Q. 2026.
+\newblock Recurrent Spiking Neural Networks with Bimodal Neuronal Time Scales
+  for Learning Performance Enhancement.
+\newblock \emph{Neural Networks}, 200: 108830.
+
+\bibitem[{Yao et~al.(2022)Yao, Li, Mo, and Cheng}]{glif}
+Yao, X.; Li, F.; Mo, Z.; and Cheng, J. 2022.
+\newblock {GLIF}: A Unified Gated Leaky Integrate-and-Fire Neuron for Spiking
+  Neural Networks.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~35.
+
+\bibitem[{Yin, Corradi, and Boht{\'{e}}(2021)}]{asrnn}
+Yin, B.; Corradi, F.; and Boht{\'{e}}, S.~M. 2021.
+\newblock Accurate and Efficient Time-Domain Classification with Adaptive
+  Spiking Recurrent Neural Networks.
+\newblock \emph{Nature Machine Intelligence}, 3: 905--913.
+
+\bibitem[{Zhang et~al.(2025{\natexlab{a}})Zhang, Zhang, Wang, Wang, Wei, Ma,
+  Wang, Yang, and Li}]{drf}
+Zhang, D.; Zhang, M.; Wang, S.; Wang, J.; Wei, W.; Ma, Z.; Wang, G.; Yang, Y.;
+  and Li, H. 2025{\natexlab{a}}.
+\newblock Dendritic Resonate-and-Fire Neuron for Effective and Efficient Long
+  Sequence Modeling.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~38.
+
+\bibitem[{Zhang(2025)}]{zhang2025reset}
+Zhang, E. 2025.
+\newblock Revisiting Reset Mechanisms in Spiking Neural Networks for Sequential
+  Modeling: Specialized Discretization for Binary Activated RNN.
+\newblock arXiv:2504.17751.
+
+\bibitem[{Zhang et~al.(2023)Zhang, Qu, Ma, Wu, Li, and Tan}]{lstmlif}
+Zhang, S.; Qu, Y.; Ma, C.; Wu, J.; Li, H.; and Tan, K.~C. 2023.
+\newblock Long Short-term Memory with Two-Compartment Spiking Neuron.
+\newblock arXiv:2307.07231.
+
+\bibitem[{Zhang et~al.(2024)Zhang, Yang, Ma, Wu, Li, and Tan}]{tclif}
+Zhang, S.; Yang, Q.; Ma, C.; Wu, J.; Li, H.; and Tan, K.~C. 2024.
+\newblock {TC-LIF}: A Two-Compartment Spiking Neuron Model for Long-Term
+  Sequential Modelling.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~38, 16838--16847.
+
+\bibitem[{Zhang et~al.(2025{\natexlab{b}})Zhang, Yu, Zhang, and Wang}]{dalif}
+Zhang, T.; Yu, K.; Zhang, J.; and Wang, H. 2025{\natexlab{b}}.
+\newblock {DA-LIF}: Dual Adaptive Leaky Integrate-and-Fire Model for Deep
+  Spiking Neural Networks.
+\newblock In \emph{2025 IEEE International Conference on Acoustics, Speech and
+  Signal Processing (ICASSP)}, 1--5. IEEE.
+
+\bibitem[{Zheng et~al.(2024)Zheng, Zheng, Hu, Xiao, Wu, Yu, Liu, Li, and
+  Deng}]{dhsnn}
+Zheng, H.; Zheng, Z.; Hu, R.; Xiao, B.; Wu, Y.; Yu, F.; Liu, X.; Li, G.; and
+  Deng, L. 2024.
+\newblock Temporal Dendritic Heterogeneity Incorporated with Spiking Neural
+  Networks for Learning Multi-Timescale Dynamics.
+\newblock \emph{Nature Communications}, 15: 277.
+
+\end{thebibliography}

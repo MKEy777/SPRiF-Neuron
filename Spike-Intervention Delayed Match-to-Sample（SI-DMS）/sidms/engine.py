@@ -28,12 +28,29 @@ def train_model(name: str, cfg: ExperimentConfig, seed: int, device: str | None 
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.train.learning_rate)
     history = []
     rng = random.Random(seed)
+    report_every = max(1, cfg.train.steps // 20)  # 与 run_all 打点节奏对齐
+
+    # 固定 clean(K=0)验证 batch:打点时用它测 acc,反映真实 clean 学习进度
+    clean_delay = cfg.task.train_delays_ms[len(cfg.task.train_delays_ms) // 2]
+    clean_batch = make_batch(cfg, cfg.train.batch_size, clean_delay, 0,
+                             cfg.model.hidden_size, seed=seed * 7_777_777, device=device,
+                             fraction=0.0)
+
+    @torch.no_grad()
+    def clean_acc():
+        model.eval()
+        out = model(clean_batch.x, clean_batch.intervention)
+        acc = float((out.logits.argmax(-1) == clean_batch.y).float().mean())
+        model.train()
+        return acc
+
     model.train()
     for step in range(cfg.train.steps):
         delay = rng.choice(cfg.task.train_delays_ms)
         count = rng.choice(cfg.task.train_intervention_counts)
         batch = make_batch(cfg, cfg.train.batch_size, delay, count,
-                           cfg.model.hidden_size, seed=seed * 1_000_003 + step, device=device)
+                           cfg.model.hidden_size, seed=seed * 1_000_003 + step, device=device,
+                           fraction=cfg.task.train_intervention_fraction)
         out = model(batch.x, batch.intervention)
         ce = F.cross_entropy(out.logits, batch.y)
         rate_loss = (out.natural_rate_tensor - cfg.train.rate_target).square()
@@ -45,8 +62,12 @@ def train_model(name: str, cfg: ExperimentConfig, seed: int, device: str | None 
                "accuracy": float((out.logits.argmax(-1) == batch.y).float().mean()),
                "natural_rate": out.natural_rate, "delay_ms": delay,
                "intervention_count": count}
+        is_report = (step == 0 or (step + 1) % report_every == 0 or step + 1 == cfg.train.steps)
+        if is_report:
+            row["clean_accuracy"] = clean_acc()
         history.append(row)
-        if progress is not None: progress(row)
+        if progress is not None:
+            progress(row)
     return model, history
 
 
@@ -56,20 +77,25 @@ def evaluate_grid(model: SIDMSNetwork, cfg: ExperimentConfig, seed: int, batches
     device = resolve_device(device or cfg.train.device)
     model.to(device).eval(); batch_size = batch_size or cfg.train.batch_size
     rows = []
+    fractions = cfg.task.eval_intervention_fractions
     for d_i, delay in enumerate(cfg.task.eval_delays_ms):
         for k_i, count in enumerate(cfg.task.eval_intervention_counts):
-            correct = total = 0; rates = []; hits = []
-            for b in range(batches):
-                batch_seed = seed * 10_000_019 + d_i * 100_003 + k_i * 1009 + b
-                batch = make_batch(cfg, batch_size, delay, count, cfg.model.hidden_size,
-                                   seed=batch_seed, device=device)
-                out = model(batch.x, batch.intervention)
-                correct += int((out.logits.argmax(-1) == batch.y).sum()); total += batch_size
-                rates.append(out.natural_rate); hits.append(out.forced_hit_rate)
-            row = {"model": model.name, "seed": seed, "delay_ms": delay,
-                   "intervention_count": count, "accuracy": correct / total,
-                   "natural_rate": sum(rates) / len(rates),
-                   "forced_hit_rate": sum(hits) / len(hits)}
-            rows.append(row)
-            if progress is not None: progress(row)
+            # K=0(clean)与 fraction 无关,只在首个 fraction 跑一次
+            frac_list = [(0, 0.0)] if count == 0 else list(enumerate(fractions))
+            for f_i, frac in frac_list:
+                correct = total = 0; rates = []; hits = []
+                for b in range(batches):
+                    batch_seed = seed * 10_000_019 + d_i * 100_003 + k_i * 1009 + f_i * 131 + b
+                    batch = make_batch(cfg, batch_size, delay, count, cfg.model.hidden_size,
+                                       seed=batch_seed, device=device, fraction=frac)
+                    out = model(batch.x, batch.intervention)
+                    correct += int((out.logits.argmax(-1) == batch.y).sum()); total += batch_size
+                    rates.append(out.natural_rate); hits.append(out.forced_hit_rate)
+                row = {"model": model.name, "seed": seed, "delay_ms": delay,
+                       "intervention_count": count, "intervention_fraction": frac,
+                       "accuracy": correct / total,
+                       "natural_rate": sum(rates) / len(rates),
+                       "forced_hit_rate": sum(hits) / len(hits)}
+                rows.append(row)
+                if progress is not None: progress(row)
     return rows

@@ -7,8 +7,6 @@
 \usepackage{natbib}  % DO NOT CHANGE AND DO NOT ADD ANY OPTIONS
 \usepackage{caption} % DO NOT CHANGE AND DO NOT ADD ANY OPTIONS
 \frenchspacing  % DO NOT CHANGE THIS
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{amsmath}
@@ -41,7 +39,7 @@
 % ============================================================
 
 \begin{abstract}
-Temporal tasks often require information to persist across long intervals. Standard spiking neurons use the same membrane state to accumulate context, generate spikes, and receive post-spike reset. This coupling repeatedly perturbs the temporal trace that a neuron must preserve. We introduce \textbf{SPRiF} (Spectral Projective Reset Integrate-and-Fire Neuron), a spiking unit based on functional state decomposition. SPRiF separates a constrained spectral slow state, which provides real and rotational memory modes with no direct local reset update, from a fast discharge state that generates spikes and receives a learnable projective reset. The design preserves a resettable spike-generation pathway while insulating slow temporal memory from direct local post-spike correction. In descriptive cross-paper comparisons on five temporal classification benchmarks, SPRiF has the highest reported mean accuracy among the listed methods on three tasks and remains competitive on the other two. Among the tested variants, jointly merging the slow and fast states and reducing state dimensionality is associated with the largest observed performance differences; removing spectral rotation or fixing the reset direction produces smaller differences. A controlled spike-intervention task shows stable delay-period recall under reset stress, and impulse-response analysis reveals heterogeneous temporal kernels. These results support functional state decomposition as a practical neuron-level design principle for temporal SNNs.
+Long-horizon temporal tasks require SNNs to retain information across extended delays while maintaining spike-based communication. However, standard spiking neurons use the same membrane state to integrate context, generate spikes, and receive post-spike reset, so each spike can disturb the temporal trace it must preserve. To address this coupling, we introduce \textbf{SPRiF} (Spectral Projective Reset Integrate-and-Fire Neuron), a spiking unit based on functional state decomposition. SPRiF separates a constrained spectral slow state, which captures real and damped rotational spectral modes without direct local reset, from a fast discharge state that generates spikes and receives a learnable projective reset. This design preserves resettable spike generation while insulating slow temporal memory from direct post-spike correction. In descriptive cross-paper comparisons across five temporal classification benchmarks, SPRiF has the highest reported mean accuracy among the listed methods on three tasks and remains competitive on the other two. Mechanism ablations identify the merged, lower-dimensional variant as the weakest configuration. On Spike-Intervention Delayed Match-to-Sample (SI-DMS), SPRiF maintains near-clean recall under intervention counts beyond the training range, while impulse-response analysis reveals heterogeneous learned temporal kernels. Together, these results support functional state decomposition as a practical neuron-level design principle for long-horizon temporal computation in SNNs.
 \end{abstract}
 
 % ============================================================
@@ -50,30 +48,30 @@ Temporal tasks often require information to persist across long intervals. Stand
 
 \section{Introduction}
 
-Spiking neural networks (SNNs) process temporal information through discrete spike events. Their temporal capacity depends on neuron dynamics, which govern integration, firing, and post-spike updates. When relevant information spans multiple timescales, these dynamics constrain the temporal patterns that an SNN can retain and exploit.
+Spiking neural networks (SNNs) encode and transmit temporal information through discrete spike events. Their neuron dynamics must preserve relevant context while continuing to generate those events, a requirement that becomes difficult when dependencies span multiple timescales.
 
-The leaky integrate-and-fire (LIF) neuron remains widely used because it is simple and compatible with surrogate-gradient training. Its extensions introduce adaptive thresholds \cite{adlif,dalif,biophysical_adaptation}, resonant dynamics \cite{brf,prf,drf}, heterogeneous temporal decays \cite{bimodal,hetsyn,mtc,ltgate}, and modified reset \cite{inflor,arlif,rplif,psn}. Yet the spike-generating variable usually remains the reset target. A single membrane potential accumulates history, determines spike timing, and absorbs reset, so each spike perturbs its temporal trace.
+The leaky integrate-and-fire (LIF) neuron remains widely used because it is simple and compatible with surrogate-gradient training. Its extensions introduce adaptive variables or thresholds \cite{adlif,dalif}, resonant dynamics \cite{brf,prf,drf}, heterogeneous temporal decays \cite{bimodal,hetsyn,mtc,ltgate}, and modified reset \cite{inflor,arlif,rplif,psn}. These mechanisms enrich the available temporal responses, but the spike-generating variable usually remains both the memory carrier and the reset target.
 
-Conventional LIF dynamics thus couple temporal integration, spike generation, and reset in one state; post-spike correction directly perturbs the retained input trace. The central issue is therefore not merely a lack of richer time constants, but the functional coupling of memory, spike generation, and reset. Separating memory from resettable discharge could preserve temporal context without sacrificing binary communication or enlarging network architecture.
+Reset therefore alters the same recurrence that transports input history. This functional coupling, rather than limited timescale diversity alone, motivates separating temporal memory from resettable discharge without sacrificing binary communication or enlarging the network architecture.
 
-We introduce \textbf{SPRiF} (Spectral Projective Reset Integrate-and-Fire Neuron), which implements functional state decomposition. Its slow spectral state combines one real exponential mode with a two-dimensional damped rotational mode to store temporal context without a direct local reset update. Its fast discharge state projects this context to a membrane readout, emits binary spikes, and receives a learnable projective reset along $[1,\lambda]^\top$. Trained with backpropagation through time and surrogate gradients, SPRiF confines direct local spike correction to the fast state while the slow state evolves continuously.
+We introduce \textbf{SPRiF} (Spectral Projective Reset Integrate-and-Fire Neuron), which implements this separation through two state groups. A slow spectral state combines one real exponential mode with a two-dimensional damped rotational mode to store temporal context. A fast discharge state projects this context to a membrane readout, emits binary spikes, and receives a learnable projective reset along $[1,\lambda]^\top$. SPRiF is trained with backpropagation through time and surrogate gradients; reset acts directly on the fast state while the slow state continues its spectral evolution.
 
-Unlike conventional multi-timescale models, whose parallel channels differ in decay but remain coupled to readout and reset, SPRiF separates state functions. Its slow state stores temporal context, whereas its fast state implements readout and reset; the reset operator has no direct update path to the slow state. The distinction is structural rather than a consequence of heterogeneous time constants alone.
+SPRiF differs from multi-timescale models that add parallel decay channels without separating state functions. Its slow state stores temporal context, while its fast state handles spike readout and reset. The defining distinction is the absence of a direct reset path to the slow state, not simply the presence of heterogeneous time constants.
 
-We evaluate SPRiF on five benchmarks spanning sequential images, physiological signals, speech, and event-based digits. In descriptive cross-paper comparisons, SPRiF has the highest reported mean accuracy among the listed methods on S-MNIST, PS-MNIST, and QTDB, and remains competitive on GSC and SHD. Its reported end-to-end parameter count is lower than that of the highest-accuracy listed baseline on four datasets and comparable on QTDB. Ablations, controlled spike intervention, and impulse-response analyses examine rotation, state separation, and projective reset.
+We evaluate SPRiF on five benchmarks spanning sequential images, physiological signals, speech, and event-based digits. Among the listed published results, SPRiF has the highest reported mean accuracy on S-MNIST, PS-MNIST, and QTDB and remains competitive on GSC and SHD. Its reported end-to-end parameter count is lower than that of the accuracy-leading listed baseline on S-MNIST, GSC, and SHD and close on PS-MNIST and QTDB. Mechanism ablations, recurrent spike intervention, and impulse-response analyses examine the roles of rotation, state separation, and projective reset.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.68\textwidth]{figures/lif_sprif_overview.png}
+\includegraphics[width=0.60\textwidth]{figures/lif_sprif_overview.png}
 \caption{Architectures of (a) LIF and (b) SPRiF. SPRiF separates a slow memory state with no direct local reset update from a resettable fast discharge state.}
 \label{fig:lif_sprif_overview}
 \end{figure*}
 
 The main contributions of our work are summarized below.
 \begin{enumerate}
-\item We formulate functional state decomposition, which separates temporal memory, spike readout, and post-spike reset. This principle is orthogonal to rate decomposition and single-state reset.
-\item SPRiF instantiates this principle with a constrained spectral slow state that combines real exponential decay and damped rotational modes, and a fast discharge state with a learned projective reset that leaves the slow state free of direct local reset updates.
-\item We evaluate SPRiF on five temporal benchmarks, three mechanism ablations, a controlled spike-intervention experiment, and analyses of learned temporal kernels. Code will be released upon acceptance.
+\item We formulate functional state decomposition as a neuron design in which temporal memory and spike-triggered reset occupy distinct states.
+\item SPRiF instantiates this principle with a constrained spectral slow state that combines real exponential decay and damped rotational modes, together with a fast discharge state that receives a learned projective reset.
+\item We evaluate SPRiF on five temporal benchmarks and probe its mechanism with three ablations, SI-DMS, and analyses of learned temporal kernels. Code will be released upon acceptance.
 \end{enumerate}
 
 % ============================================================
@@ -84,19 +82,19 @@ The main contributions of our work are summarized below.
 
 \subsection{Neuron Dynamics for Temporal Processing}
 
-LIF extensions enrich temporal dynamics through adaptive variables, heterogeneous decays, and temporal gates \cite{asrnn,adlif,hetsyn,ltgate}. These approaches provide rate decomposition, in which parallel components evolve at different timescales but remain coupled to membrane readout and reset.
+Adaptive variables, heterogeneous decays, and temporal gates broaden the response repertoire of LIF neurons \cite{asrnn,adlif,hetsyn,ltgate}. These approaches enrich temporal dynamics without imposing SPRiF's neuron-local division between spectral memory and resettable discharge.
 
-Resonate-and-fire variants use damped oscillations \cite{izhikevich_rf,brf,prf,drf}, whereas compartmental and heterogeneous models introduce dendritic structure and dynamics \cite{tclif,dhsnn,dendrify,heterogeneity}. Multi-compartment neurons such as LSTM-LIF separate a dendritic long-term memory compartment from somatic discharge \cite{lstmlif}, and recent modular SNNs explicitly decouple a memory module from a spiking module and its reset \cite{zhang2025reset}. Structured state-space dynamics have also been incorporated into spiking neurons \cite{silif,spikingssms}. Relatedly, DMP-SNN \cite{sun2026dmp} combines a layer-shared, low-dimensional memory with a fast feed-forward spiking pathway for efficient long-horizon processing. SPRiF instead realizes neuron-level separation between a spectral slow state and a fast state with projective reset.
+Resonate-and-fire variants encode damped oscillations \cite{izhikevich_rf,brf,prf,drf}, while heterogeneous neurons and synapses distribute temporal decays across a network \cite{heterogeneity,hetsyn}. Compartmental models add dendritic structure and dynamics \cite{tclif,dhsnn,dendrify}; LSTM-LIF, for example, separates a dendritic long-term memory compartment from somatic discharge \cite{lstmlif}. Structured state-space dynamics provide another route to long-horizon processing \cite{silif,spikingssms}. DMP-SNN combines layer-shared, low-dimensional memory with a fast feed-forward spiking pathway \cite{sun2026dmp}. SPRiF instead places spectral memory and projective reset in distinct state groups within each neuron.
 
 \subsection{Reset and Functional State Separation}
 
-Existing reset mechanisms soften, adapt, or remove the post-spike update \cite{inflor,rplif,arlif,psn}, but still modify the spike-generating state itself or remove reset from that state. SPRiF instead confines a learnable projective reset to the fast discharge state and introduces no direct local reset update to the slow spectral state, distinct from both scalar or adaptive reset \cite{inflor,rplif,arlif,psn} and module-level reset decoupling \cite{zhang2025reset}. Network-level temporal architectures \cite{mpssnn,stochastic_gating,neuromorphic_robustness} are complementary to this neuron-level separation.
+Existing mechanisms soften, adapt, or remove the post-spike update, and recent work also revisits reset and refractory periods through binary-activated recurrent sequence models \cite{inflor,rplif,arlif,psn,zhang2025reset}. These designs modify the spike-generating state or remove its reset. SPRiF retains reset but confines it to the fast discharge state, leaving the slow spectral state outside the local reset path. Network-level temporal processing and robustness strategies \cite{mpssnn,stochastic_gating,neuromorphic_robustness} remain complementary to this neuron-level design.
 
 % ============================================================
 % Section 3: Method
 % ============================================================
 
-\section{Method}
+\section{Methodology}
 
 \subsection{Limitation of Conventional LIF Dynamics}
 
@@ -146,7 +144,7 @@ Equation~\eqref{eq:sprif_dynamics} is written for one neuron, with indices suppr
 
 \subsection{Spectral Slow-Memory Dynamics}
 
-The slow-state update in Eq.~\eqref{eq:sprif_dynamics} retains temporal context without direct spike-triggered correction. Rather than learning an unconstrained transition, SPRiF uses a three-dimensional real-valued system with one real decay mode and one complex-conjugate rotational pair.
+The slow-state update in Eq.~\eqref{eq:sprif_dynamics} uses a three-dimensional real-valued system with one real decay mode and one complex-conjugate rotational pair. This constrained transition retains temporal context while keeping its spectrum interpretable.
 \begin{equation}
 A=
 \begin{bmatrix}
@@ -184,7 +182,7 @@ A^kB=
 \end{bmatrix}.
 \label{eq:spectral_impulse_response}
 \end{equation}
-The real coordinate supplies a monotone exponential trace, whereas the rotational pair supplies phase-shifted, damped oscillations. Together they form a compact temporal basis with distinct decay and frequency controls. Because the slow state is computed before spikes and absent from the reset equation, its dynamics remain separate from post-spike correction.
+The real coordinate supplies a monotone exponential trace, whereas the rotational pair supplies phase-shifted, damped oscillations. They form a compact temporal basis with distinct decay and frequency controls.
 
 \subsection{Fast Discharge Dynamics and Projective Reset}
 
@@ -198,12 +196,10 @@ After a spike, SPRiF applies the following projective reset only to the fast sta
 \begin{bmatrix}1\\\lambda_j\end{bmatrix},
 \label{eq:projective_reset}
 \end{equation}
-where $\lambda_j$ is learned independently for neuron $j$. Setting $\lambda_j=0$ recovers scalar subtraction on the membrane coordinate; otherwise, reset modifies both fast coordinates along a learned direction. Thus, $\lambda_j$ controls post-spike correction rather than the temporal memory transition and introduces no direct local update term for $\mathbf{x}_t$.
+where $\lambda_j$ is learned independently for neuron $j$. Setting $\lambda_j=0$ recovers scalar subtraction on the membrane coordinate; otherwise, reset modifies both fast coordinates along a learned direction. Thus, $\lambda_j$ controls post-spike correction without changing the slow-state transition.
 
 \begin{table*}[t]
 \centering
-\caption{Comparison across five temporal benchmarks. ``Rec'' denotes recurrent synaptic connections; DMP-SNN uses layer-shared state-space memory. Parameters are reported in millions (M), and SPRiF entries (bold) are mean$\pm$std over 5 seeds.}
-\label{tab:main_results}
 \begin{tabular}{clccc}
 \toprule
 Datasets & Method & Network & Parameters (M) & Accuracy (\%) \\
@@ -212,7 +208,7 @@ Datasets & Method & Network & Parameters (M) & Accuracy (\%) \\
 & GLIF$_{\text{NeurIPS, 2022}}$ \cite{glif} & Rec & 0.15 & 96.64 \\
 & ASRNN$_{\text{Nat. Mach. Intell., 2021}}$ \cite{asrnn} & Rec & 0.15 & 98.70 \\
 & DH-SNN$_{\text{Nat. Commun., 2024}}$ \cite{dhsnn} & Rec & 0.08 & 98.90 \\
-& BRF$_{\text{ICLR, 2024}}$ \cite{brf} & Rec & 0.069 & 99.10 \\
+& BRF$_{\text{ICML, 2024}}$ \cite{brf} & Rec & 0.069 & 99.10 \\
 & TC-LIF$_{\text{AAAI, 2024}}$ \cite{tclif} & Rec & 0.15 & 99.20 \\
 & DMP-SNN (II)$_{\text{Nat. Mach. Intell., 2026}}$ \cite{sun2026dmp} & DMP & 0.073 & 99.20 \\
 & \textbf{SPRiF (ours)} & \textbf{Rec} & \textbf{0.067} & \textbf{99.28 $\pm$ 0.06} \\
@@ -221,7 +217,7 @@ Datasets & Method & Network & Parameters (M) & Accuracy (\%) \\
 & GLIF$_{\text{NeurIPS, 2022}}$ \cite{glif} & Rec & 0.15 & 90.47 \\
 & ASRNN$_{\text{Nat. Mach. Intell., 2021}}$ \cite{asrnn} & Rec & 0.15 & 94.30 \\
 & DH-SNN$_{\text{Nat. Commun., 2024}}$ \cite{dhsnn} & Rec & 0.08 & 94.52 \\
-& BRF$_{\text{ICLR, 2024}}$ \cite{brf} & Rec & 0.069 & 95.20 \\
+& BRF$_{\text{ICML, 2024}}$ \cite{brf} & Rec & 0.069 & 95.20 \\
 & TC-LIF$_{\text{AAAI, 2024}}$ \cite{tclif} & Rec & 0.15 & 95.36 \\
 & DMP-SNN (I)$_{\text{Nat. Mach. Intell., 2026}}$ \cite{sun2026dmp} & DMP & 0.061 & 95.50 \\
 & \textbf{SPRiF (ours)} & \textbf{Rec} & \textbf{0.067} & \textbf{95.86 $\pm$ 0.14} \\
@@ -229,12 +225,12 @@ Datasets & Method & Network & Parameters (M) & Accuracy (\%) \\
 \multirow{5}{*}{QTDB}
 & ASRNN$_{\text{Nat. Mach. Intell., 2021}}$ \cite{asrnn} & Rec & 0.0018 & 85.90 \\
 & DH-SNN$_{\text{Nat. Commun., 2024}}$ \cite{dhsnn} & Rec & 0.00178 & 86.35 \\
-& BRF$_{\text{ICLR, 2024}}$ \cite{brf} & Rec & 0.00173 & 87.00 \\
+& BRF$_{\text{ICML, 2024}}$ \cite{brf} & Rec & 0.00173 & 87.00 \\
 & SE-adLIF$_{\text{Nat. Commun., 2025}}$ \cite{adlif} & Rec & 0.0018 & 86.88 \\
 & \textbf{SPRiF (ours)} & \textbf{Rec} & \textbf{0.00177} & \textbf{88.43 $\pm$ 0.36} \\
 \midrule
 \multirow{6}{*}{GSC}
-& SNN-SFA$_{eLife, 2021}$ \cite{snnsfa} & Rec & 4.19 & 91.21 \\
+& SNN-SFA$_{\text{eLife, 2021}}$ \cite{snnsfa} & Rec & 4.19 & 91.21 \\
 & ASRNN$_{\text{Nat. Mach. Intell., 2021}}$ \cite{asrnn} & Rec & 0.31 & 92.10 \\
 & RadLIF$_{\text{Front. Neurosci., 2022}}$ \cite{radlif} & Rec & 1.20 & 94.51 \\
 & DH-SNN$_{\text{Nat. Commun., 2024}}$ \cite{dhsnn} & Rec & 0.13 & 93.80 \\
@@ -245,32 +241,34 @@ Datasets & Method & Network & Parameters (M) & Accuracy (\%) \\
 & Heterogeneous SNN$_{\text{Nat. Commun., 2021}}$ \cite{heterogeneity} & Rec & 0.11 & 82.50 \\
 & ASRNN$_{\text{Nat. Mach. Intell., 2021}}$ \cite{asrnn} & Rec & 0.14 & 90.40 \\
 & DH-SNN$_{\text{Nat. Commun., 2024}}$ \cite{dhsnn} & Rec & 0.05 & 91.34 \\
-& BRF$_{\text{ICLR, 2024}}$ \cite{brf} & Rec & 0.11 & 91.70 \\
+& BRF$_{\text{ICML, 2024}}$ \cite{brf} & Rec & 0.11 & 91.70 \\
 & TC-LIF$_{\text{AAAI, 2024}}$ \cite{tclif} & Rec & 0.14 & 88.91 \\
 & MPS-SNN$_{\text{ICLR, 2025}}$ \cite{mpssnn} & Rec & 0.39 & 91.19 \\
 & DGN$_{\text{ICLR, 2026}}$ \cite{dgn} & Rec & 0.22 & 87.78 \\
 & \textbf{SPRiF (ours)} & \textbf{Rec} & \textbf{0.05} & \textbf{91.52 $\pm$ 0.46} \\
 \bottomrule
 \end{tabular}
+\caption{Comparison across five temporal benchmarks. ``Rec'' denotes recurrent synaptic connections; DMP-SNN uses layer-shared state-space memory. Parameters are reported in millions (M), and SPRiF entries (bold) are mean$\pm$standard deviation over five seeds.}
+\label{tab:main_results}
 \end{table*}
 
 \subsection{Reset-Memory Separation Analysis}
 
-The preceding equations distinguish the direct effect of reset from the ordinary temporal propagation of spike signals. Relative to the pre-reset states, the reset-induced increments are
+The preceding equations separate the same-step effect of reset from the later propagation of spike signals. Relative to the pre-reset states, the reset-induced increments are
 \begin{equation}
 \Delta\mathbf{x}_t^{\mathrm{reset}}=\mathbf{0},\qquad
 \Delta\mathbf{u}_t^{\mathrm{reset}}=-z_t\theta
 \begin{bmatrix}1\\\lambda_j\end{bmatrix}.
 \label{eq:reset_separation}
 \end{equation}
-In LIF, the reset contribution $-z_{t-1}\theta$ is accumulated through the same recurrence as input history. In SPRiF, direct local reset is confined to $\mathbf{u}_t$, leaving $\mathbf{x}_t$ unchanged at the same timestep.
+In LIF, the reset contribution $-z_{t-1}\theta$ is accumulated through the same recurrence as input history. In SPRiF, Eq.~\eqref{eq:reset_separation} gives a zero same-step increment for $\mathbf{x}_t$ and confines reset to $\mathbf{u}_t$.
 
 The slow-state recurrence makes this distinction explicit. Iterating the first line of Eq.~\eqref{eq:sprif_dynamics} yields
 \begin{equation}
 \mathbf{x}_t=A^t\mathbf{x}_0+\sum_{\tau=1}^{t}A^{t-\tau}B I_\tau.
 \label{eq:slow_unrolled}
 \end{equation}
-No direct local reset term appears in Eq.~\eqref{eq:slow_unrolled}; holding $I_t$ fixed gives $\partial\mathbf{x}_t/\partial z_t=\mathbf{0}$ for the reset operation. In recurrent layers, $\mathbf{z}_t$ affects $\mathbf{x}_{t+1}$ through $W_{\mathrm{rec}}\mathbf{z}_t$. SPRiF therefore separates direct local post-spike reset from ordinary network communication.
+Holding $I_t$ fixed, Eq.~\eqref{eq:slow_unrolled} gives $\partial\mathbf{x}_t/\partial z_t=\mathbf{0}$ for the reset operation. In recurrent layers, $\mathbf{z}_t$ can still affect $\mathbf{x}_{t+1}$ through $W_{\mathrm{rec}}\mathbf{z}_t$. The construction therefore distinguishes same-step local reset from later network communication.
 
 
 % ============================================================
@@ -278,94 +276,106 @@ No direct local reset term appears in Eq.~\eqref{eq:slow_unrolled}; holding $I_t
 % ============================================================
 \section{Experiments}
 
-\subsection{Benchmarks and Protocol}
+\subsection{Evaluation Questions and Protocol}
 
-We evaluate SPRiF on five temporal classification benchmarks spanning sequential images (S-MNIST and PS-MNIST), physiological signals (QTDB), frame-based speech (GSC), and event-driven speech (SHD). We train all models for a fixed number of epochs. These tasks differ substantially in input encoding, sequence length, and temporal structure, allowing us to test whether the proposed neuron dynamics transfer beyond a single temporal modality.
+The experiments address four questions: how SPRiF compares with published temporal SNNs, which design choices contribute to its accuracy, whether additional spike-triggered updates disrupt retained context, and what temporal dynamics the trained states learn. We evaluate five benchmarks spanning sequential images (S-MNIST and PS-MNIST), physiological signals (QTDB), frame-based speech (GSC), and event-driven speech (SHD). For SPRiF, Table~\ref{tab:main_results} reports the mean and standard deviation over five seeds after fixed-epoch training.
 
-We compare SPRiF with published recurrent SNNs that use gated, adaptive, dendritic, resonate-and-fire, and other temporal neuron dynamics. The architectures and optimization protocols are adapted to each benchmark, whereas the reported SPRiF variants retain the same neuron definition. Complete dataset preprocessing, task-specific architectures, optimization settings, initialization procedures, and reproducibility details are provided in the technical appendix. Classification accuracy is reported in Table~\ref{tab:main_results}.
+The evidence has two levels. Table~\ref{tab:main_results} provides a descriptive cross-paper comparison with recurrent SNNs using gated, adaptive, dendritic, resonate-and-fire, and other temporal neuron dynamics; their architectures and optimization protocols remain task-specific. The subsequent ablations and SI-DMS experiments use controlled variants to examine the SPRiF mechanism. The technical appendix specifies preprocessing, architectures, optimization, initialization, and reproducibility details.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/si_dms_mechanism_composite.pdf}
-\caption{Controlled spike-intervention results (SI-DMS). (a) Accuracy versus intervention count $K$ for the three SPRiF mechanism variants (solid, saturated) and three external baselines (dashed, gray); values are 3-seed means $\pm$ seed standard deviations. (b) Per-model delay-by-$K$ accuracy grids (3-seed mean) for all six models with a shared colorbar; $\mu$ denotes the per-model mean across the grid.}
+\includegraphics[width=0.88\textwidth]{figures/si_dms_mechanism_composite.png}
+\caption{SI-DMS at the fixed 15\% intervention fraction. (a) Paired clean and $K=8$ replays of the same deterministic A--A input for full SPRiF at a 1600-ms delay. The cues share stimulus identity but use independent spike realizations. Blue and red ticks mark natural and forced spikes; faint red lines mark the eight intervention times. Cue-2 details show natural activity and the match readout; both conditions predict match. (b) Accuracy versus $K$, averaged over five delays within each of three seeds; bands show seed standard deviations. (c) Three-seed mean delay-by-$K$ accuracy with a shared color scale. Training includes $K\leq8$; $K\in\{16,32,40\}$ are unseen. Full SPRiF remains near its clean accuracy at these unseen intervention counts.}
 \label{fig:si_dms}
 \end{figure*}
-\subsection{Main Results}
 
-Table~\ref{tab:main_results} summarizes the benchmark comparison. SPRiF obtains the highest reported accuracy among the listed methods on S-MNIST, PS-MNIST, and QTDB, while remaining competitive on GSC and SHD. It also has a lower reported parameter count than the highest-accuracy listed baseline on four datasets and a comparable count on QTDB. These results span five distinct temporal input regimes, showing consistent patterns across the tested settings. Because the published systems use task-specific architectures and training protocols, the table provides descriptive cross-paper context rather than a matched significance or efficiency comparison.
+\subsection{Benchmark Comparison}
 
-\subsection{Mechanism Ablations}
+SPRiF records the highest listed mean accuracy on S-MNIST, PS-MNIST, and QTDB (Table~\ref{tab:main_results}). Its absolute margins over the best listed baseline accuracies are 0.08, 0.36, and 1.43 percentage points, respectively. On GSC and SHD, SPRiF is within 0.29 and 0.18 percentage points of the listed best result. Its end-to-end parameter count is lower than that of the accuracy-leading listed baseline on S-MNIST, GSC, and SHD, and close on PS-MNIST and QTDB. Because these systems use different task-specific protocols, the comparison establishes benchmark context rather than matched statistical significance or hardware efficiency.
 
-We isolated three design choices on PS-MNIST, GSC, and QTDB. Ablation A set $\omega=0$, removing rotational coupling while retaining the real decay path. Ablation B merged memory and discharge into a single three-dimensional state, whose first coordinate served as both membrane and reset target. Ablation C fixed $\lambda=0$, reducing Eq.~\eqref{eq:projective_reset} to scalar reset. All variants otherwise retained the task-specific training configuration.
 
+\subsection{Contribution of the SPRiF Design Choices}
 \begin{table}[t]
 \centering
-\caption{Mechanism ablations (accuracy, \%).}
-\label{tab:ablation}
-\begin{tabular}{lcccc}
+{\small
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
 Dataset & Full$^*$ & $\omega{=}0$ & Merged & $\lambda{=}0$ \\
 \midrule
-PS-MNIST & \textbf{95.86} & 92.29 & 93.44 & 95.32 \\
-GSC & \textbf{94.55} & 93.83 & 90.05 & 94.22 \\
-QTDB & \textbf{88.43} & 87.78 & 83.39 & 87.40 \\
+PS-MNIST & \textbf{95.86} & 93.44$\pm$0.27 & 92.29$\pm$0.36 & 95.32$\pm$0.18 \\
+GSC & \textbf{94.55} & 93.83$\pm$0.28 & 90.05$\pm$0.42 & 94.22$\pm$0.22 \\
+QTDB & \textbf{88.43} & 87.40$\pm$0.25 & 83.39$\pm$0.44 & 87.78$\pm$0.30 \\
 \bottomrule
-\multicolumn{5}{l}{\footnotesize $^*$Full values are the 5-seed mean from Table~\ref{tab:main_results}.}
 \end{tabular}
+\par
+\parbox{\columnwidth}{$^*$Full standard deviations are reported in Table~\ref{tab:main_results}.}
+}
+\caption{Classification accuracy (\%) of SPRiF and its mechanism variants on PS-MNIST, GSC, and QTDB. Full SPRiF is highest and the merged variant is lowest on all three datasets.}
+\label{tab:ablation}
 \end{table}
 
-The merged variant jointly collapses the two state roles and reduces total state dimensionality, so this comparison does not isolate separation alone. With this qualification, Table~\ref{tab:ablation} shows a consistent ordering across all three datasets. The merged variant has the largest observed accuracy decrease, 2.42--5.04 points. Removing rotation is associated with a 0.65--3.57-point decrease, with the largest difference on the long permuted sequence, while fixing the reset direction is associated with a smaller but consistent 0.33--1.03-point decrease. Across the tested settings, the joint separation-and-capacity change is associated with the largest performance difference, with spectral rotation and a learnable reset direction providing further refinement.
+We isolate three design choices on PS-MNIST, GSC, and QTDB. Setting $\omega=0$ removes rotational coupling while retaining the real decay path. The merged variant combines memory and discharge in a single three-dimensional state whose first coordinate is both membrane and reset target. Setting $\lambda=0$ reduces Eq.~\eqref{eq:projective_reset} to scalar reset. All variants otherwise retain the task-specific training configuration.
+
+
+Table~\ref{tab:ablation} shows the same ordering on all three datasets. Merging produces the largest observed decrease, 3.57--5.04 percentage points. Removing rotation reduces accuracy by 0.72--2.42 points, with the largest difference on the long permuted sequence; scalar reset reduces it by 0.33--0.65 points. The latter two controlled changes therefore have smaller effects under the tested settings. Because merging also reduces total state dimensionality, however, its larger decrease cannot be attributed to state separation alone.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/mechanism_composite_v5_01.png}
-\caption{Functional decomposition and learned projective reset. (a) Slow and fast states around a recorded PS-MNIST spike. (b) Oscillatory slow-state trajectories across cue--delay probe windows. (c) Representative reset directions $[1,\lambda]$. (d) Task-wise distributions of $\lambda$. (e) Pearson correlations between $\lambda$ and firing rate, $\alpha$, and $\omega$.}
+\includegraphics[width=0.92\textwidth]{figures/mechanism_composite.png}
+\caption{Functional decomposition and learned projective reset. (a) Slow and fast states around a recorded PS-MNIST spike. (b) Oscillatory slow-state trajectories across cue--delay probe windows. (c) Representative reset directions $[1,\lambda]$. (d) Task-wise distributions of $\lambda$. (e) Pearson correlations between $\lambda$ and firing rate, $\alpha$, and $\omega$. Learned reset directions span both signs and are only weakly correlated with the measured neuron statistics.}
 \label{fig:mechanism}
 \end{figure*}
-\subsection{Controlled Spike Intervention}
+\subsection{Spike-Intervention Delayed Match-to-Sample (SI-DMS)}
 
-To test whether slow--fast separation protects memory under reset stress, we designed a Spike-Intervention Delayed Match-to-Sample (SI-DMS) task. A cue was followed by a delay, during which selected hidden neurons were induced to spike at controlled times. A match/non-match probe then tested recall. At each intervention timestep, the membrane coordinates of 10\% of hidden neurons were placed above threshold before spike computation, so the standard reset mechanism was applied. We evaluated $K\in\{0,1,2,4,8\}$ intervention times. The maximum-stress setting, $K=8$, was not used during training. If reset reaches the memory-bearing state, these interventions should impair delay-period recall. If the slow state is structurally insulated, recall should remain more stable.
+Standard benchmark accuracy does not reveal whether additional spikes corrupt retained context. SI-DMS tests this failure mode by pairing a clean replay with a stressed replay in which forced spikes trigger native reset and recurrent propagation during the memory delay.
 
-Table~\ref{tab:si_dms} reports clean ($K=0$) and maximum-stress ($K=8$) accuracy averaged over three seeds. At maximum stress, the two separated variants maintained high accuracy with only small losses. SPRiF full reached 93.5\% clean accuracy and lost 0.6 percentage points, while SPRiF $\lambda{=}0$ showed a comparable 0.7-point drop. This pattern is consistent with preserved delay-period recall and indicates that structural separation, rather than $\lambda$ alone, was important in the tested setting. BRF decreased from 70.4\% to 64.9\%. The merged variant remained near chance (51.7\% clean and 50.4\% under maximum stress), as did LIF and ASRNN, so their clean-to-stress differences are interpreted only within that performance range. Figure~\ref{fig:si_dms} shows the delay-by-intervention grid, with complete grids and integrity audits provided in the appendix.
+The test uses a 64-unit recurrent hidden layer. During the delay, 15\% of hidden neurons are induced to spike at each of $K$ sampled timesteps before a match/non-match probe. Placing the membrane coordinate above threshold before spike computation triggers native reset, and the emitted spike enters the next-step recurrent pathway. SI-DMS therefore measures combined spike-reset and recurrent-spike stress, not a pure local-reset effect. Training samples $K\in\{0,1,2,4,8\}$; evaluation adds unseen $K\in\{16,32,40\}$ and sweeps the intervention fraction from 5\% to 50\%.
+
+For each seed and delay, $\Delta\mathrm{Acc}(K,f)=\mathrm{Acc}(0)-\mathrm{Acc}(K,f)$. Table~\ref{tab:si_dms} averages over five delays within each seed and then over three seeds at $f=15\%$. ASRNN provides the clean-matched control: full SPRiF and ASRNN both attain $100.0{\pm}0.0$ clean accuracy, but their losses at unseen $K=40$ are $0.2{\pm}0.2$ and $31.2{\pm}7.4$ percentage points, respectively. BRF and LIF start lower, with LIF also showing substantial seed variability, so clean accuracy and paired loss should be read together.
+
+At $K=40$, the $\lambda{=}0$ variant loses $4.2{\pm}0.2$ percentage points, compared with $0.2{\pm}0.2$ for full SPRiF, supporting a task-specific benefit from the learned reset direction. Both separated variants are more resilient than the merged model, whose losses are $32.3{\pm}1.4$ at $K=8$ and $36.4{\pm}2.7$ at $K=40$, alongside lower clean accuracy. Because merging also reduces state dimensionality, this result cannot isolate separation from capacity. Figure~\ref{fig:si_dms} gives the complete delay-by-$K$ view; the appendix provides the fraction sweep and integrity audit.
+
+Figure~\ref{fig:si_dms}a replays the same deterministic A--A input under clean and $K=8$ conditions. After the 1600-ms delay and eight forced events, the stressed replay retains natural cue-2 activity and the same correct match decision. This trace illustrates the intervention process; Fig.~\ref{fig:si_dms}b--c provides the aggregate evidence across models, delays, and seeds.
 
 \begin{table}[t]
 \centering
-\caption{SI-DMS results (3-seed average; accuracy in \%; drop in percentage points). Clean and maximum-stress accuracies correspond to $K=0$ and $K=8$, respectively. External baselines are marked (ext.). The two separated SPRiF variants maintain high accuracy under intervention.}
-\label{tab:si_dms}
 \begin{tabular}{lccc}
 \toprule
-Model & Clean & Stress & Drop \\
+Model & Clean & $\Delta\mathrm{Acc}_{8}$ & $\Delta\mathrm{Acc}_{40}$ \\
 \midrule
-SPRiF full & 93.5 & 92.9 & 0.6 \\
-SPRiF $\lambda{=}0$ & 92.8 & 92.1 & 0.7 \\
-SPRiF merged & 51.7 & 50.4 & 1.3 \\
+SPRiF full & $100.0{\pm}0.0$ & $\mathbf{0.0{\pm}0.0}$ & $\mathbf{0.2{\pm}0.2}$ \\
+SPRiF $\lambda{=}0$ & $99.4{\pm}0.0$ & $0.4{\pm}0.1$ & $4.2{\pm}0.2$ \\
+SPRiF merged & $88.1{\pm}1.4$ & $32.3{\pm}1.4$ & $36.4{\pm}2.7$ \\
 \midrule
-LIF (ext.) & 50.0 & 50.2 & $-$0.2 \\
-ASRNN (ext.) & 52.0 & 51.7 & 0.3 \\
-BRF (ext.) & 70.4 & 64.9 & 5.5 \\
+ASRNN & $100.0{\pm}0.0$ & $0.6{\pm}0.5$ & $31.2{\pm}7.4$ \\
+BRF & $79.3{\pm}1.4$ & $8.6{\pm}1.4$ & $25.6{\pm}1.2$ \\
+LIF & $74.9{\pm}23.0$ & $5.9{\pm}8.2$ & $13.7{\pm}10.2$ \\
 \bottomrule
 \end{tabular}
+\caption{SI-DMS clean accuracy and paired intervention loss at $f=15\%$ (mean$\pm$standard deviation over three seeds; percentage points). Each seed-level value is averaged over five delays before aggregation. Full SPRiF has the smallest loss at the unseen $K=40$ setting.}
+\label{tab:si_dms}
 \end{table}
 
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/temporal_kernels_composite.pdf}
-\caption{Learned temporal kernels. (a) Real (solid) and oscillatory (dotted) coordinates of four $\alpha$-quantile SPRiF neurons per task over 100 post-impulse timesteps. (b) Median normalized real-coordinate spectrum with the 10--90\% range. (c) Representative SPRiF real-coordinate and available trained ASRNN membrane kernels on GSC and QTDB, with derived time constants $\tau$.}
+\includegraphics[width=0.92\textwidth]{figures/temporal_kernels_composite.png}
+\caption{Learned temporal kernels. (a) Real (solid) and oscillatory (dotted) coordinates of four $\alpha$-quantile SPRiF neurons per task over 100 post-impulse timesteps. (b) Median normalized real-coordinate spectrum with the 10--90\% range. (c) Representative SPRiF real-coordinate kernels and membrane kernels from the ASRNN checkpoints available for GSC and QTDB, with derived time constants $\tau$. The learned SPRiF basis contains both rapid and persistent responses.}
 \label{fig:temporal_kernels}
 \end{figure*}
 
-\subsection{Dynamical Analysis}
+\subsection{Reset Geometry and Temporal Kernels}
 
-The update equations ensure that direct local reset does not modify $\mathbf{x}_t$, and SI-DMS tests the functional consequence of this design under controlled interventions. Figure~\ref{fig:mechanism}a shows the resulting state dynamics around recorded spikes, while Fig.~\ref{fig:mechanism}b shows continuous slow-state oscillation across probe windows in a cue--delay task. These traces illustrate continuous slow-state evolution but are not, by themselves, an event-level reset test. Figure~\ref{fig:mechanism}c--e examines the learned projective reset directions.
+The state-space diagnostics separate local dynamics from intervention behavior. The update equations give $\mathbf{x}_t$ a zero same-step reset increment, whereas SI-DMS measures recall after forced spikes undergo native reset and enter the next-step recurrent pathway. Figure~\ref{fig:mechanism}a records slow and fast states around a PS-MNIST spike, and Fig.~\ref{fig:mechanism}b follows slow-state oscillation across cue--delay probe windows. These traces visualize continuous slow-state evolution; Fig.~\ref{fig:mechanism}c--e then characterizes the learned projective reset directions.
 
-Projective reset did not collapse to a shared direction. Across QTDB, GSC, and PS-MNIST, the learned $\lambda$ values spanned both signs (Fig.~\ref{fig:mechanism}c--d). Their correlations with firing rate, $\alpha$, and $\omega$ were weak, with $|r|\leq0.191$ (Fig.~\ref{fig:mechanism}e). Together with the $\lambda=0$ ablation difference, these observations support diverse learned reset directions in the fast state. The analysis characterizes reset geometry in the tested networks; biological interpretation lies outside its scope.
+The learned reset directions do not collapse to a common value. On QTDB, GSC, and PS-MNIST, $\lambda$ spans both signs (Fig.~\ref{fig:mechanism}c--d), and its correlations with firing rate, $\alpha$, and $\omega$ remain weak, with $|r|\leq0.191$ (Fig.~\ref{fig:mechanism}e). Combined with the $\lambda{=}0$ ablation, this variation shows that training learns heterogeneous reset directions in the fast state. The result characterizes reset geometry in the tested networks and does not imply a biological interpretation.
 
-To characterize learned memory kernels, we injected a unit impulse into trained neurons and recorded 100 steps of intrinsic slow-state evolution. With no subsequent input, this diagnostic isolates the temporal basis $A^kB$ in Eq.~\eqref{eq:spectral_impulse_response} from task-specific input activity and subsequent post-spike correction. Unlike SI-DMS, which probes recall under externally induced spikes, the impulse response exposes the intrinsic slow transition. We sampled neurons across $\alpha$ quantiles and aggregated real-coordinate spectra across all neurons, providing complementary trace-level and task-wide views in Fig.~\ref{fig:temporal_kernels}.
+The impulse-response analysis complements SI-DMS by exposing the intrinsic slow transition rather than recall under induced spikes. We inject a unit impulse into trained neurons and record 100 steps of slow-state evolution without subsequent input, isolating the temporal basis $A^kB$ in Eq.~\eqref{eq:spectral_impulse_response}. Figure~\ref{fig:temporal_kernels} combines trajectories sampled across $\alpha$ quantiles with real-coordinate spectra aggregated over all neurons.
 
-The $\alpha$-stratified real coordinates span rapid and persistent responses, while the rotational coordinates vary in phase and frequency. At the population level, the median normalized real-coordinate spectra concentrate at low frequencies, and their 10--90\% ranges show substantial within-task variation. Normalization focuses this comparison on response shape rather than absolute amplitude. These observations connect the learned kernel diversity to the constrained parameterization. The parameter $\alpha$ controls monotone retention, while $\rho$ and $\omega$ govern rotational damping and phase evolution.
+The $\alpha$-stratified real coordinates span rapid and persistent responses, and the rotational coordinates vary in phase and frequency. At the population level, the median normalized real-coordinate spectra concentrate at low frequencies, with substantial within-task variation in the 10--90\% ranges. Normalization removes absolute amplitude from this comparison. The resulting response families reflect the constrained parameterization: $\alpha$ controls monotone retention, and $\rho$ and $\omega$ govern rotational damping and phase evolution.
 
-On GSC and QTDB, selected slow-decay SPRiF real modes have derived time constants of approximately 272 and 138 steps, respectively, compared with 34 and 46 steps for the available trained ASRNN membrane kernels. This checkpoint-availability-limited diagnostic characterizes the observed responses on the two tasks rather than establishing a general cross-model advantage. Additional impulse-response and spectral analyses are provided in the appendix.
+Available checkpoints permit the cross-model kernel comparison only on GSC and QTDB. On these tasks, selected slow-decay SPRiF real modes have derived time constants of approximately 272 and 138 steps, respectively, compared with 34 and 46 steps for the trained ASRNN membrane kernels. We treat this as a two-task diagnostic, not a general cross-model advantage. The appendix provides additional impulse-response and spectral analyses.
 
 % ============================================================
 % Section 5: Conclusion
@@ -373,7 +383,7 @@ On GSC and QTDB, selected slow-decay SPRiF real modes have derived time constant
 
 \section{Conclusion}
 
-SPRiF is built on the principle that the state storing temporal context need not receive a direct local reset update after a spike. A constrained spectral slow state supplies real and rotational memory modes, while a fast discharge state produces binary spikes and receives a learnable projective reset. In descriptive cross-paper comparisons across five temporal benchmarks, SPRiF has the highest reported mean accuracy among the listed methods on three tasks and remains competitive on the other two, with reported parameter counts that are comparable to or lower than those of the highest-accuracy listed baselines. Among the tested ablations, the variant that jointly collapses the slow and fast states and reduces state dimensionality has the largest observed degradation, while removing rotation or fixing the reset direction yields smaller decreases. Controlled spike-intervention and temporal-kernel analyses provide complementary mechanistic evidence for the proposed design. These findings support functional state decomposition as a reusable neuron-level design principle. Larger-scale evaluation and neuromorphic-hardware deployment remain open.
+SPRiF separates temporal memory from spike-triggered discharge: a constrained spectral slow state carries real and rotational modes, and a fast state emits binary spikes and receives projective reset. Across five temporal benchmarks, SPRiF has the highest reported mean accuracy among the listed methods on three tasks and remains competitive on the other two; because the published systems use different protocols, these cross-paper results provide descriptive context. At the unseen $K=40$ setting in recurrent SI-DMS, full SPRiF loses $0.2{\pm}0.2$ percentage points, compared with $31.2{\pm}7.4$ for clean-matched ASRNN and $4.2{\pm}0.2$ for the $\lambda{=}0$ variant. The merged variant shows the largest benchmark degradation but also reduces state dimensionality, so it does not isolate separation from capacity. Under the tested conditions, functional state decomposition provides a practical way to protect temporal context, with the learned reset direction offering task-specific refinement; evaluation at larger scale and on neuromorphic hardware remains future work.
 
 % ============================================================
 % References
