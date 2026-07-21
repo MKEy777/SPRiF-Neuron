@@ -1,8 +1,6 @@
-"""SPRiF Ablation A model wrapper for GSC (1D slow state, no rotation)."""
 import torch
 import torch.nn as nn
 from core_algorithm.sprif_layer_ablation_a import SPRiFNeuronLayerAblationA
-
 
 class SPRiFGSCNetAblationA(nn.Module):
     def __init__(
@@ -44,3 +42,4 @@ class SPRiFGSCNetAblationA(nn.Module):
         pooled = out.mean(dim=1)
         log_probs = torch.log_softmax(self.classifier(pooled), dim=-1)
         return log_probs, {"spike_rate": torch.stack(spike_rates).mean()}
+

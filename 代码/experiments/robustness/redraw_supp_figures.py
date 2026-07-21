@@ -1,13 +1,3 @@
-"""
-Redraw the supplementary robustness figure (feature-space noise robustness)
-from the saved experiment JSON.
-
-Output overwrites the .png referenced by SPRiF_AAAI2027_supp.tex and also emits
-editable .svg / .pdf alongside.
-
-Usage:
-    python redraw_supp_figures.py
-"""
 
 import json
 import os
@@ -17,22 +7,18 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ---------------------------------------------------------------------------
-# Publication style (editable SVG text, restrained palette)
-# ---------------------------------------------------------------------------
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Arial", "DejaVu Sans", "Liberation Sans"]
-plt.rcParams["svg.fonttype"] = "none"          # editable text in SVG
-plt.rcParams["pdf.fonttype"] = 42              # editable TrueType in PDF
+plt.rcParams["svg.fonttype"] = "none"
+plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["font.size"] = 9
 plt.rcParams["axes.spines.right"] = False
 plt.rcParams["axes.spines.top"] = False
 plt.rcParams["axes.linewidth"] = 1.0
 plt.rcParams["legend.frameon"] = False
 
-# Restrained two-family palette: SPRiF (ours) vs ASRNN (comparator)
-C_SPRIF = "#0F4D92"     # blue_main
-C_ASRNN = "#B64342"     # red_strong (directional cue: larger degradation)
+C_SPRIF = "#0F4D92"
+C_ASRNN = "#B64342"
 GRID = "#D8D8D8"
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -53,15 +39,9 @@ COND_LABELS = ["Clean", "Gauss\n$\\sigma$=0.01", "Gauss\n$\\sigma$=0.05",
                "Gauss\n$\\sigma$=0.10", "Zero\n$p$=0.05", "Zero\n$p$=0.10",
                "Zero\n$p$=0.20", "Mixed"]
 
-
 def _add_panel_label(ax, label, x=-0.12, y=1.04):
     ax.text(x, y, label, transform=ax.transAxes, fontsize=11,
             fontweight="bold", ha="left", va="bottom")
-
-
-# ---------------------------------------------------------------------------
-# Robustness figure — feature-space noise robustness
-# ---------------------------------------------------------------------------
 
 def draw_noise():
     with open(os.path.join(RESULTS, "robustness_benchmark.json")) as f:
@@ -73,14 +53,14 @@ def draw_noise():
             r["SPRiF_accuracy"], r["ASRNN_accuracy"])
 
     datasets = ["GSC", "QTDB"]
-    # 2 rows x 1 col: each dataset gets a full-width panel so labels breathe.
+
     fig, axes = plt.subplots(len(datasets), 1, figsize=(5.8, 7.6), sharey=True)
     if len(datasets) == 1:
         axes = [axes]
 
     bar_w = 0.36
     x = np.arange(len(COND_ORDER))
-    # Subtle background bands grouping the noise families (reduces clutter).
+
     group_spans = [(-0.5, 0.5, "#F2F2F2"), (0.5, 3.5, "#FFFFFF"),
                    (3.5, 6.5, "#F2F2F2"), (6.5, 7.5, "#FFFFFF")]
 
@@ -100,13 +80,13 @@ def draw_noise():
                     linewidth=0.6, zorder=3)
         if panel == 0:
             leg_handles = [b1, b2]
-        # value labels on every bar
+
         for i in range(len(COND_ORDER)):
             ax.text(x[i] - bar_w / 2, sprif[i] + 0.010, f"{sprif[i]:.3f}",
                     ha="center", va="bottom", fontsize=8, color=C_SPRIF)
             ax.text(x[i] + bar_w / 2, asrnn[i] + 0.010, f"{asrnn[i]:.3f}",
                     ha="center", va="bottom", fontsize=8, color=C_ASRNN)
-        # dashed clean baseline so the degradation trend is visible
+
         clean_val = by_ds[ds]["clean"][0]
         ax.axhline(clean_val, color="#606060", linestyle=":", linewidth=1.2,
                    zorder=2)
@@ -128,7 +108,6 @@ def draw_noise():
     fig.tight_layout(pad=1.4)
     _save(fig, os.path.join(ROOT, "robustness_benchmark"))
 
-
 def _save(fig, base):
     fig.savefig(base + ".svg", bbox_inches="tight")
     fig.savefig(base + ".pdf", bbox_inches="tight")
@@ -136,7 +115,7 @@ def _save(fig, base):
     plt.close(fig)
     print(f"Saved: {base}.(svg|pdf|png)")
 
-
 if __name__ == "__main__":
     draw_noise()
     print("Done.")
+

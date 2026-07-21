@@ -1,14 +1,3 @@
-"""
-SPRiF Reset Direction Analysis — learned λ_j distribution and functional correlates.
-
-Extracts learnable lambda_reset (projective reset direction) from trained SPRiF
-neurons, computes per-neuron firing rates on test data, and analyzes correlations
-between reset strategy and spectral parameters / firing behavior.
-
-Usage:
-    cd 代码/experiments
-    python reset_analysis/reset_analyze.py
-"""
 
 import glob
 import os
@@ -30,10 +19,6 @@ import seaborn as sns
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.2)
 
-# ---------------------------------------------------------------------------
-# Path helpers
-# ---------------------------------------------------------------------------
-
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIGURE_DIR = os.path.join(
     os.path.dirname(ROOT),
@@ -42,7 +27,6 @@ FIGURE_DIR = os.path.join(
     "figures",
     "reset_analysis",
 )
-
 
 def _add_path(task_dir: str) -> str:
     p = os.path.join(ROOT, task_dir)
@@ -53,7 +37,6 @@ def _add_path(task_dir: str) -> str:
         if name in {"model", "data", "core_algorithm"} or name.startswith("core_algorithm."):
             sys.modules.pop(name, None)
     return p
-
 
 def _find_checkpoint(task_dir: str, class_prefix: str) -> Optional[str]:
     pattern = os.path.join(task_dir, f"{class_prefix}_*.pth")
@@ -74,7 +57,6 @@ def _find_checkpoint(task_dir: str, class_prefix: str) -> Optional[str]:
             best = f
     return best
 
-
 def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
     cwd = os.path.join(ROOT, task_dir)
     script = os.path.join(cwd, train_script)
@@ -87,13 +69,7 @@ def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
     if result.returncode != 0:
         raise RuntimeError(f"Training failed with code {result.returncode}")
 
-
-# ---------------------------------------------------------------------------
-# Model loading + test DataLoader per task
-# ---------------------------------------------------------------------------
-
 def _load_psmnist(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
-    """Load pSMNIST model and return (model, test_loader)."""
     import torchvision
     import torchvision.transforms as transforms
 
@@ -124,7 +100,6 @@ def _load_psmnist(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader
     )
     model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
 
-    # Build test DataLoader — permutation must match training seed (0)
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,)),
@@ -142,9 +117,7 @@ def _load_psmnist(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader
     )
     return model, test_loader
 
-
 def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
-    """Load GSC model and return (model, test_loader)."""
     import torchvision
     from torch.utils.data import DataLoader
 
@@ -152,10 +125,7 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
     from model import SPRiFGSCNet
 
     task_abs = os.path.join(ROOT, task_dir)
-    # Support multiple GSC data layouts:
-    #   - Task_GSC/data/SpeechCommands (download_GSC.py default)
-    #   - Task_GSC/dataset/SpeechCommands/speech_commands_v0.02 (autodl server)
-    #   - Task_GSC/dataset/SpeechCommands/speech_commands_v0.01
+
     _gsc_candidates = [
         os.path.join(task_abs, "data", "SpeechCommands"),
         os.path.join(task_abs, "dataset", "SpeechCommands", "speech_commands_v0.02"),
@@ -192,7 +162,6 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
     )
     model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
 
-    # Build test DataLoader — mirror train.py build_loaders
     from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
     if not os.path.exists(data_root):
@@ -233,9 +202,7 @@ def _load_gsc(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
     )
     return model, test_loader
 
-
 def _load_ecg(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
-    """Load ECG model and return (model, test_loader)."""
     import scipy.io
     from torch.utils.data import DataLoader, TensorDataset
 
@@ -248,7 +215,7 @@ def _load_ecg(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
     ckpt = _find_checkpoint(task_abs, "SPRiFECGModel")
     if ckpt is not None:
         print(f"  Found checkpoint: {os.path.basename(ckpt)}")
-        # Need data to determine input_size even when loading checkpoint
+
         train_mat_path = os.path.join(task_abs, "data", "QTDB_train.mat")
         if not os.path.exists(train_mat_path):
             raise FileNotFoundError(
@@ -280,9 +247,8 @@ def _load_ecg(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
         ckpt = _find_checkpoint(task_abs, "SPRiFECGModel")
         if ckpt is None:
             raise RuntimeError("Training completed but no checkpoint found.")
-        return _load_ecg(task_dir)  # recurse once to get model + loader
+        return _load_ecg(task_dir)
 
-    # Build test DataLoader
     test_mat_path = os.path.join(task_abs, "data", "QTDB_test.mat")
     if not os.path.exists(test_mat_path):
         raise FileNotFoundError(f"ECG test data not found at {test_mat_path}")
@@ -304,11 +270,6 @@ def _load_ecg(task_dir: str) -> Tuple[nn.Module, torch.utils.data.DataLoader]:
     )
     return model, test_loader
 
-
-# ---------------------------------------------------------------------------
-# Firing rate computation
-# ---------------------------------------------------------------------------
-
 @torch.no_grad()
 def compute_firing_rates(
     model: nn.Module,
@@ -316,16 +277,8 @@ def compute_firing_rates(
     device: torch.device,
     num_batches: int = 30,
 ) -> Dict[int, torch.Tensor]:
-    """Compute per-neuron mean firing rate on test data.
-
-    Returns:
-        dict mapping layer_idx -> tensor of shape (hidden_size,) with
-        mean spike count per neuron per timestep.
-    """
     model.eval()
-    # Defensive: ensure every parameter is on the target device. Some Task_*
-    # models expose sub-modules that model.to(device) does not visit if the
-    # module was re-imported after another task was already on GPU.
+
     for p in model.parameters():
         if p.device != device:
             p.data = p.data.to(device)
@@ -336,9 +289,6 @@ def compute_firing_rates(
     spike_counts = [torch.zeros(layer.hidden_size) for layer in model.layers]
     total_steps = 0
 
-    # If model expects a larger feature dim than the loader provides (e.g. GSC
-    # returns (B, 3*T, n_mels) and train.py reshapes to (B, T, 3*n_mels)),
-    # infer the target input_size from the first layer's input_linear.
     target_input_size = None
     if hasattr(model, "layers") and len(model.layers) > 0:
         first = model.layers[0]
@@ -349,13 +299,11 @@ def compute_firing_rates(
         if batch_idx >= num_batches:
             break
         x = x.to(device)
-        # Handle GSC 4-D input: loader returns (B, delta_ch, T, n_mels).
-        # train.py does: x.permute(0, 2, 1, 3).reshape(B, T, delta_ch*n_mels).
+
         if x.dim() == 4:
             B0 = x.shape[0]
             x = x.permute(0, 2, 1, 3).reshape(B0, x.shape[2], -1)
-        # 3-D fallback: if feature dim mismatches expected input_size and looks
-        # like it was pre-flattened along time, try to reshape (B, ch*T, feat).
+
         elif target_input_size is not None and x.dim() == 3 and x.shape[-1] != target_input_size:
             n_mels = x.shape[-1]
             ch = target_input_size // n_mels
@@ -369,18 +317,17 @@ def compute_firing_rates(
         for li, layer in enumerate(model.layers):
             state = layer.init_state(B, device=device)
             runtime = layer._precompute_runtime_params()
-            # Make sure runtime tensors follow the layer (avoid CPU/CUDA mix)
+
             runtime = {k: (v.to(device) if isinstance(v, torch.Tensor) else v)
                        for k, v in runtime.items()}
             layer_spikes = []
             for t in range(T):
                 spike, _, state = layer.forward_step(out[:, t, :], state, runtime)
-                # Keep spikes on device so the NEXT layer's input_linear sees a
-                # device tensor. Moving to CPU here breaks multi-layer models.
+
                 layer_spikes.append(spike.detach())
-            spike_seq = torch.stack(layer_spikes, dim=0)  # (T, B, H) on device
+            spike_seq = torch.stack(layer_spikes, dim=0)
             spike_counts[li] += spike_seq.sum(dim=(0, 1)).cpu()
-            out = spike_seq.permute(1, 0, 2)  # (B, T, H) on device
+            out = spike_seq.permute(1, 0, 2)
 
         total_steps += B * T
 
@@ -389,24 +336,18 @@ def compute_firing_rates(
 
     return {li: counts / total_steps for li, counts in enumerate(spike_counts)}
 
-
-# ---------------------------------------------------------------------------
-# Data extraction
-# ---------------------------------------------------------------------------
-
 def extract_and_merge(
     model: nn.Module,
     rates: Dict[int, torch.Tensor],
 ) -> pd.DataFrame:
-    """Combine spectral params + lambda_reset + firing rates into one DataFrame."""
     records = []
     for li, layer in enumerate(model.layers):
         params = layer.get_spectral_parameters()
         alpha = params["alpha"].detach().cpu().numpy()
         rho = params["rho"].detach().cpu().numpy()
         omega = params["omega"].detach().cpu().numpy()
-        eta = params["eta"].detach().cpu().numpy()             # (H, 2)
-        lam = params["lambda_reset"].detach().cpu().numpy()     # (H,)
+        eta = params["eta"].detach().cpu().numpy()
+        lam = params["lambda_reset"].detach().cpu().numpy()
         fr = rates[li].numpy()
 
         for ni in range(len(alpha)):
@@ -423,16 +364,9 @@ def extract_and_merge(
             })
     return pd.DataFrame(records)
 
-
-# ---------------------------------------------------------------------------
-# Plot functions
-# ---------------------------------------------------------------------------
-
 LAYER_MARKERS = {0: "o", 1: "s"}
 
-
 def plot_lambda_distribution(dfs: Dict[str, pd.DataFrame], out_dir: str):
-    """Histogram of lambda_reset per task, overlaid per layer."""
     tasks = [t for t in ["ECG", "GSC", "pSMNIST"] if t in dfs]
     if not tasks:
         return
@@ -459,7 +393,6 @@ def plot_lambda_distribution(dfs: Dict[str, pd.DataFrame], out_dir: str):
         ax.set_title(f"{task_name} — Learned Reset Direction Distribution", fontweight="bold")
         ax.legend(frameon=True, fontsize=9)
 
-        # Print stats
         all_vals = df["lambda_reset"].dropna()
         print(f"  {task_name} λ: [{all_vals.min():.4f}, {all_vals.mean():.4f}, "
               f"{all_vals.max():.4f}], std={all_vals.std():.4f}, "
@@ -473,13 +406,7 @@ def plot_lambda_distribution(dfs: Dict[str, pd.DataFrame], out_dir: str):
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
 def plot_lambda_vs_firing_rate(dfs: Dict[str, pd.DataFrame], out_dir: str):
-    """Scatter: lambda_reset vs firing rate, per task, colored by layer.
-
-    Tasks with all-zero firing_rate (e.g. GSC when data is unavailable) are
-    excluded so the scatter is not polluted by placeholder values.
-    """
     tasks = [t for t in ["ECG", "GSC", "pSMNIST"]
              if t in dfs and dfs[t]["firing_rate"].abs().sum() > 0]
     if not tasks:
@@ -504,7 +431,6 @@ def plot_lambda_vs_firing_rate(dfs: Dict[str, pd.DataFrame], out_dir: str):
         ax.set_title(task_name, fontweight="bold")
         ax.legend(frameon=True, fontsize=8)
 
-        # Correlation
         valid = df.dropna(subset=["lambda_reset", "firing_rate"])
         if len(valid) > 2:
             corr = np.corrcoef(valid["lambda_reset"], valid["firing_rate"])[0, 1]
@@ -520,9 +446,7 @@ def plot_lambda_vs_firing_rate(dfs: Dict[str, pd.DataFrame], out_dir: str):
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
 def plot_lambda_vs_alpha(dfs: Dict[str, pd.DataFrame], out_dir: str):
-    """Scatter: lambda_reset vs alpha, per task, colored by layer."""
     tasks = [t for t in ["ECG", "GSC", "pSMNIST"] if t in dfs]
     if not tasks:
         return
@@ -561,9 +485,7 @@ def plot_lambda_vs_alpha(dfs: Dict[str, pd.DataFrame], out_dir: str):
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
 def plot_lambda_vs_omega(dfs: Dict[str, pd.DataFrame], out_dir: str):
-    """Scatter: lambda_reset vs omega, per task, colored by layer."""
     tasks = [t for t in ["ECG", "GSC", "pSMNIST"] if t in dfs]
     if not tasks:
         return
@@ -602,9 +524,7 @@ def plot_lambda_vs_omega(dfs: Dict[str, pd.DataFrame], out_dir: str):
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
 def save_lambda_stats(dfs: Dict[str, pd.DataFrame], out_dir: str):
-    """Concatenate per-task DataFrames and save to CSV."""
     combined = []
     for task_name, df in dfs.items():
         df = df.copy()
@@ -615,21 +535,11 @@ def save_lambda_stats(dfs: Dict[str, pd.DataFrame], out_dir: str):
     full.to_csv(csv_path, index=False)
     print(f"  Saved: {csv_path}")
 
-
-# ---------------------------------------------------------------------------
-# Task registry
-# ---------------------------------------------------------------------------
-
 LOADERS = {
     "ECG": ("Task_ECG", _load_ecg),
     "GSC": ("Task_GSC", _load_gsc),
     "pSMNIST": ("Task_pSMNIST", _load_psmnist),
 }
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main():
     out_dir = FIGURE_DIR
@@ -654,7 +564,6 @@ def main():
         model.to(device)
         model.eval()
 
-        # Compute per-neuron firing rates (skip gracefully if data missing)
         if test_loader is None:
             print(f"  Skipping firing rates (no data); using zeros as placeholder.")
             rates = {li: torch.zeros(layer.hidden_size)
@@ -667,7 +576,6 @@ def main():
                 fr = rates[li]
                 print(f"    Layer {li}: firing rate [{fr.min():.4f}, {fr.mean():.4f}, {fr.max():.4f}]")
 
-        # Extract params + lambda + firing rates
         df = extract_and_merge(model, rates)
         print(f"  Extracted {len(df)} neurons across {df['layer'].nunique()} layer(s)")
         dfs[task_name] = df
@@ -687,6 +595,6 @@ def main():
 
     print("\nDone.")
 
-
 if __name__ == "__main__":
     main()
+

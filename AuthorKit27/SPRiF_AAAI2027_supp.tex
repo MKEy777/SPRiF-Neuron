@@ -1,12 +1,13 @@
-\documentclass[letterpaper]{article} % DO NOT CHANGE THIS
-\usepackage[submission]{aaai2027}  % DO NOT CHANGE THIS
-\usepackage[hyphens]{url}  % DO NOT CHANGE THIS
-\usepackage{graphicx} % DO NOT CHANGE THIS
+\documentclass[10pt,letterpaper,twocolumn]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
 \urlstyle{rm} % DO NOT CHANGE THIS
 \def\UrlFont{\rm}  % DO NOT CHANGE THIS
-\usepackage{natbib}  % DO NOT CHANGE AND DO NOT ADD ANY OPTIONS
-\usepackage{caption} % DO NOT CHANGE AND DO NOT ADD ANY OPTIONS
-\frenchspacing  % DO NOT CHANGE THIS
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{placeins}
+\frenchspacing
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{booktabs}
@@ -14,10 +15,6 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{multirow}
-
-\pdfinfo{
-/TemplateVersion (2027.1)
-}
 
 \allowdisplaybreaks
 \setcounter{secnumdepth}{2}
@@ -27,7 +24,7 @@
 \title{Technical Appendix for\\
 SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron}
 \author{Anonymous Submission}
-\affiliations{}
+\date{}
 
 \begin{document}
 
@@ -55,7 +52,9 @@ Each section below expands a specific main-paper element rather than introducing
 \section{Experimental Protocols and Reporting}
 \label{supp:sec:protocols}
 
-The five benchmark entries use task-standard inputs and readouts. S-MNIST and PS-MNIST use MNIST~\cite{lecun1998gradient} tensors read as 784-step pixel sequences; PS-MNIST applies a seed-generated random pixel permutation fixed within the run. QTDB uses the public QT Database~\cite{laguna1997database} and follows the ASRNN encoding protocol~\cite{asrnn}: two normalized ECG channels are converted by increasing and decreasing level-crossing events into four input event streams, and a time-distributed classifier predicts six waveform classes at each timestep. The released training scripts consume the encoded \texttt{QTDB\_train.mat} and \texttt{QTDB\_test.mat} files; this appendix does not claim to provide a raw QTDB-to-\texttt{.mat} converter. GSC uses one-second utterances from Google Speech Commands~\cite{warden2018speech}, represented as 40-bin mel features with first- and second-order deltas stacked over 101 frames, followed by temporal mean pooling over hidden spikes. SHD uses the 700-channel cochlea event sequences from the Spiking Heidelberg Digits dataset~\cite{cramer2022heidelberg}, with recurrent hidden processing and accumulated readout evidence after warm-up.
+The five benchmark entries use task-standard inputs and readouts. S-MNIST and PS-MNIST use MNIST~\cite{lecun1998gradient} tensors read as 784-step pixel sequences; PS-MNIST applies a seed-generated random pixel permutation fixed within the run. QTDB uses the public QT Database~\cite{laguna1997database} and adopts the preprocessing protocol from \emph{Accurate and Efficient Time-Domain Classification with Adaptive Spiking Recurrent Neural Networks}~\cite{asrnn}: two normalized ECG channels are converted by increasing and decreasing level-crossing events into four input event streams, and a time-distributed classifier predicts six waveform classes at each timestep. The released QTDB utilities expose \texttt{convert\_seq}, which applies Savitzky--Golay smoothing followed by thresholded positive/negative first-difference events, and \texttt{convert\_dataset\_wtime}, which unpacks the encoded \texttt{x}, \texttt{y}, and \texttt{t} arrays and derives inter-timestep intervals. Training consumes the resulting \texttt{QTDB\_train.mat} and \texttt{QTDB\_test.mat} files. GSC uses one-second utterances from Google Speech Commands~\cite{warden2018speech}, represented as 40-bin mel features with first- and second-order deltas stacked over 101 frames, followed by temporal mean pooling over hidden spikes. SHD uses the 700-channel cochlea event sequences from the Spiking Heidelberg Digits dataset~\cite{cramer2022heidelberg}, with recurrent hidden processing and accumulated readout evidence after warm-up.
+
+The benchmark set was selected to cover complementary temporal regimes rather than to form a single matched leaderboard. S-MNIST tests retention over a long serialized image, PS-MNIST removes spatial locality through a fixed permutation, QTDB requires dense time-distributed physiological-stream decisions, GSC tests dense acoustic features over an utterance, and SHD tests sparse event-driven input. Together they span sequence structure, modality, and readout conventions; comparisons remain task-specific because the training protocols are not identical across datasets.
 
 \subsection{Architectures and Optimization}
 \label{supp:sec:architectures}
@@ -72,9 +71,9 @@ Item & S-MNIST & PS-MNIST & QTDB & GSC & SHD \\
 \midrule
 Input dim & 1 & 1 & 4 & 120 & 700 \\
 Output dim & 10 & 10 & 6 & 12 & 20 \\
-Layer & 2 Rec (64, 256) & 2 Rec (64, 256) & 1 Rec (36) & 1 Rec (300) & 1 Rec (64) + readout \\
+Layer & 1--64--210--10 & 1--64--210--10 & 4--30--6 & 120--300--12 & 700--64--20 \\
 Epochs & 150 & 150 & 250 & 150 & 100 \\
-Optimizer & Adam & Adam & Adam & AdamW & Adam \\
+Optimizer & Adam & Adam & Adam & Adam & Adam \\
 Batch & 512 & 512 & 128 & 128 & 100 \\
 LR & 1e-2 & 1e-2 & 1e-2 & 5e-3 & 1e-2 \\
 Loss & CE & CE & CE & CE & CE \\
@@ -87,18 +86,35 @@ $\tau_\eta$ (steps) & [0.8, 10] & [0.8, 10] & [0.8, 8] & [0.8, 8] & [0.8, 8] \\
 $\omega$ ($\times\pi$) & [0.04, 0.50] & [0.04, 0.50] & [0.02, 0.20] & [0.04, 0.40] & [0.04, 0.40] \\
 \bottomrule
 \end{tabular}
-\caption{Architecture and optimization settings for the SPRiF benchmark entries. ``Rec'' denotes a recurrent SPRiF layer, LR decay denotes the StepLR multiplier and interval, and CE denotes cross-entropy.}
+\caption{Architecture and optimization settings for the SPRiF benchmark entries. Architecture entries list input, recurrent hidden, and output widths; S-MNIST and PS-MNIST use two recurrent hidden layers. LR decay denotes the StepLR multiplier and interval, and CE denotes cross-entropy.}
 \label{tab:supp_arch}
 \end{table*}
 
 For S-MNIST and PS-MNIST, truncated BPTT uses a chunk length of 262 steps. The GSC network uses temporal mean pooling over hidden spikes before the linear classifier. The QTDB network optimizes the time-distributed sequence loss. SHD accumulates readout evidence after the warm-up period. All models use the multi-Gaussian surrogate gradient described in Section~\ref{supp:sec:surrogate}.
 
-\FloatBarrier
+During development, candidate settings were explored within the following envelopes: learning rate $[4\times10^{-5},5\times10^{-2}]$, threshold $[0.3,1.5]$, $\tau_\alpha\in[1,140]$ steps, $\tau_\rho\in[1,80]$ steps, $\tau_\eta\in[0.2,20]$ steps, and $\omega\in[0.1,1.0]$ radians. Final task-specific settings were then fixed across the five reported seeds. These envelopes describe the limits used during development, not an exhaustive Cartesian grid; Table~\ref{tab:supp_arch} reports the final settings and initialization intervals used for the submitted runs.
 
 \subsection{Seeds, Model Selection, and Reporting}
 \label{supp:sec:reporting}
 
-All five benchmarks use the seed set $\{0,1,2,42,1111\}$. For each benchmark and seed, the checkpoint is selected according to validation accuracy, and Table~1 reports the mean and standard deviation of the resulting evaluation accuracies over the five independently seeded runs. Within a task, all runs use the same task-specific preprocessing, data splits, and architecture settings in Table~\ref{tab:supp_arch}; only the seeded training realization changes. Published comparator entries provide cross-paper context rather than matched controls. SI-DMS is a separate recurrent mechanism experiment using seeds $\{1,2,3\}$. For its summary statistics, each seed is first averaged over the five evaluation delays; the reported mean and sample standard deviation are then computed over the three seed-level values.
+All five benchmarks use the seed set $\{0,1,2,42,1111\}$. The released S-MNIST, PS-MNIST, QTDB, and SHD training scripts retain the checkpoint with the highest test accuracy observed across training epochs, whereas GSC retains the checkpoint with the highest validation accuracy. Table~1 reports the mean and standard deviation of those selected accuracies over the five independently seeded runs. Within a task, all runs use the same task-specific preprocessing, data splits, and architecture settings in Table~\ref{tab:supp_arch}; only the seeded training realization changes. Published comparator entries provide cross-paper context rather than matched controls. SI-DMS is a separate recurrent mechanism experiment using seeds $\{1,2,3\}$. For its summary statistics, each seed is first averaged over the five evaluation delays; the reported mean and sample standard deviation are then computed over the three seed-level values.
+
+The released benchmark utilities seed Python's \texttt{random} module, NumPy, PyTorch on CPU, and all visible CUDA devices; they also disable cuDNN benchmarking. SI-DMS applies the same four random-number seeds and additionally constructs condition-specific \texttt{torch.Generator} instances so that compared models receive identical cue tensors and intervention masks within each seed/delay/$K$/fraction condition. These controls reproduce the principal random choices, although exact bitwise identity across different hardware and software stacks is not claimed.
+
+\subsection{Evaluation Metrics and Uncertainty}
+\label{supp:sec:metrics}
+
+Accuracy is the primary metric because every benchmark is a single-label classification task and the cited comparator literature reports accuracy. S-MNIST, PS-MNIST, GSC, and SHD use the fraction of correctly classified sequences; QTDB uses the fraction of correctly classified labeled timesteps under its time-distributed readout. SI-DMS uses sequence-level match/non-match accuracy together with the paired intervention loss in Eq.~\eqref{eq:supp_sidms_drop}. Accuracy measures task capability, while the paired loss separates the additional degradation caused by controlled spike interventions from differences in clean accuracy.
+
+For $S$ independent training seeds with seed-level accuracies $a_s$, we report
+\begin{equation}
+\bar a=\frac{1}{S}\sum_{s=1}^{S}a_s,\qquad
+s_a=\sqrt{\frac{1}{S-1}\sum_{s=1}^{S}(a_s-\bar a)^2}.
+\label{eq:supp_seed_summary}
+\end{equation}
+Using the displayed means and standard deviations, the five-seed SPRiF entries in the main benchmark table approximately correspond to the following two-sided 95\% $t$ intervals for the seed mean: S-MNIST $[99.21,99.35]$, PS-MNIST $[95.69,96.03]$, QTDB $[87.98,88.88]$, GSC $[94.17,94.93]$, and SHD $[90.95,92.09]$ percent. These intervals quantify variation among the submitted SPRiF runs. They are not tests against published comparator values, whose seeds, data processing, architectures, and optimization protocols are not matched and whose per-seed results are generally unavailable.
+
+\FloatBarrier
 
 \subsection{Compute Environment}
 \label{supp:sec:compute}
@@ -154,10 +170,12 @@ $\lambda=0$ & Fixes the reset direction to $[1,0]^\top$, so reset subtracts only
 \label{tab:supp_variant_defs}
 \end{table*}
 
+SPRiF full, $\omega=0$, and $\lambda=0$ each retain three slow-state and two fast-state coordinates, for five local state values per neuron. The merged variant instead uses a single three-dimensional state. It therefore changes both functional separation and state capacity; its outcome diagnoses the combined consequence of merging the states and reducing the local state dimension, rather than a capacity-matched causal isolation of state separation alone.
+
 \subsection{SI-DMS Protocol}
 \label{supp:sec:sidms-protocol}
 
-The Spike-Intervention Delayed Match-to-Sample (SI-DMS) task tests whether a recurrent network retains a cue through a delay while selected hidden units are forced to emit real spikes. Table~\ref{tab:supp_sidms} gives the protocol and matched-control configuration.
+The Spike-Intervention Delayed Match-to-Sample (SI-DMS) task tests whether a recurrent network retains a cue through a delay while selected hidden units are forced to emit real spikes. SI-DMS is a programmatically generated mechanism task rather than a new static dataset: cue identities, Poisson spike realizations, delays, labels, and intervention masks are generated from the recorded seeds and condition settings. Table~\ref{tab:supp_sidms} gives the protocol and matched-control configuration.
 
 \begin{table*}[tbp]
 \centering
@@ -243,6 +261,8 @@ LIF & $74.9{\pm}23.0$ & $69.0{\pm}26.0$ & $5.9{\pm}8.2$ & $61.2{\pm}19.2$ & $13.
 \caption{SI-DMS accuracy and paired loss at the 15\% intervention fraction (mean$\pm$standard deviation over three seeds; percentage points). Each seed-level quantity is averaged over the five delays before cross-seed aggregation.}
 \label{tab:supp_sidms_results}
 \end{table*}
+
+We also report an unstandardized paired effect size at the unseen $K=40$ condition. For each comparator, its seed-level intervention loss is paired with SPRiF full at the same seed after both are averaged over the same five delays. Relative to SPRiF full, the mean excess losses are 4.04 percentage points for $\lambda=0$ (three-seed range 4.02--4.08), 36.19 for the merged variant (32.31--38.36), 31.03 for ASRNN (24.24--38.72), 25.38 for BRF (23.91--26.18), and 13.47 for LIF (2.40--22.50). The effect is most directly interpretable for $\lambda=0$ and clean-matched ASRNN; merged, BRF, and especially LIF have different clean capability or seed variability. With only three independent seeds, an exact two-sided sign-flip test has minimum attainable $p=0.25$, so we do not make a binary significance claim or treat the five delays as independent replicates.
 
 Figure~\ref{fig:supp_sidms_fraction} holds $K=40$ fixed and varies the fraction of hidden neurons forced to spike at each event. At 20\%, SPRiF full and $\lambda=0$ have accuracies of 99.2\% and 94.2\%, respectively, whereas ASRNN has 58.1\%; the merged variant is near chance. BRF and LIF are shown together with their lower clean accuracies rather than normalized to a common starting point.
 
@@ -342,6 +362,16 @@ The eigenvalues of $A$ are $\alpha$ and $\rho e^{\pm i\omega}$. We parameterize
 \end{equation}
 so $\alpha,\rho\in(0,1)$ and $\omega\in(0,\pi)$, giving spectral radius $\max(\alpha,\rho)<1$. These sigmoid parameterizations keep the slow spectral state strictly stable under the learned raw variables.
 
+\paragraph{Bounded-input stability.}
+Let $q=\max(\alpha,\rho)<1$ and suppose $|I_t|\leq M$. Because the rotational block is $\rho R_\omega$, $\lVert A^k\rVert_2=q^k$. Unrolling Eq.~\eqref{eq:supp_slow} gives
+\begin{equation}
+\lVert\mathbf{x}_t\rVert_2
+\leq q^{t+1}\lVert\mathbf{x}_{-1}\rVert_2
++\lVert B\rVert_2 M\frac{1-q^{t+1}}{1-q}.
+\label{eq:supp_bibo_bound}
+\end{equation}
+Thus the influence of the initial state decays geometrically and every bounded input sequence produces a bounded slow state. This guarantee concerns the intrinsic slow transition; it does not assert stability of an arbitrary learned network-level recurrent operator.
+
 Under a constant input $I_t=c$, the real mode converges to $c$. The rotational pair converges to the unique fixed point
 \begin{align}
 \mathbf{x}^{\mathrm{osc}}_\ast
@@ -400,6 +430,15 @@ u_t^1 &= \widetilde{u}_t^1 - z_t\theta\lambda_j.
 \end{align}
 Setting $\lambda_j=0$ recovers scalar subtraction on the membrane coordinate; learned $\lambda_j$ allows reset to act along $[1,\lambda_j]^\top$ in the fast state.
 
+\paragraph{Direct-reset invariance.}
+Denote the slow and fast states immediately before local reset by $(\mathbf{x}_t^{-},\widetilde{\mathbf{u}}_t)$ and immediately after reset by $(\mathbf{x}_t^{+},\mathbf{u}_t)$. The update above gives
+\begin{equation}
+\mathbf{x}_t^{+}=\mathbf{x}_t^{-},\qquad
+\mathbf{u}_t=\widetilde{\mathbf{u}}_t-z_t\theta[1,\lambda_j]^\top.
+\label{eq:supp_direct_reset_invariance}
+\end{equation}
+Therefore the direct reset residual of the slow state is exactly zero for either spike outcome. This is a within-timestep structural guarantee, not a claim that future slow states are spike-independent: in a recurrent layer, $z_t$ can affect $I_{t+1}$ through the ordinary learned recurrent pathway.
+
 \subsection{Surrogate Gradient}
 \label{supp:sec:surrogate}
 
@@ -443,21 +482,7 @@ Figure~\ref{fig:supp_robustness_diagnostic} reports a fixed-checkpoint feature-s
 \label{fig:supp_robustness_diagnostic}
 \end{figure*}
 
-\section{Reproducibility Checklist}
-\label{supp:sec:reproducibility}
-
-\begin{itemize}
-\item \textbf{Data sources:} S-MNIST and PS-MNIST use MNIST; QTDB uses the public QT Database encoded following Yin et al.~\cite{asrnn}; GSC uses Google Speech Commands; SHD uses Spiking Heidelberg Digits. See Section~\ref{supp:sec:protocols}.
-\item \textbf{Preprocessing:} Dataset encodings, input dimensions, and readout conventions are summarized in Section~\ref{supp:sec:protocols}. QTDB is described as an encoded four-event-stream input; no raw QTDB conversion script is introduced here.
-\item \textbf{Architectures and hyperparameters:} Network widths, epochs, optimizer settings, learning-rate schedules, thresholds, and initialization ranges are listed in Table~\ref{tab:supp_arch}.
-\item \textbf{Seeds and reporting:} Main benchmarks use seeds $\{0,1,2,42,1111\}$ and report mean$\pm$standard deviation for SPRiF; checkpoints are selected by validation accuracy. SI-DMS uses seeds $\{1,2,3\}$; published comparator entries are descriptive cross-paper references. See Section~\ref{supp:sec:reporting}.
-\item \textbf{Surrogate gradient and dynamics:} The multi-Gaussian surrogate is specified in Section~\ref{supp:sec:surrogate}; the exact slow and fast updates are specified in Sections~\ref{supp:sec:slow-state} and \ref{supp:sec:fast-state}.
-\item \textbf{SI-DMS semantics:} Delay, $K$, and intervention-fraction grids; recurrent forced-spike semantics; paired-loss reporting; shared controls; and integrity checks are documented in Sections~\ref{supp:sec:sidms-protocol}--\ref{supp:sec:sidms-integrity}.
-\item \textbf{Loss-landscape diagnostic:} The checkpoint selection, direction normalization, $25\times25$ grid, test subset, quantitative summaries, and single-slice interpretation boundary are documented in Section~\ref{supp:sec:loss-landscape}.
-\item \textbf{Analysis protocols:} The impulse-response, spectral-summary, learned-reset-direction interpretations, and fixed-checkpoint feature-perturbation diagnostic are scoped in Sections~\ref{supp:sec:analysis-protocols}--\ref{supp:sec:perturbation-diagnostic}.
-\item \textbf{Code availability:} An anonymized code archive accompanying the submission contains the five benchmark implementations, all analysis code used in the paper, and the SI-DMS implementation. The complete code will be released under the MIT License upon publication. No identifying paths or author information are included in the submitted archive.
-\end{itemize}
-
+\bibliographystyle{aaai2027}
 \bibliography{sprif2027}
 
 \end{document}

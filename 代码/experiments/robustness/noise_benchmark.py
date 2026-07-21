@@ -1,20 +1,3 @@
-"""
-SPRiF Robustness Experiment R1: Noise Robustness Benchmark.
-
-Methodology (following DGN ICLR 2026): Train on CLEAN data only,
-test on noisy data. Compares SPRiF vs ASRNN accuracy degradation.
-
-Noise types:
-    - Additive Gaussian: x_noisy = x + N(0, sigma^2)
-    - Subtractive dropout: randomly zero out fraction p of elements
-    - Mixed: additive + subtractive simultaneously
-
-Datasets: GSC, QTDB.
-
-Usage:
-    cd 代码/experiments
-    python robustness/noise_benchmark.py
-"""
 
 import glob
 import json
@@ -37,15 +20,10 @@ import seaborn as sns
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.2)
 
-# ---------------------------------------------------------------------------
-# Path
-# ---------------------------------------------------------------------------
-
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RESULTS_DIR = os.path.join(
     os.path.dirname(ROOT), "experiment-design-20260606", "results"
 )
-
 
 def _add_path(task_dir: str) -> str:
     p = os.path.join(ROOT, task_dir)
@@ -60,7 +38,6 @@ def _add_path(task_dir: str) -> str:
         ):
             sys.modules.pop(name, None)
     return p
-
 
 def _find_checkpoint(task_dir: str, class_prefix: str) -> Optional[str]:
     pattern = os.path.join(task_dir, f"{class_prefix}_*.pth")
@@ -81,7 +58,6 @@ def _find_checkpoint(task_dir: str, class_prefix: str) -> Optional[str]:
             best = f
     return best
 
-
 def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
     cwd = os.path.join(ROOT, task_dir)
     script = os.path.join(cwd, train_script)
@@ -93,45 +69,26 @@ def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
     if result.returncode != 0:
         raise RuntimeError(f"Training failed with code {result.returncode}")
 
-
-# ---------------------------------------------------------------------------
-# Noise injection
-# ---------------------------------------------------------------------------
-
 def seed_generator(seed: int = 42):
-    """Deterministic RNG for reproducible noise across models."""
     return np.random.RandomState(seed)
 
-
 def additive_noise(x: np.ndarray, sigma: float, rng: np.random.RandomState) -> np.ndarray:
-    """Add Gaussian noise N(0, sigma^2). Does NOT modify input."""
     noise = rng.randn(*x.shape).astype(np.float32) * sigma
     return x + noise
 
-
 def subtractive_noise(x: np.ndarray, p: float, rng: np.random.RandomState) -> np.ndarray:
-    """Randomly zero out fraction p of elements."""
     mask = rng.rand(*x.shape) > p
     return x * mask.astype(np.float32)
 
-
 def mixed_noise(x: np.ndarray, sigma: float, p: float, rng: np.random.RandomState) -> np.ndarray:
-    """Additive + subtractive combined."""
     x = additive_noise(x, sigma, rng)
     x = subtractive_noise(x, p, rng)
     return x
 
-
-# ---------------------------------------------------------------------------
-# GSC model loading
-# ---------------------------------------------------------------------------
-
 def _load_gsc_models(task_dir: str):
-    """Load SPRiF and ASRNN GSC models. Train if needed."""
     _add_path(task_dir)
     from model import SPRiFGSCNet
 
-    # Import ASRNN model
     sys.path.insert(0, os.path.join(ROOT, task_dir, "model_wrapper"))
     from asrnn_gsc import ASRNNGSCNet
 
@@ -145,7 +102,6 @@ def _load_gsc_models(task_dir: str):
 
     models = {}
 
-    # Load SPRiF
     prefix = "SPRiFGSCNet"
     ckpt = _find_checkpoint(task_abs, prefix)
     if ckpt is None:
@@ -186,7 +142,6 @@ def _load_gsc_models(task_dir: str):
     sprif_model.eval()
     models["SPRiFGSCNet"] = sprif_model
 
-    # Load ASRNN
     ckpt = _find_checkpoint(task_abs, "ASRNNGSCNet")
     if ckpt is None:
         if not os.path.exists(data_root):
@@ -216,9 +171,7 @@ def _load_gsc_models(task_dir: str):
 
     return models["SPRiFGSCNet"], models["ASRNNGSCNet"]
 
-
 def _build_gsc_test_loader(task_dir: str, batch_size: int = 200):
-    """Build GSC test DataLoader."""
     import torchvision
     from torch.utils.data import DataLoader
 
@@ -263,13 +216,7 @@ def _build_gsc_test_loader(task_dir: str, batch_size: int = 200):
     return DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
                       num_workers=2, collate_fn=collate_fn)
 
-
-# ---------------------------------------------------------------------------
-# ECG model loading
-# ---------------------------------------------------------------------------
-
 def _load_ecg_models(task_dir: str):
-    """Load SPRiF and ASRNN ECG models. Train if needed."""
     import scipy.io
 
     _add_path(task_dir)
@@ -277,7 +224,6 @@ def _load_ecg_models(task_dir: str):
 
     from model import SPRiFECGModel
 
-    # Import ASRNN model
     sys.path.insert(0, os.path.join(ROOT, task_dir, "model_wrapper"))
     from asrnn_ecg import ASRNNECGNet
 
@@ -292,7 +238,6 @@ def _load_ecg_models(task_dir: str):
 
     models = {}
 
-    # Load SPRiF
     prefix = "SPRiFECGModel"
     ckpt = _find_checkpoint(task_abs, prefix)
     if ckpt is None:
@@ -320,7 +265,6 @@ def _load_ecg_models(task_dir: str):
     sprif_model.eval()
     models["SPRiFECGModel"] = sprif_model
 
-    # Load ASRNN
     ckpt = _find_checkpoint(task_abs, "ASRNNECGModel")
     if ckpt is None:
         _train_task(
@@ -347,9 +291,7 @@ def _load_ecg_models(task_dir: str):
 
     return models["SPRiFECGModel"], models["ASRNNECGModel"]
 
-
 def _build_ecg_test_loader(task_dir: str, batch_size: int = 64):
-    """Build ECG test DataLoader."""
     import scipy.io
     from torch.utils.data import DataLoader, TensorDataset
 
@@ -374,14 +316,8 @@ def _build_ecg_test_loader(task_dir: str, batch_size: int = 64):
         batch_size=batch_size, shuffle=False, num_workers=2,
     )
 
-
-# ---------------------------------------------------------------------------
-# Evaluation
-# ---------------------------------------------------------------------------
-
 @torch.no_grad()
 def evaluate_gsc(model: nn.Module, loader, device, seq_len=101, n_mels=40, input_size=120, model_name="SPRiF"):
-    """Evaluate GSC model. Returns accuracy (float)."""
     model.eval()
     total_correct = 0
     total = 0
@@ -389,12 +325,11 @@ def evaluate_gsc(model: nn.Module, loader, device, seq_len=101, n_mels=40, input
         x = x.view(-1, 3, seq_len, n_mels).to(device)
         y = y.to(device)
 
-        # Different models have different interfaces
         if model_name == "ASRNN":
-            # ASRNN expects (batch, 3, seq_len, n_mels) directly
+
             logits = model(x)
         else:
-            # SPRiF expects (batch, seq_len, input_size)
+
             x = x.permute(0, 2, 1, 3).reshape(-1, seq_len, input_size)
             logits, _ = model(x)
 
@@ -402,10 +337,8 @@ def evaluate_gsc(model: nn.Module, loader, device, seq_len=101, n_mels=40, input
         total += x.size(0)
     return total_correct / total if total > 0 else 0.0
 
-
 @torch.no_grad()
 def evaluate_ecg(model: nn.Module, loader, device, model_name="SPRiF"):
-    """Evaluate ECG model. Returns accuracy (float)."""
     model.eval()
     total_correct = 0
     total = 0
@@ -413,26 +346,13 @@ def evaluate_ecg(model: nn.Module, loader, device, model_name="SPRiF"):
         inputs = inputs.to(device)
         labels = labels.to(device)
 
-        # Both SPRiF and ASRNN ECG models output [batch, num_classes, seq_len]
-        # (dense per-timestep supervision). Labels are [batch, seq_len].
         logits = model(inputs)
-        pred = logits.argmax(dim=1)  # [batch, seq_len]
+        pred = logits.argmax(dim=1)
         total_correct += pred.eq(labels).sum().item()
         total += labels.numel()
     return total_correct / total if total > 0 else 0.0
 
-
-# ---------------------------------------------------------------------------
-# GSC noisy evaluation (noise applied to raw numpy before collate + reshape)
-# ---------------------------------------------------------------------------
-
 class NoisyGSCLoader:
-    """Wraps a GSC test DataLoader and applies noise to the raw audio features.
-
-    Noise is applied to the collated tensor (B, 3, seq_len, n_mels) after
-    collate_fn normalisation. Outputs raw (B, 3, seq_len, n_mels) — the
-    evaluate_gsc function handles the view/permute/reshape internally.
-    """
 
     def __init__(self, base_loader, noise_fn, noise_args, rng):
         self.base_loader = base_loader
@@ -452,9 +372,7 @@ class NoisyGSCLoader:
     def __len__(self):
         return len(self._batches)
 
-
 class NoisyECGLoader:
-    """Wraps an ECG test DataLoader and applies noise to the raw signal."""
 
     def __init__(self, base_loader, noise_fn, noise_args, rng):
         self.base_loader = base_loader
@@ -474,13 +392,8 @@ class NoisyECGLoader:
     def __len__(self):
         return len(self._batches)
 
-
-# ---------------------------------------------------------------------------
-# Main experiment
-# ---------------------------------------------------------------------------
-
 NOISE_CONDITIONS = [
-    # (label, noise_fn, args)
+
     ("clean", None, ()),
     ("additive_sigma_0.01", additive_noise, (0.01,)),
     ("additive_sigma_0.05", additive_noise, (0.05,)),
@@ -510,50 +423,35 @@ DATASET_CONFIG = {
     },
 }
 
-
 def _sync_module_device(model: nn.Module, device) -> None:
-    """Recursively set the .device attribute on every submodule.
-
-    ASRNN's SRNN layers (spike_dense / spike_rnn) build their state and decay
-    tensors using a stored string self.device (fixed to "cpu" at construction).
-    Calling model.to(cuda) only relocates registered Parameters/buffers, leaving
-    self.device pointing at cpu, which triggers a device mismatch in
-    mem_update_adp. Patching the attribute makes those tensors land on `device`.
-    """
     dev_str = str(device)
     for m in model.modules():
         if hasattr(m, "device"):
             m.device = dev_str
 
-
 def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
-    """Run all noise conditions for one dataset. Returns list of result dicts."""
     print(f"\n{'='*60}")
     print(f"Dataset: {dataset_name}")
     print(f"{'='*60}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Load models
     print("Loading models...")
     sprif_model, asrnn_model = config["load_models"](config["task_dir"])
     sprif_model.to(device)
     asrnn_model.to(device)
-    # ASRNN's SRNN layers create state/decay tensors via self.device (a string set
-    # at construction time to "cpu"). .to(device) only moves Parameters, so we must
-    # also patch every submodule's .device attribute to match the runtime device.
+
     _sync_module_device(asrnn_model, device)
 
-    # Build base loader
     base_loader = config["build_loader"](config["task_dir"])
 
     results = []
-    rng = seed_generator(42)  # same noise seed for both models
+    rng = seed_generator(42)
 
     for label, noise_fn, args in NOISE_CONDITIONS:
         print(f"  Condition: {label}")
         if noise_fn is None:
-            # Clean — evaluate directly
+
             acc_sprif = config["evaluate"](sprif_model, base_loader, device, model_name="SPRiF", **config["loader_kwargs"])
             acc_asrnn = config["evaluate"](asrnn_model, base_loader, device, model_name="ASRNN", **config["loader_kwargs"])
         else:
@@ -572,13 +470,7 @@ def run_benchmark(dataset_name: str, config: dict, out_dir: str) -> List[dict]:
 
     return results
 
-
-# ---------------------------------------------------------------------------
-# Plot
-# ---------------------------------------------------------------------------
-
 def plot_benchmark(all_results: List[dict], out_dir: str):
-    """Grouped bar chart comparing SPRiF vs ASRNN degradation per condition per dataset."""
     datasets = sorted(set(r["dataset"] for r in all_results))
 
     fig, axes = plt.subplots(1, len(datasets), figsize=(7 * len(datasets), 5))
@@ -604,7 +496,6 @@ def plot_benchmark(all_results: List[dict], out_dir: str):
         bars2 = ax.bar(x + bar_width / 2, asrnn_vals, bar_width, label="ASRNN",
                        color=colors["ASRNN"], alpha=0.85, edgecolor="white")
 
-        # Annotate degradation from clean
         clean_sprif = by_cond["clean"]["SPRiF_accuracy"]
         clean_asrnn = by_cond["clean"]["ASRNN_accuracy"]
         for i, c in enumerate(conditions_order):
@@ -632,11 +523,6 @@ def plot_benchmark(all_results: List[dict], out_dir: str):
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
 def main():
     out_dir = os.path.dirname(os.path.abspath(__file__))
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -655,18 +541,16 @@ def main():
         print("\nNo datasets evaluated. Aborting.")
         return
 
-    # Save JSON
     json_path = os.path.join(RESULTS_DIR, "robustness_benchmark.json")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2)
     print(f"\nSaved: {json_path}")
 
-    # Plot
     print("Plotting...")
     plot_benchmark(all_results, out_dir)
 
     print("\nDone.")
 
-
 if __name__ == "__main__":
     main()
+

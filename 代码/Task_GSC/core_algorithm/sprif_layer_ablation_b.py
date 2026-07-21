@@ -1,13 +1,3 @@
-"""
-SPRiF Ablation B: Merged slow/fast state — no separate fast state.
-
-This layer removes the entire fast-state subsystem (u, eta, G, fast_coupling,
-lambda_reset). Membrane potential is read directly from the first slow component
-x[0], and reset is scalar (subtract threshold from x[0] only).
-
-Compare with full SPRiFNeuronLayer in model.py: fast state adds a 2D
-compartment with projective reset and learned slow→fast coupling.
-"""
 
 import math
 from typing import Dict, List, Optional, Tuple, Union
@@ -19,11 +9,9 @@ StateDict = Dict[str, Tensor]
 lens = 0.5
 gamma = 0.5
 
-
 def gaussian(x: Tensor, mu: float = 0.0, sigma: float = 0.5) -> Tensor:
     denom = torch.sqrt(2 * torch.tensor(math.pi, device=x.device, dtype=x.dtype)) * sigma
     return torch.exp(-((x - mu) ** 2) / (2 * sigma**2)) / denom
-
 
 class ActFun_adp(torch.autograd.Function):
     @staticmethod
@@ -43,20 +31,12 @@ class ActFun_adp(torch.autograd.Function):
         )
         return grad_input * temp.to(dtype=grad_input.dtype) * gamma
 
-
 def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
-
 SurrogateSpike = ActFun_adp
 
-
 class SPRiFNeuronLayerAblationB(nn.Module):
-    """SPRiF neuron with merged slow/fast — no separate fast state.
-
-    Slow state (3D): [x_real, x_osc_1, x_osc_2] with spectral block-diagonal
-    dynamics.  Membrane = x[..., 0] directly.  Scalar reset on x[0] only.
-    """
 
     def __init__(
         self,
@@ -83,7 +63,6 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
         )
 
-        # Only slow-state parameters — no eta, fast_coupling, G, or lambda_reset
         self.alpha_raw = nn.Parameter(torch.empty(hidden_size))
         self.rho_raw = nn.Parameter(torch.empty(hidden_size))
         self.omega_raw = nn.Parameter(torch.empty(hidden_size))
@@ -136,12 +115,6 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             )
             self.omega_raw.copy_(self._safe_logit(omega / math.pi))
 
-        # No eta, fast_coupling, G, or lambda_reset to initialise
-
-    # ------------------------------------------------------------------
-    # State management
-    # ------------------------------------------------------------------
-
     def init_state(
         self,
         batch_size: int,
@@ -156,7 +129,7 @@ class SPRiFNeuronLayerAblationB(nn.Module):
         return {
             "x": torch.zeros(batch_size, self.hidden_size, 3, device=device, dtype=dtype),
             "prev_spike": torch.zeros(batch_size, self.hidden_size, device=device, dtype=dtype),
-            # NOTE: no "u" key — fast state removed
+
         }
 
     @staticmethod
@@ -164,10 +137,6 @@ class SPRiFNeuronLayerAblationB(nn.Module):
         if state is None:
             return None
         return {k: v.detach() for k, v in state.items()}
-
-    # ------------------------------------------------------------------
-    # Runtime parameters
-    # ------------------------------------------------------------------
 
     def _precompute_runtime_params(self) -> Dict[str, Tensor]:
         alpha = torch.sigmoid(self.alpha_raw)
@@ -190,14 +159,9 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             "omega": runtime["omega"],
         }
 
-    # ------------------------------------------------------------------
-    # Core dynamics  (slow flow only — fast flow removed)
-    # ------------------------------------------------------------------
-
     def _slow_flow(
         self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]
     ) -> Tensor:
-        """3D spectral slow state — identical to full SPRiF."""
         x_real = x_prev[..., 0]
         x_osc_1 = x_prev[..., 1]
         x_osc_2 = x_prev[..., 2]
@@ -213,16 +177,8 @@ class SPRiFNeuronLayerAblationB(nn.Module):
 
         return torch.stack((x_next_0, x_next_1, x_next_2), dim=-1)
 
-    # ------------------------------------------------------------------
-    # Spike
-    # ------------------------------------------------------------------
-
     def _spike_fn(self, membrane_delta: Tensor) -> Tensor:
         return surrogate_spike(membrane_delta)
-
-    # ------------------------------------------------------------------
-    # Single time-step
-    # ------------------------------------------------------------------
 
     def forward_step(
         self, x_t: Tensor, state: StateDict, runtime: Dict[str, Tensor]
@@ -230,20 +186,16 @@ class SPRiFNeuronLayerAblationB(nn.Module):
         x_state = state["x"]
         prev_spike = state["prev_spike"]
 
-        # Input current
         input_current = self.input_linear(x_t)
         if self.recurrent and self.recurrent_linear is not None:
             input_current = input_current + self.recurrent_linear(prev_spike)
 
-        # Slow flow (no fast flow follows)
         x_next = self._slow_flow(x_state, input_current, runtime)
 
-        # Membrane = first slow component directly (no fast state)
         membrane = x_next[..., 0]
         theta = self.threshold
         spike = self._spike_fn(membrane - theta)
 
-        # Scalar reset on x[0] only (no projective reset)
         if isinstance(theta, Tensor):
             reset_scale = theta
         else:
@@ -251,17 +203,12 @@ class SPRiFNeuronLayerAblationB(nn.Module):
 
         x_next_reset = x_next.clone()
         x_next_reset[..., 0] = x_next[..., 0] - spike * reset_scale
-        # x[1], x[2] are NEVER reset — oscillation persists across spikes
 
         next_state = {
             "x": x_next_reset,
             "prev_spike": spike,
         }
         return spike, membrane, next_state
-
-    # ------------------------------------------------------------------
-    # Full sequence forward
-    # ------------------------------------------------------------------
 
     def forward(
         self,
@@ -303,7 +250,7 @@ class SPRiFNeuronLayerAblationB(nn.Module):
 
             if return_voltages:
                 if return_post_reset_voltages:
-                    voltages.append(state["x"][..., 0])   # post-reset x[0]  (no "u" state)
+                    voltages.append(state["x"][..., 0])
                 else:
                     voltages.append(membrane)
 
@@ -322,3 +269,4 @@ class SPRiFNeuronLayerAblationB(nn.Module):
         if return_state:
             return spike_seq, state
         return spike_seq
+

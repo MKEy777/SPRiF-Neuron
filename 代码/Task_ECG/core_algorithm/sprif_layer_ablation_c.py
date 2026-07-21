@@ -1,15 +1,3 @@
-"""
-Ablation C: SPRiF with scalar reset (lambda = 0, no learnable reset direction).
-
-Compared to full SPRiF:
-  - lambda_j = 0 fixed for all neurons  (no learnable lambda_reset parameter)
-  - reset_direction = [1, 0]^T  (standard scalar soft reset on u^0 only)
-  - u^1 is NOT affected by reset
-  - 3D slow state, 2D fast state, all other params unchanged
-
-Tests claim C4: Does projective (directional, learnable) reset add value
-over standard scalar soft reset?
-"""
 
 import math
 from typing import Dict, Optional, Tuple
@@ -22,11 +10,9 @@ StateDict = Dict[str, Tensor]
 lens = 0.5
 gamma = 0.5
 
-
 def gaussian(x: Tensor, mu: float = 0.0, sigma: float = 0.5) -> Tensor:
     denom = torch.sqrt(2 * torch.tensor(math.pi, device=x.device, dtype=x.dtype)) * sigma
     return torch.exp(-((x - mu) ** 2) / (2 * sigma**2)) / denom
-
 
 class ActFun_adp(torch.autograd.Function):
     @staticmethod
@@ -46,16 +32,10 @@ class ActFun_adp(torch.autograd.Function):
         )
         return grad_input * temp.to(dtype=grad_input.dtype) * gamma
 
-
 def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
-
 class SPRiFNeuronLayerAblationC(nn.Module):
-    """
-    Ablation C — scalar reset.
-    Same architecture as full SPRiF, but lambda = 0 (no directional reset).
-    """
 
     def __init__(
         self,
@@ -82,17 +62,13 @@ class SPRiFNeuronLayerAblationC(nn.Module):
             nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
         )
 
-        # spectral params (same as full SPRiF)
         self.alpha_raw = nn.Parameter(torch.empty(hidden_size))
         self.rho_raw = nn.Parameter(torch.empty(hidden_size))
         self.omega_raw = nn.Parameter(torch.empty(hidden_size))
         self.eta_raw = nn.Parameter(torch.empty(hidden_size, 2))
         self.fast_coupling = nn.Parameter(torch.empty(hidden_size))
 
-        # G: slow→fast projection  (2 × 3, same as full SPRiF)
         self.G = nn.Parameter(torch.empty(hidden_size, 2, 3))
-
-        # NOTE: no lambda_reset parameter — scalar reset is [1, 0] fixed
 
         self._reset_parameters(
             init_std=init_std,
@@ -121,7 +97,7 @@ class SPRiFNeuronLayerAblationC(nn.Module):
             nn.init.orthogonal_(self.recurrent_linear.weight)
 
         with torch.no_grad():
-            # log-space uniform for tau_alpha
+
             tau_alpha = torch.exp(
                 torch.empty(self.hidden_size).uniform_(
                     math.log(tau_alpha_range[0]),
@@ -131,7 +107,6 @@ class SPRiFNeuronLayerAblationC(nn.Module):
             alpha = torch.exp(-1.0 / tau_alpha)
             self.alpha_raw.copy_(self._safe_logit(alpha))
 
-            # log-space uniform for tau_rho
             tau_rho = torch.exp(
                 torch.empty(self.hidden_size).uniform_(
                     math.log(tau_rho_range[0]),
@@ -141,14 +116,12 @@ class SPRiFNeuronLayerAblationC(nn.Module):
             rho = torch.exp(-1.0 / tau_rho)
             self.rho_raw.copy_(self._safe_logit(rho))
 
-            # linear-space uniform for omega
             omega = torch.empty(self.hidden_size).uniform_(
                 omega_range[0],
                 omega_range[1],
             )
             self.omega_raw.copy_(self._safe_logit(omega / math.pi))
 
-            # log-space uniform for tau_eta
             tau_eta = torch.exp(
                 torch.empty(self.hidden_size, 2).uniform_(
                     math.log(tau_eta_range[0]),
@@ -184,7 +157,6 @@ class SPRiFNeuronLayerAblationC(nn.Module):
         omega = math.pi * torch.sigmoid(self.omega_raw)
         eta = torch.sigmoid(self.eta_raw).unsqueeze(0)
 
-        # Fixed scalar reset: direction = [1, 0]  (no learnable lambda)
         dev = self.input_linear.weight.device
         ones = torch.ones(self.hidden_size, device=dev)
         zeros = torch.zeros(self.hidden_size, device=dev)
@@ -272,7 +244,6 @@ class SPRiFNeuronLayerAblationC(nn.Module):
         else:
             reset_scale = torch.as_tensor(theta, device=u_tilde.device, dtype=u_tilde.dtype)
 
-        # Scalar reset: direction = [1, 0]  (u^1 unaffected)
         u_next = (
             u_tilde
             - spike.unsqueeze(-1)
@@ -313,5 +284,5 @@ class SPRiFNeuronLayerAblationC(nn.Module):
 
         return spike_seq
 
-
 __all__ = ["SPRiFNeuronLayerAblationC"]
+

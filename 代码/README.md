@@ -1,33 +1,39 @@
-# SPRiF: Slow-Path Resonance with Intrinsic Fast-flow Spiking Neuron Networks
+# SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron Networks
 
-This repository contains the official implementation of SPRiF neuron networks for multiple benchmark tasks.
+Official implementation of SPRiF neuron networks across multiple benchmark tasks.
 
 ## Architecture
 
-SPRiF (Slow-Path Resonance with Intrinsic Fast-flow) is a bio-inspired spiking neuron model that combines:
+SPRiF (Spectral Projective Reset Integrate-and-Fire) is a bio-inspired spiking neuron model combining:
 
-- **Slow dynamics** (3-state): One leaky integrator + one damped oscillatory pair
-- **Fast dynamics** (2-state): Driven by slow-to-fast coupling with per-neuron leakage
-- **Surrogate gradient**: Multi-Gaussian surrogate for differentiable spike training
+- **Slow dynamics (3-state)**: one leaky integrator + one damped oscillatory pair
+- **Fast dynamics (2-state)**: slow-to-fast coupling driving per-neuron leakage
+- **Surrogate gradient**: multi-Gaussian surrogate for differentiable spike training
 
 ## Directory Structure
 
 ```
-SPRiF_Paper/
-├── core_algorithm/          # Shared algorithm library (copied into each task)
+├── core_algorithm/          # Shared algorithm library (copied to each task)
 │   ├── sprif_layer.py       # SPRiFNeuronLayer + surrogate gradient
 │   └── utils.py             # set_seed, dump_json, load_json, convert_dataset_wtime
 │
 ├── Task_GSC/                # Google Speech Commands (12-class keyword spotting)
 ├── Task_ECG/                # QTDB ECG classification (6-class heartbeat)
-├── Task_S-MNIST/            # Sequential MNIST (10-digit classification, row-by-row order)
-├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit classification, random pixel order)
-└── Task_SHD/                # Spiking Heidelberg Digits (20-class digit recognition)
+├── Task_S-MNIST/            # Sequential MNIST (10-digit classification, row-by-row)
+├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit, random pixel order)
+├── Task_SHD/                # Spiking Heidelberg Digits (20-class digit recognition)
+└── experiments/             # Analysis scripts for paper figures
+    ├── impulse_analysis/    # Impulse response kernel analysis
+    ├── reset_analysis/      # Learned reset direction analysis
+    ├── robustness/          # Noise robustness benchmarking
+    ├── trajectory_analysis/ # Slow-state trajectory visualization
+    ├── loss_landscape/      # Loss landscape visualization
+    └── SI-DMS/              # Spike-intervention delayed match-to-sample
 ```
 
-Each task directory is **fully self-contained** and can be run independently.
+Each task directory is **self-contained** and can be run independently.
 
-## Requirements
+## Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -38,67 +44,58 @@ pip install -r requirements.txt
 - numpy >= 1.19.0
 - scipy >= 1.5.0
 - librosa >= 0.8.0
+- torchaudio >= 0.10.0
+- tables >= 3.6.0
+- pandas >= 1.3.0
+- matplotlib >= 3.3.0
+- seaborn >= 0.11.0
+- PyYAML >= 5.4
 
 ## Running Experiments
 
-### Task GSC (Google Speech Commands)
+### Google Speech Commands (GSC)
 
 ```bash
 cd Task_GSC
-python train.py --data-root /path/to/speech_commands_v0.02
+python download_GSC.py
+python train.py
 ```
 
-Optional: `--cache-root /path/to/cache` to specify a cache directory.
-
-### Task ECG (QTDB ECG)
+### ECG Classification (QTDB)
 
 ```bash
 cd Task_ECG
 python train.py --train-mat ./data/QTDB_train.mat --test-mat ./data/QTDB_test.mat
 ```
 
-### Task pSMNIST (Permuted Sequential MNIST)
+### Permuted Sequential MNIST (pSMNIST)
 
 ```bash
 cd Task_pSMNIST
 python train.py
 ```
 
-MNIST dataset will be downloaded automatically on first run.
-
-### Task S-MNIST (Sequential MNIST)
+### Sequential MNIST (S-MNIST)
 
 ```bash
 cd Task_S-MNIST
 python train.py
 ```
 
-Pixels are read in natural row-by-row order (no permutation). Same hyperparameters as pSMNIST.
-Ablation variants: `python train_ablation_{a,b,c}.py`.
+### Spiking Heidelberg Digits (SHD)
 
-### Task SHD (Spiking Heidelberg Digits)
-
-**Step 1**: Preprocess the SHD dataset (HDF5 → NPY):
 ```bash
 cd Task_SHD
 python generate_data.py
-```
-
-**Step 2**: Train the model:
-```bash
-python train.py --train-dir /path/to/train_1ms --test-dir /path/to/test_1ms
+python train.py --train-dir ../../data/SHD/train_1ms --test-dir ../../data/SHD/test_1ms
 ```
 
 ## Model Checkpoints
 
-Models are automatically saved with the naming convention:
+Saved model naming format: `[NetworkPrefix]_[KeyHParams]_seed[N]_acc[XX.XX].pth`
 
-```
-[NetworkPrefix]_[KeyHParams]_seed[N]_acc[XX.XX].pth
-```
-
-Example: `SPRiFGSCNet_hs300_bs200_lr0.003_seed42_acc92.50.pth`
+Checkpoints are saved in the task root directory during training.
 
 ## Citation
 
-If you use this code in your research, please cite the paper.
+If you find this work useful for your research, please cite our paper.

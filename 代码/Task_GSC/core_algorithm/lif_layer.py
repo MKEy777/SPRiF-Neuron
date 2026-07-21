@@ -1,14 +1,3 @@
-"""
-Standard LIF neuron layer with API compatible with SPRiFNeuronLayer.
-
-Exposes the same signatures (init_state, forward_step, forward, forward_with_state,
-get_spectral_parameters) so it can be used as a drop-in replacement in GSC models.
-
-Dynamics:
-    v_tilde = beta * v_{t-1} + (1 - beta) * input_current
-    spike = Heaviside(v_tilde - threshold)
-    v_next = v_tilde - spike * threshold   (soft reset)
-"""
 
 import math
 from typing import Dict, Optional, Tuple
@@ -19,7 +8,6 @@ from torch import Tensor, nn
 from core_algorithm.sprif_layer import surrogate_spike
 
 StateDict = Dict[str, Tensor]
-
 
 class LIFNeuronLayer(nn.Module):
     def __init__(
@@ -44,9 +32,6 @@ class LIFNeuronLayer(nn.Module):
             nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
         )
 
-        # Membrane decay: beta controls how much of the old voltage is retained.
-        # Parameterized via raw logit to keep beta in (0, 1).
-        # tau_m = -1 / log(beta)  →  beta = exp(-1 / tau_m)
         self.beta_raw = nn.Parameter(torch.empty(hidden_size))
 
         self._reset_parameters(init_std=init_std, tau_m_range=tau_m_range)
@@ -66,7 +51,6 @@ class LIFNeuronLayer(nn.Module):
         if self.recurrent_linear is not None:
             nn.init.orthogonal_(self.recurrent_linear.weight)
 
-        # Initialize beta to match tau_m ~ Uniform[tau_min, tau_max] in log-space
         with torch.no_grad():
             tau_m = torch.exp(
                 torch.empty(self.hidden_size).uniform_(
@@ -98,7 +82,6 @@ class LIFNeuronLayer(nn.Module):
         return {"beta": beta}
 
     def get_spectral_parameters(self) -> Dict[str, Tensor]:
-        """Return membrane time constant for compatibility with SPRiF API."""
         beta = torch.sigmoid(self.beta_raw)
         tau_m = -1.0 / torch.log(beta + 1e-8)
         return {"tau_m": tau_m}
@@ -194,5 +177,5 @@ class LIFNeuronLayer(nn.Module):
 
         return spike_seq, state
 
-
 __all__ = ["LIFNeuronLayer"]
+

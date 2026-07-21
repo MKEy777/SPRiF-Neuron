@@ -8,11 +8,9 @@ StateDict = Dict[str, Tensor]
 lens = 0.5
 gamma = 0.5
 
-
 def gaussian(x: Tensor, mu: float = 0.0, sigma: float = 0.5) -> Tensor:
     denom = torch.sqrt(2 * torch.tensor(math.pi, device=x.device, dtype=x.dtype)) * sigma
     return torch.exp(-((x - mu) ** 2) / (2 * sigma**2)) / denom
-
 
 class ActFun_adp(torch.autograd.Function):
     @staticmethod
@@ -32,10 +30,8 @@ class ActFun_adp(torch.autograd.Function):
         )
         return grad_input * temp.to(dtype=grad_input.dtype) * gamma
 
-
 def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
-
 
 class SPRiFNeuronLayer(nn.Module):
     def __init__(
@@ -278,5 +274,5 @@ class SPRiFNeuronLayer(nn.Module):
 
         return spike_seq
 
-
 __all__ = ["SPRiFNeuronLayer"]
+

@@ -1,9 +1,3 @@
-"""
-SHD preprocessing script aligned with the original Rhythm-SNN pipeline:
-- Read `shd_train.h5` / `shd_test.h5`
-- Convert event streams to dense binary frames with dt=1ms
-- Save each sample as `ID:{i}_{label}.npy`
-"""
 
 import os
 from typing import Tuple
@@ -11,11 +5,9 @@ from typing import Tuple
 import numpy as np
 import tables
 
-
 def poisson_spikes_gen(nb_steps: int, nb_units: int, rate: float):
     spike_trains = (np.random.uniform(0, 1, (nb_steps, nb_units)) <= rate).astype(int)
     return spike_trains
-
 
 def binary_image_readout(times, units, dt=1e-3):
     img = []
@@ -32,7 +24,6 @@ def binary_image_readout(times, units, dt=1e-3):
         units = np.delete(units, idxs)
         img.append(vector)
     return np.array(img)
-
 
 def binary_image_readout_random(times, units, dt=1e-3, max_timestep=1000):
     img = []
@@ -56,7 +47,6 @@ def binary_image_readout_random(times, units, dt=1e-3, max_timestep=1000):
         return np.vstack([head, img, tail])
     return np.array(img)
 
-
 def generate_dataset(file_name: str, output_dir: str, dt=1e-3) -> int:
     fileh = tables.open_file(file_name, mode="r")
     units = fileh.root.spikes.units
@@ -74,7 +64,6 @@ def generate_dataset(file_name: str, output_dir: str, dt=1e-3) -> int:
     fileh.close()
     return 0
 
-
 if __name__ == "__main__":
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     train_h5 = os.path.join(root, "data", "SHD", "shd_train.h5")
@@ -87,3 +76,4 @@ if __name__ == "__main__":
 
     generate_dataset(test_h5, output_dir=out_test, dt=1e-3)
     generate_dataset(train_h5, output_dir=out_train, dt=1e-3)
+

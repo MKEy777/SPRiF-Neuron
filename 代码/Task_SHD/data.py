@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-
 class SHDDataset(Dataset):
     def __init__(self, data_paths: List[str], transform: Optional[callable] = None):
         self.data_paths = data_paths
@@ -22,3 +21,4 @@ class SHDDataset(Dataset):
         if self.transform is not None:
             x = self.transform(x)
         return x, y
+

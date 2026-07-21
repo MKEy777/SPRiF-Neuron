@@ -1,9 +1,3 @@
-"""
-SPRiF-pSMNIST: Permuted Sequential MNIST with SPRiF neuron networks.
-
-Usage:
-    python train.py
-"""
 
 import argparse
 import os
@@ -19,27 +13,25 @@ from core_algorithm.utils import set_seed
 from core_algorithm.sprif_layer import SPRiFNeuronLayer
 from model import PermutedMNIST, SPRiFpSMNISTNet
 
-
 def get_args():
     parser = argparse.ArgumentParser(description="SPRiF-pSMNIST: Permuted Sequential MNIST")
-    # Training
+
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--seed", type=int, default=0)
-    # Model
-    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 256])
+
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 210])
     parser.add_argument("--mode", type=str, default="srnn")
     parser.add_argument("--num-classes", type=int, default=10)
     parser.add_argument("--warmup-steps", type=int, default=0)
-    # TBPTT
+
     parser.add_argument("--tbptt-len", type=int, default=262,
                         help="TBPTT chunk length (0 = full BPTT)")
-    # Scheduler
+
     parser.add_argument("--scheduler-step", type=int, default=50)
     parser.add_argument("--scheduler-gamma", type=float, default=0.1)
     return parser.parse_args()
-
 
 def main():
     args = get_args()
@@ -47,7 +39,6 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # Data
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
     train_mnist = torchvision.datasets.MNIST(
         root="./data", train=True, download=True, transform=transform,
@@ -73,7 +64,6 @@ def main():
 
     print(f"Train samples: {len(train_dataset)}, Test samples: {len(test_dataset)}")
 
-    # Model
     model = SPRiFpSMNISTNet(
         input_size=1,
         hidden_sizes=list(args.hidden_sizes),
@@ -85,14 +75,11 @@ def main():
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}")
 
-    # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     criterion = nn.CrossEntropyLoss()
 
-    # Training loop
     best_test_acc = 0.0
-    best_ckpt_path = None
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -121,7 +108,7 @@ def main():
                     out, ns = layer.forward_with_state(out, states[i], batch_first=True)
                     new_states.append(ns)
 
-                logits_chunk = model.readout(out)  # (B, chunk_len, C)
+                logits_chunk = model.readout(out)
 
                 local_warmup = max(model.warmup_steps - start, 0)
                 if local_warmup >= logits_chunk.size(1):
@@ -129,9 +116,9 @@ def main():
                     continue
 
                 valid_logits = logits_chunk[:, local_warmup:, :]
-                chunk_logits = valid_logits.mean(dim=1)  # (B, C)
+                chunk_logits = valid_logits.mean(dim=1)
 
-                optimizer.zero_grad(set_to_none=True)
+                optimizer.zero_grad()
                 loss = criterion(chunk_logits, y)
                 loss.backward()
                 optimizer.step()
@@ -150,7 +137,6 @@ def main():
 
         scheduler.step()
 
-        # Evaluation
         model.eval()
         test_loss = 0.0
         test_correct = 0
@@ -158,7 +144,7 @@ def main():
         with torch.no_grad():
             for x, y in test_loader:
                 x, y = x.to(device, non_blocking=pin_memory), y.to(device, non_blocking=pin_memory)
-                logits = model(x)  # Full BPTT for eval
+                logits = model(x)
                 loss = criterion(logits, y)
                 test_loss += loss.item() * x.size(0)
                 test_correct += (logits.argmax(dim=-1) == y).sum().item()
@@ -182,16 +168,10 @@ def main():
                 f"SPRiFpSMNISTNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
-            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
-                try:
-                    os.remove(best_ckpt_path)
-                except OSError:
-                    pass
             torch.save(model.state_dict(), save_name)
-            best_ckpt_path = save_name
 
     print(f"\nTraining complete. Best test accuracy: {best_test_acc:.2f}%")
 
-
 if __name__ == "__main__":
     main()
+

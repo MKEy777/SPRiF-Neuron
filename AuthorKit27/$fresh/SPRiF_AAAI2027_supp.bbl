@@ -1,0 +1,55 @@
+\begin{thebibliography}{8}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Cramer et~al.(2022)Cramer, Stradmann, Schemmel, and
+  Zenke}]{cramer2022heidelberg}
+Cramer, B.; Stradmann, Y.; Schemmel, J.; and Zenke, F. 2022.
+\newblock The Heidelberg Spiking Data Sets for the Systematic Evaluation of
+  Spiking Neural Networks.
+\newblock \emph{IEEE Transactions on Neural Networks and Learning Systems},
+  33(7): 2744--2757.
+
+\bibitem[{Hendrycks and Dietterich(2019)}]{hendrycks2019benchmarking}
+Hendrycks, D.; and Dietterich, T.~G. 2019.
+\newblock Benchmarking Neural Network Robustness to Common Corruptions and
+  Perturbations.
+\newblock In \emph{International Conference on Learning Representations}.
+
+\bibitem[{Iwana and Uchida(2021)}]{iwana2021empirical}
+Iwana, B.~K.; and Uchida, S. 2021.
+\newblock An Empirical Survey of Data Augmentation for Time Series
+  Classification with Neural Networks.
+\newblock \emph{PLOS ONE}, 16(7): e0254841.
+
+\bibitem[{Laguna et~al.(1997)Laguna, Mark, Goldberger, and
+  Moody}]{laguna1997database}
+Laguna, P.; Mark, R.~G.; Goldberger, A.~L.; and Moody, G.~B. 1997.
+\newblock A Database for Evaluation of Algorithms for Measurement of {QT} and
+  Other Waveform Intervals in the {ECG}.
+\newblock In \emph{Computers in Cardiology}, volume~24, 673--676.
+
+\bibitem[{LeCun et~al.(1998)LeCun, Bottou, Bengio, and
+  Haffner}]{lecun1998gradient}
+LeCun, Y.; Bottou, L.; Bengio, Y.; and Haffner, P. 1998.
+\newblock Gradient-Based Learning Applied to Document Recognition.
+\newblock \emph{Proceedings of the IEEE}, 86(11): 2278--2324.
+
+\bibitem[{Li et~al.(2018)Li, Xu, Taylor, Studer, and
+  Goldstein}]{li2018visualizing}
+Li, H.; Xu, Z.; Taylor, G.; Studer, C.; and Goldstein, T. 2018.
+\newblock Visualizing the Loss Landscape of Neural Nets.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~31, 6391--6401.
+
+\bibitem[{Warden(2018)}]{warden2018speech}
+Warden, P. 2018.
+\newblock Speech Commands: A Dataset for Limited-Vocabulary Speech Recognition.
+\newblock \emph{CoRR}, abs/1804.03209.
+
+\bibitem[{Yin, Corradi, and Boht{\'{e}}(2021)}]{asrnn}
+Yin, B.; Corradi, F.; and Boht{\'{e}}, S.~M. 2021.
+\newblock Accurate and Efficient Time-Domain Classification with Adaptive
+  Spiking Recurrent Neural Networks.
+\newblock \emph{Nature Machine Intelligence}, 3: 905--913.
+
+\end{thebibliography}

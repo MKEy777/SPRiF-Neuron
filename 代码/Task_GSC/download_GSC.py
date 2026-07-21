@@ -3,10 +3,14 @@ import os
 
 from torchaudio import datasets
 
-
 def main():
     parser = argparse.ArgumentParser(description="Download Google Speech Commands v0.02")
-    parser.add_argument("--root", type=str, default="autodl-tmp/A-sprif/Task_GSC/dataset", help="Root data directory")
+    parser.add_argument(
+        "--root",
+        type=str,
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset"),
+        help="Root data directory",
+    )
     args = parser.parse_args()
 
     datasets.SPEECHCOMMANDS(
@@ -17,6 +21,6 @@ def main():
     )
     print("Download finished:", os.path.abspath(args.root))
 
-
 if __name__ == "__main__":
     main()
+

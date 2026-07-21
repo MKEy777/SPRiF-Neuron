@@ -1,16 +1,3 @@
-"""
-Ablation A: SPRiF with ω=0 — no rotation coupling between x¹ and x².
-
-Compared to full SPRiF (3D slow: real + 2D damped rotation):
-  - ω is fixed to 0  →  cos(ω)=1, sin(ω)=0
-  - x¹' = ρ·x¹ + (1-ρ)·I   (no rotation from x²)
-  - x²' = ρ·x²              (no rotation from x¹)
-  - Removes omega_raw parameter
-  - 3D slow state, 2D fast state, G (2×3), and projective reset unchanged
-
-Tests claim C5: Does cross-channel rotation coupling (sin/cos mixing)
-between x¹ and x² provide value beyond independent damped decay?
-"""
 
 import math
 from typing import Dict, Optional, Tuple
@@ -23,11 +10,9 @@ StateDict = Dict[str, Tensor]
 lens = 0.5
 gamma = 0.5
 
-
 def gaussian(x: Tensor, mu: float = 0.0, sigma: float = 0.5) -> Tensor:
     denom = torch.sqrt(2 * torch.tensor(math.pi, device=x.device, dtype=x.dtype)) * sigma
     return torch.exp(-((x - mu) ** 2) / (2 * sigma**2)) / denom
-
 
 class ActFun_adp(torch.autograd.Function):
     @staticmethod
@@ -47,17 +32,10 @@ class ActFun_adp(torch.autograd.Function):
         )
         return grad_input * temp.to(dtype=grad_input.dtype) * gamma
 
-
 def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
-
 class SPRiFNeuronLayerAblationA(nn.Module):
-    """
-    Ablation A — ω=0, no rotation coupling.
-    3D slow state preserved; only cross-channel sin/cos mixing removed.
-    Fast state (2D) and projective reset are unchanged.
-    """
 
     def __init__(
         self,
@@ -84,13 +62,11 @@ class SPRiFNeuronLayerAblationA(nn.Module):
             nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
         )
 
-        # spectral params — same as full SPRiF minus omega_raw
         self.alpha_raw = nn.Parameter(torch.empty(hidden_size))
         self.rho_raw = nn.Parameter(torch.empty(hidden_size))
         self.eta_raw = nn.Parameter(torch.empty(hidden_size, 2))
         self.fast_coupling = nn.Parameter(torch.empty(hidden_size))
 
-        # G: slow→fast projection  (2 × 3, same as full SPRiF)
         self.G = nn.Parameter(torch.empty(hidden_size, 2, 3))
 
         self._reset_parameters(
@@ -124,7 +100,6 @@ class SPRiFNeuronLayerAblationA(nn.Module):
             alpha = torch.exp(-1.0 / tau_alpha)
             self.alpha_raw.copy_(self._safe_logit(alpha))
 
-            # tau_rho uniform (no omega-dependent upper bound since ω=0)
             tau_rho = torch.empty(self.hidden_size).uniform_(
                 tau_rho_range[0], tau_rho_range[1]
             )
@@ -186,9 +161,6 @@ class SPRiFNeuronLayerAblationA(nn.Module):
             "lambda_reset": runtime["lambda_reset"],
         }
 
-    # ------------------------------------------------------------------
-    #  Core change: _slow_flow with ω=0  (cos=1, sin=0, no rotation)
-    # ------------------------------------------------------------------
     def _slow_flow(
         self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]
     ) -> Tensor:
@@ -200,8 +172,8 @@ class SPRiFNeuronLayerAblationA(nn.Module):
         rho = runtime["rho"].unsqueeze(0)
 
         x_next_0 = alpha * x_real + (1.0 - alpha) * input_current
-        x_next_1 = rho * x_osc_1 + (1.0 - rho) * input_current      # no rotation
-        x_next_2 = rho * x_osc_2                                     # no rotation
+        x_next_1 = rho * x_osc_1 + (1.0 - rho) * input_current
+        x_next_2 = rho * x_osc_2
 
         return torch.stack((x_next_0, x_next_1, x_next_2), dim=-1)
 
@@ -270,7 +242,6 @@ class SPRiFNeuronLayerAblationA(nn.Module):
         state: StateDict,
         batch_first: bool = False,
     ) -> Tuple[Tensor, StateDict]:
-        """Forward full sequence from external state. Returns (spikes, next_state)."""
         if batch_first:
             x = x.transpose(0, 1)
         T, B, F = x.shape
@@ -309,5 +280,5 @@ class SPRiFNeuronLayerAblationA(nn.Module):
             spike_seq = spike_seq.transpose(0, 1)
         return spike_seq
 
-
 __all__ = ["SPRiFNeuronLayerAblationA"]
+

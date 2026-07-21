@@ -1,17 +1,3 @@
-"""
-Ablation B: SPRiF with merged slow/fast states (no functional separation).
-
-Compared to full SPRiF (3D slow + 2D fast):
-  - Single 3D spectral state (same spectral dynamics as SPRiF slow state)
-  - x^0 directly reads out as membrane potential:  v_t = x^0_t
-  - z_t = H(x^0_t - theta)
-  - Scalar soft reset on x^0 only:  x^0 <- x^0 - z_t * theta
-  - x^1, x^2 are NEVER reset (oscillation persists across spikes)
-  - No separate fast state (no u_t, no G, no eta, no fast_coupling, no lambda_reset)
-
-Tests claim C2: Is the functional slow/fast decomposition necessary, or does
-a single 3D spectral state with direct readout suffice?
-"""
 
 import math
 from typing import Dict, Optional, Tuple
@@ -24,11 +10,9 @@ StateDict = Dict[str, Tensor]
 lens = 0.5
 gamma = 0.5
 
-
 def gaussian(x: Tensor, mu: float = 0.0, sigma: float = 0.5) -> Tensor:
     denom = torch.sqrt(2 * torch.tensor(math.pi, device=x.device, dtype=x.dtype)) * sigma
     return torch.exp(-((x - mu) ** 2) / (2 * sigma**2)) / denom
-
 
 class ActFun_adp(torch.autograd.Function):
     @staticmethod
@@ -48,16 +32,10 @@ class ActFun_adp(torch.autograd.Function):
         )
         return grad_input * temp.to(dtype=grad_input.dtype) * gamma
 
-
 def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
-
 class SPRiFNeuronLayerAblationB(nn.Module):
-    """
-    Ablation B — merged slow/fast.
-    Single 3D spectral state, x^0 = membrane, scalar reset on x^0 only.
-    """
 
     def __init__(
         self,
@@ -83,7 +61,6 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             nn.Linear(hidden_size, hidden_size, bias=False) if recurrent else None
         )
 
-        # spectral params (same as full SPRiF slow state)
         self.alpha_raw = nn.Parameter(torch.empty(hidden_size))
         self.rho_raw = nn.Parameter(torch.empty(hidden_size))
         self.omega_raw = nn.Parameter(torch.empty(hidden_size))
@@ -113,20 +90,18 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             nn.init.orthogonal_(self.recurrent_linear.weight)
 
         with torch.no_grad():
-            # 线性空间均匀采样 tau_alpha
+
             tau_alpha = torch.empty(self.hidden_size).uniform_(
                 tau_alpha_range[0], tau_alpha_range[1]
             )
             alpha = torch.exp(-1.0 / tau_alpha)
             self.alpha_raw.copy_(self._safe_logit(alpha))
 
-            # 线性空间均匀采样 omega
             omega = torch.empty(self.hidden_size).uniform_(
                 omega_range[0], omega_range[1]
             )
             self.omega_raw.copy_(self._safe_logit(omega / math.pi))
 
-            # omega 依赖的动态 tau_rho 上界
             omega_norm = (omega - omega_range[0]) / (omega_range[1] - omega_range[0] + 1e-5)
             dynamic_upper = tau_rho_range[1] - omega_norm * (tau_rho_range[1] - tau_rho_range[0] * 1.5)
             dynamic_upper = torch.clamp(dynamic_upper, min=tau_rho_range[0] + 0.1)
@@ -208,15 +183,12 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             if self.recurrent and self.recurrent_linear is not None:
                 input_current = input_current + self.recurrent_linear(prev_spike)
 
-        # Update spectral state
         x_next = self._slow_flow(x_state, input_current, runtime)
 
-        # Membrane = x^0  (no separate fast state)
         membrane = x_next[..., 0]
         theta = self.threshold
         spike = self._spike_fn(membrane - theta)
 
-        # Scalar soft reset on x^0 only  (x^1, x^2 never reset)
         if isinstance(theta, Tensor):
             reset_val = theta
         else:
@@ -237,7 +209,6 @@ class SPRiFNeuronLayerAblationB(nn.Module):
         state: StateDict,
         batch_first: bool = False,
     ) -> Tuple[Tensor, StateDict]:
-        """Forward full sequence from external state. Returns (spikes, next_state)."""
         if batch_first:
             x = x.transpose(0, 1)
         T, B, F = x.shape
@@ -275,5 +246,5 @@ class SPRiFNeuronLayerAblationB(nn.Module):
             spike_seq = spike_seq.transpose(0, 1)
         return spike_seq
 
-
 __all__ = ["SPRiFNeuronLayerAblationB"]
+

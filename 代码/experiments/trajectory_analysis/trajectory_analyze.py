@@ -1,14 +1,3 @@
-"""
-SPRiF 慢状态轨迹分析 — 证明"脉冲不打断慢状态"。
-
-加载 PS-MNIST 已训练 SPRiF 模型，选一个测试样本，
-记录慢状态 x_t 和膜电位 u^0 的逐时间步轨迹，
-展示慢状态在脉冲时刻连续、膜电位在脉冲时刻跳变。
-
-Usage:
-    cd 代码/experiments
-    python trajectory_analysis/trajectory_analyze.py
-"""
 
 import glob
 import os
@@ -26,10 +15,6 @@ from matplotlib import pyplot as plt
 
 matplotlib.use("Agg")
 
-# ---------------------------------------------------------------------------
-# Path / config
-# ---------------------------------------------------------------------------
-
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIGURE_DIR = os.path.join(
     os.path.dirname(ROOT),
@@ -43,7 +28,6 @@ TASK_ABS = os.path.join(ROOT, TASK_DIR)
 sys.path.insert(0, TASK_ABS)
 
 from core_algorithm.utils import set_seed
-
 
 def _find_checkpoint(task_path: str, class_prefix: str) -> Optional[str]:
     pattern = os.path.join(task_path, f"{class_prefix}_*.pth")
@@ -64,9 +48,7 @@ def _find_checkpoint(task_path: str, class_prefix: str) -> Optional[str]:
             best = f
     return best
 
-
 def _train_psmnist() -> str:
-    """Train pSMNIST and return checkpoint path."""
     print("  Training SPRiF on pSMNIST...")
     train_script = os.path.join(TASK_ABS, "train.py")
     cmd = [
@@ -83,26 +65,9 @@ def _train_psmnist() -> str:
         raise RuntimeError("Training completed but no checkpoint found.")
     return ckpt
 
-
-# ---------------------------------------------------------------------------
-# Trajectory recording
-# ---------------------------------------------------------------------------
-
 def record_trajectory(
     model: nn.Module, x_single: torch.Tensor
 ) -> Dict[str, List[np.ndarray]]:
-    """
-    Record per-timestep states for a single sample.
-
-    Args:
-        model: SPRiFpSMNISTNet
-        x_single: [1, T, F]  (batch_first, batch=1)
-
-    Returns:
-        slow_states: list of [T, H, 3] per layer
-        membranes:   list of [T, H]    per layer
-        spikes:      list of [T, H]    per layer
-    """
     model.eval()
     T = x_single.size(1)
     device = x_single.device
@@ -111,7 +76,7 @@ def record_trajectory(
     mem_list: List[np.ndarray] = []
     spike_list: List[np.ndarray] = []
 
-    out = x_single  # [1, T, F]
+    out = x_single
 
     for layer in model.layers:
         state = layer.init_state(1, device=device, dtype=out.dtype)
@@ -129,11 +94,10 @@ def record_trajectory(
             layer_mems.append(membrane.squeeze(0).detach().cpu().numpy())
             layer_slow.append(state["x"].squeeze(0).detach().cpu().numpy())
 
-        slow_list.append(np.stack(layer_slow, axis=0))     # [T, H, 3]
-        mem_list.append(np.stack(layer_mems, axis=0))       # [T, H]
-        spike_list.append(np.stack(layer_spikes, axis=0))   # [T, H]
+        slow_list.append(np.stack(layer_slow, axis=0))
+        mem_list.append(np.stack(layer_mems, axis=0))
+        spike_list.append(np.stack(layer_spikes, axis=0))
 
-        # Feed spikes to next layer
         spike_t = torch.from_numpy(
             np.stack(layer_spikes, axis=0)
         ).unsqueeze(0).to(device)
@@ -145,11 +109,6 @@ def record_trajectory(
         "spikes": spike_list,
     }
 
-
-# ---------------------------------------------------------------------------
-# Sample selection
-# ---------------------------------------------------------------------------
-
 def find_spiking_sample(
     model: nn.Module,
     test_loader: torch.utils.data.DataLoader,
@@ -157,11 +116,6 @@ def find_spiking_sample(
     min_spikes: int = 3,
     max_attempts: int = 200,
 ) -> Tuple[torch.Tensor, int, np.ndarray]:
-    """
-    Find a test sample where the last layer has >= min_spikes spike events.
-
-    Returns (x_tensor [1,T,F], label, spikes_last_layer [T,H]).
-    """
     model.eval()
     for i, (x, y) in enumerate(test_loader):
         if i >= max_attempts:
@@ -170,7 +124,7 @@ def find_spiking_sample(
             )
         x = x.to(device)
         rec = record_trajectory(model, x)
-        last_spikes = rec["spikes"][-1]  # [T, H]
+        last_spikes = rec["spikes"][-1]
         spike_times = np.where(last_spikes.sum(axis=1) > 0.5)[0]
         if len(spike_times) >= min_spikes:
             print(f"  Sample {i} (label={y.item()}): "
@@ -178,42 +132,24 @@ def find_spiking_sample(
             return x, y.item(), last_spikes
     raise RuntimeError(f"No sample with >= {min_spikes} spikes found.")
 
-
-# ---------------------------------------------------------------------------
-# Plotting
-# ---------------------------------------------------------------------------
-
 def plot_trajectory(
     rec: Dict,
     spike_time: int,
     neuron_idx: int,
     out_dir: str,
 ):
-    """
-    Plot slow state continuity vs membrane reset around a spike.
-
-    Top: slow state 3D (x_real, x_osc1, x_osc2) — continuous.
-    Bottom: membrane u^0 — reset at spike.
-
-    Args:
-        rec: dict from record_trajectory()
-        spike_time: timestep of the selected spike
-        neuron_idx: which neuron to visualize (last layer)
-        out_dir: save directory
-    """
     WINDOW = 15
-    slow = rec["slow_states"][-1]    # last layer [T, H, 3]
-    membrane = rec["membranes"][-1]  # last layer [T, H]
-    spikes = rec["spikes"][-1]       # last layer [T, H]
+    slow = rec["slow_states"][-1]
+    membrane = rec["membranes"][-1]
+    spikes = rec["spikes"][-1]
     T = slow.shape[0]
 
     t_start = max(0, spike_time - WINDOW)
     t_end = min(T, spike_time + WINDOW + 1)
-    t_rel = np.arange(t_start, t_end) - spike_time  # 0 = spike
+    t_rel = np.arange(t_start, t_end) - spike_time
 
     fig, axes = plt.subplots(2, 1, figsize=(13, 7), sharex=True)
 
-    # --- Top: Slow state 3D ---
     ax = axes[0]
     labels = [r"$x^{\mathrm{real}}$", r"$x^{\mathrm{osc}}_1$", r"$x^{\mathrm{osc}}_2$"]
     colors = ["#1b9e77", "#d95f02", "#7570b3"]
@@ -225,11 +161,10 @@ def plot_trajectory(
     ax.set_title("SPRiF Slow State $x_t$ — Continuous Across Spike", fontweight="bold")
     ax.legend(loc="upper right", frameon=True, fontsize=9)
 
-    # --- Bottom: Membrane (show relative to pre-spike baseline) ---
     ax = axes[1]
     mem_window = membrane[t_start:t_end, neuron_idx]
-    # Normalize to show reset clearly
-    mem_baseline = mem_window[0]  # use first value as baseline
+
+    mem_baseline = mem_window[0]
     mem_rel = mem_window - mem_baseline
 
     ax.plot(t_rel, mem_rel,
@@ -263,7 +198,6 @@ def plot_trajectory(
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
 def save_trajectory_data(
     rec: Dict,
     out_dir: str,
@@ -271,26 +205,17 @@ def save_trajectory_data(
     spike_time: int,
     neuron_idx: int,
 ):
-    """Save recorded trajectory as .npz for reproducibility / further analysis.
-
-    Saves per-layer slow states, membranes, and spikes as structured arrays.
-    """
     save_path = os.path.join(out_dir, "trajectory_data.npz")
     npz = {}
     for li in range(len(rec["slow_states"])):
-        npz[f"layer{li}_slow"] = rec["slow_states"][li]     # (T, H, 3)
-        npz[f"layer{li}_membrane"] = rec["membranes"][li]   # (T, H)
-        npz[f"layer{li}_spikes"] = rec["spikes"][li]        # (T, H)
+        npz[f"layer{li}_slow"] = rec["slow_states"][li]
+        npz[f"layer{li}_membrane"] = rec["membranes"][li]
+        npz[f"layer{li}_spikes"] = rec["spikes"][li]
     npz["label"] = np.array(label)
     npz["highlight_spike_time"] = np.array(spike_time)
     npz["highlight_neuron"] = np.array(neuron_idx)
     np.savez_compressed(save_path, **npz)
     print(f"  Saved: {save_path}")
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main():
     out_dir = FIGURE_DIR
@@ -298,7 +223,6 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # ---- Load or train model ----
     from model import SPRiFpSMNISTNet
 
     ckpt = _find_checkpoint(TASK_ABS, "SPRiFpSMNISTNet")
@@ -318,7 +242,6 @@ def main():
     model.eval()
     print(f"Model loaded. Params: {sum(p.numel() for p in model.parameters()):,}")
 
-    # ---- Data ----
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,)),
@@ -336,21 +259,17 @@ def main():
         test_dataset, batch_size=1, shuffle=True, num_workers=2,
     )
 
-    # ---- Find sample with spikes ----
     x_sample, label, last_spikes = find_spiking_sample(
         model, test_loader, device, min_spikes=3,
     )
 
-    # ---- Record trajectory ----
     print("Recording full trajectory...")
     set_seed(0)
     rec = record_trajectory(model, x_sample)
 
-    # ---- Pick a neuron with moderate membrane values ----
-    membrane = rec["membranes"][-1]  # [T, H]
-    spikes = rec["spikes"][-1]       # [T, H]
+    membrane = rec["membranes"][-1]
+    spikes = rec["spikes"][-1]
 
-    # Find neurons that spike but have reasonable membrane range
     H = membrane.shape[1]
     neuron_scores = []
     for ni in range(H):
@@ -367,7 +286,7 @@ def main():
         spiking_neurons = np.where(spikes[chosen_spike] > 0.5)[0]
         chosen_neuron = int(spiking_neurons[0])
     else:
-        # Pick neuron with smallest membrane range (most stable)
+
         neuron_scores.sort(key=lambda x: x[2])
         chosen_neuron = neuron_scores[0][0]
         spike_times = np.where(spikes[:, chosen_neuron] > 0.5)[0]
@@ -377,12 +296,11 @@ def main():
     print(f"  Neuron spike count: {(spikes[:, chosen_neuron] > 0.5).sum()}")
     print(f"  Membrane range: {membrane[:, chosen_neuron].min():.2f} to {membrane[:, chosen_neuron].max():.2f}")
 
-    # ---- Plot ----
     print("Plotting...")
     plot_trajectory(rec, chosen_spike, chosen_neuron, out_dir)
     save_trajectory_data(rec, out_dir, label, chosen_spike, chosen_neuron)
     print("Done.")
 
-
 if __name__ == "__main__":
     main()
+

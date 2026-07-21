@@ -1,14 +1,3 @@
-"""
-SPRiF Effective Temporal Kernel Analysis — Impulse Response Gallery.
-
-Injects a unit impulse (bypassing input linear layer) into learned SPRiF neurons
-and records the slow-state trajectory. Compares with the *trained* ASRNN
-(adaptive LIF) baseline — using its actual learned per-neuron tau_m to compute
-the impulse response of its membrane kernel — and visualizes the diversity of
-learned temporal filters in both time and frequency domain.
-
-Note: pSMNIST has no ASRNN checkpoint; its ASRNN comparison is skipped.
-"""
 
 import glob
 import os
@@ -30,10 +19,6 @@ import seaborn as sns
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.2)
 
-# ---------------------------------------------------------------------------
-# Path helpers
-# ---------------------------------------------------------------------------
-
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIGURE_DIR = os.path.join(
     os.path.dirname(ROOT),
@@ -42,7 +27,6 @@ FIGURE_DIR = os.path.join(
     "figures",
     "impulse_analysis",
 )
-
 
 def _add_path(task_dir: str) -> str:
     p = os.path.join(ROOT, task_dir)
@@ -53,7 +37,6 @@ def _add_path(task_dir: str) -> str:
         if name in {"model", "data", "core_algorithm"} or name.startswith("core_algorithm."):
             sys.modules.pop(name, None)
     return p
-
 
 def _find_checkpoint(task_dir: str, class_prefix: str) -> Optional[str]:
     pattern = os.path.join(task_dir, f"{class_prefix}_*.pth")
@@ -74,7 +57,6 @@ def _find_checkpoint(task_dir: str, class_prefix: str) -> Optional[str]:
             best = f
     return best
 
-
 def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
     cwd = os.path.join(ROOT, task_dir)
     script = os.path.join(cwd, train_script)
@@ -86,11 +68,6 @@ def _train_task(task_dir: str, train_script: str, extra_args: List[str]):
     result = subprocess.run(cmd, cwd=cwd, capture_output=False)
     if result.returncode != 0:
         raise RuntimeError(f"Training failed with code {result.returncode}")
-
-
-# ---------------------------------------------------------------------------
-# Model loading per task
-# ---------------------------------------------------------------------------
 
 def _load_psmnist(task_dir: str) -> nn.Module:
     _add_path(task_dir)
@@ -121,7 +98,6 @@ def _load_psmnist(task_dir: str) -> nn.Module:
     if ckpt is None:
         raise RuntimeError("Training completed but no checkpoint found.")
     return _load_psmnist(task_dir)
-
 
 def _load_gsc(task_dir: str) -> nn.Module:
     _add_path(task_dir)
@@ -160,7 +136,6 @@ def _load_gsc(task_dir: str) -> nn.Module:
     if ckpt is None:
         raise RuntimeError("Training completed but no checkpoint found.")
     return _load_gsc(task_dir)
-
 
 def _load_ecg(task_dir: str) -> nn.Module:
     import scipy.io
@@ -211,32 +186,12 @@ def _load_ecg(task_dir: str) -> nn.Module:
         raise RuntimeError("Training completed but no checkpoint found.")
     return _load_ecg(task_dir)
 
-
-# ---------------------------------------------------------------------------
-# Impulse response computation
-# ---------------------------------------------------------------------------
-
 @torch.no_grad()
 def compute_impulse_responses(
     layer: nn.Module,
     T: int = 100,
     device: torch.device = torch.device("cpu"),
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Inject unit impulse via input_current bypass, record slow state and membrane.
-
-    Uses ``input_current`` on ``forward_step()`` to bypass ``input_linear``,
-    so every neuron receives exactly the same unit pulse. Differences in the
-    resulting trajectory are purely due to intrinsic spectral parameters.
-
-    Args:
-        layer: SPRiFNeuronLayer instance.
-        T: number of timesteps to simulate.
-        device: compute device.
-
-    Returns:
-        slow_resp:  (H, T, 3) — slow state x_t trajectory per neuron.
-        membrane_resp: (H, T) — membrane potential u⁰ per neuron.
-    """
     H = layer.hidden_size
     state = layer.init_state(1, device=device)
     runtime = layer._precompute_runtime_params()
@@ -245,8 +200,7 @@ def compute_impulse_responses(
     membrane_list: List[torch.Tensor] = []
 
     for t in range(T):
-        # Unit impulse at t=0, zero thereafter — injected directly into
-        # the slow-state dynamics, bypassing input_linear.
+
         if t == 0:
             ic = torch.ones(1, H, device=device, dtype=state["x"].dtype)
         else:
@@ -261,51 +215,22 @@ def compute_impulse_responses(
         slow_list.append(state["x"].detach().cpu())
         membrane_list.append(membrane.detach().cpu())
 
-    # state["x"] shape: (1, H, 3) → stacked over T along dim=1 → (1, T, H, 3)
-    # squeeze batch → (T, H, 3), then permute to (H, T, 3)
-    slow_resp = torch.stack(slow_list, dim=1).squeeze(0).permute(1, 0, 2).contiguous()  # (H, T, 3)
-    membrane_resp = torch.stack(membrane_list, dim=1).squeeze(0).permute(1, 0).contiguous()  # (H, T)
+    slow_resp = torch.stack(slow_list, dim=1).squeeze(0).permute(1, 0, 2).contiguous()
+    membrane_resp = torch.stack(membrane_list, dim=1).squeeze(0).permute(1, 0).contiguous()
     return slow_resp, membrane_resp
-
 
 def compute_asrnn_impulse_response(
     tau_m: np.ndarray,
     T: int,
 ) -> np.ndarray:
-    """ASRNN (adaptive LIF) impulse response of the membrane kernel.
-
-    ASRNN membrane dynamics (no spike, no adaptation active):
-        mem[t] = alpha * mem[t-1] + (1 - alpha) * input[t]
-    where alpha = exp(-1 / tau_m). A unit impulse at t=0 yields the response:
-        h[t] = (1 - alpha) * alpha^t
-
-    Args:
-        tau_m: array of learned per-neuron time constants, shape (H,).
-        T: number of timesteps to simulate.
-
-    Returns:
-        resp: array of shape (H, T) — impulse response for each neuron.
-    """
-    alpha = np.exp(-1.0 / np.clip(tau_m, 1e-3, None))  # (H,)
-    t = np.arange(T)[None, :]  # (1, T)
-    resp = (1.0 - alpha[:, None]) * np.power(alpha[:, None], t)  # (H, T)
+    alpha = np.exp(-1.0 / np.clip(tau_m, 1e-3, None))
+    t = np.arange(T)[None, :]
+    resp = (1.0 - alpha[:, None]) * np.power(alpha[:, None], t)
     return resp
-
-
-# ---------------------------------------------------------------------------
-# ASRNN model loading (adaptive LIF baseline)
-# ---------------------------------------------------------------------------
 
 ASRNN_ROOT = os.path.join(os.path.dirname(ROOT), "ASRNN")
 
-
 def _find_asrnn_ckpt(task_folder: str, prefix: str, legacy_paths: List[str]) -> Optional[str]:
-    """Search common locations for an ASRNN checkpoint.
-
-    Order:
-      1. legacy explicit paths (e.g. ASRNN/GSC/*.pth in old layout)
-      2. Task_<X>/<prefix>_*.pth or Task_<X>/*.pth alongside SPRiF checkpoints
-    """
     for p in legacy_paths:
         if os.path.exists(p):
             return p
@@ -313,7 +238,7 @@ def _find_asrnn_ckpt(task_folder: str, prefix: str, legacy_paths: List[str]) -> 
     for pattern in (f"{prefix}_*.pth", f"{prefix}*.pth", "ASRNN*.pth"):
         files = sorted(glob.glob(os.path.join(task_dir, pattern)))
         if files:
-            # pick highest-acc one when the filename encodes _acc<num>
+
             best, best_acc = None, -1.0
             for f in files:
                 base = os.path.basename(f)
@@ -328,12 +253,7 @@ def _find_asrnn_ckpt(task_folder: str, prefix: str, legacy_paths: List[str]) -> 
             return best
     return None
 
-
 def _extract_tau_m_from_state(state, candidate_keys: List[str]) -> Optional[np.ndarray]:
-    """Extract a tau_m-like tensor from a checkpoint state_dict without instantiating the model.
-
-    This avoids wrapper-class dependency issues (missing modules, input_size mismatch).
-    """
     if isinstance(state, dict) and "state_dict" in state and isinstance(state["state_dict"], dict):
         state = state["state_dict"]
     if not isinstance(state, dict):
@@ -343,7 +263,7 @@ def _extract_tau_m_from_state(state, candidate_keys: List[str]) -> Optional[np.n
             t = state[key]
             if torch.is_tensor(t):
                 return t.detach().cpu().numpy().ravel()
-    # Fallback: fuzzy match — any key ending with .tau_m / tau_m_h
+
     for key, t in state.items():
         if not torch.is_tensor(t):
             continue
@@ -354,9 +274,7 @@ def _extract_tau_m_from_state(state, candidate_keys: List[str]) -> Optional[np.n
             return arr
     return None
 
-
 def _load_asrnn_gsc_tau_m() -> Optional[np.ndarray]:
-    """Load ASRNN-GSC checkpoint and extract layer-1 tau_m directly from state_dict."""
     legacy = [os.path.join(ASRNN_ROOT, "GSC", "0.91398-gscv1-_class.pth")]
     ckpt = _find_asrnn_ckpt("Task_GSC", "ASRNNGSCNet", legacy)
     if ckpt is None:
@@ -378,9 +296,7 @@ def _load_asrnn_gsc_tau_m() -> Optional[np.ndarray]:
         print(f"  [ASRNN-GSC] failed to load: {e}")
         return None
 
-
 def _load_asrnn_ecg_tau_m() -> Optional[np.ndarray]:
-    """Load ASRNN-ECG checkpoint and extract hidden-layer tau_m directly from state_dict."""
     legacy_dir = os.path.join(ASRNN_ROOT, "ECG")
     legacy = sorted(glob.glob(os.path.join(legacy_dir, "*.pth")))
     ckpt = _find_asrnn_ckpt("Task_ECG", "ASRNNECGModel", legacy)
@@ -403,35 +319,24 @@ def _load_asrnn_ecg_tau_m() -> Optional[np.ndarray]:
         print(f"  [ASRNN-ECG] failed to load: {e}")
         return None
 
-
 ASRNN_LOADERS = {
     "GSC": _load_asrnn_gsc_tau_m,
     "ECG": _load_asrnn_ecg_tau_m,
-    # pSMNIST: no pretrained ASRNN checkpoint available
+
 }
 
-
 def _sampled_neurons(alpha: np.ndarray, n_samples: int = 8) -> np.ndarray:
-    """Select evenly-spaced neuron indices covering the alpha range.
-
-    Returns sorted indices into the alpha array.
-    """
     H = len(alpha)
     order = np.argsort(alpha)
     n = min(n_samples, H)
     step = max(1, H // n)
     picked = [order[i] for i in range(0, H, step)[:n]]
-    # Ensure endpoints are included
+
     if order[0] not in picked:
         picked.insert(0, order[0])
     if order[-1] not in picked:
         picked.append(order[-1])
     return np.array(sorted(picked, key=lambda i: alpha[i]))
-
-
-# ---------------------------------------------------------------------------
-# Plot: impulse response gallery
-# ---------------------------------------------------------------------------
 
 def plot_impulse_gallery(
     all_responses: Dict[str, Dict[int, Tuple[torch.Tensor, torch.Tensor]]],
@@ -441,11 +346,6 @@ def plot_impulse_gallery(
     T: int = 100,
     n_cols: int = 8,
 ):
-    """Grid of impulse responses for sampled neurons per task.
-
-    Rows = tasks, columns = sampled neurons sorted by alpha.
-    Shows x_real (main line), x_osc1/x_osc2 (thin dashed).
-    """
     tasks = [t for t in ["pSMNIST", "GSC", "ECG"] if t in all_responses]
     if not tasks:
         return
@@ -456,7 +356,7 @@ def plot_impulse_gallery(
         axes = axes.reshape(1, -1)
 
     for row_idx, task_name in enumerate(tasks):
-        # Use layer 0 only (first layer receives raw input)
+
         if 0 not in all_responses[task_name]:
             continue
         slow_resp, _ = all_responses[task_name][0]
@@ -489,7 +389,6 @@ def plot_impulse_gallery(
             ax.set_xlim(0, T - 1)
             ax.tick_params(labelsize=6)
 
-        # Row label and legend on first column
         axes[row_idx, 0].set_ylabel(f"{task_name}\n(H={H})", fontweight="bold")
         if row_idx == 0:
             axes[row_idx, 0].legend(fontsize=6, loc="upper right", frameon=True)
@@ -505,20 +404,13 @@ def plot_impulse_gallery(
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
 def _extract_omega_for_neuron(
     all_omegas: Dict[str, Dict[int, np.ndarray]],
     task_name: str, layer_idx: int, neuron_idx: int,
 ) -> float:
-    """Extract omega for a specific neuron from pre-collected data."""
     if task_name in all_omegas and layer_idx in all_omegas[task_name]:
         return all_omegas[task_name][layer_idx][neuron_idx]
     return 0.0
-
-
-# ---------------------------------------------------------------------------
-# Plot: frequency response
-# ---------------------------------------------------------------------------
 
 def plot_frequency_response(
     all_responses: Dict[str, Dict[int, Tuple[torch.Tensor, torch.Tensor]]],
@@ -526,11 +418,6 @@ def plot_frequency_response(
     out_dir: str,
     T: int = 100,
 ):
-    """|FFT| of impulse responses, one subplot per task.
-
-    Each line = one sampled neuron's |FFT(x_real)|, color-coded by alpha.
-    Shows the diversity of frequency-domain filtering behavior.
-    """
     tasks = [t for t in ["pSMNIST", "GSC", "ECG"] if t in all_responses]
     if not tasks:
         return
@@ -540,8 +427,7 @@ def plot_frequency_response(
     if n_rows == 1:
         axes = [axes]
 
-    # Shared frequency axis
-    freqs = np.fft.rfftfreq(T)  # normalized: 0 to 0.5 (Nyquist = pi rad/sample)
+    freqs = np.fft.rfftfreq(T)
 
     for row_idx, task_name in enumerate(tasks):
         ax = axes[row_idx]
@@ -553,12 +439,11 @@ def plot_frequency_response(
 
         indices = _sampled_neurons(alphas, n_samples=12)
 
-        # Color by alpha using viridis
         norm_alpha = (alphas[indices] - alphas.min()) / (alphas.max() - alphas.min() + 1e-8)
         cmap = plt.cm.viridis
 
         for i, ni in enumerate(indices):
-            signal = slow_resp[ni, :, 0].numpy()  # x_real
+            signal = slow_resp[ni, :, 0].numpy()
             mag = np.abs(np.fft.rfft(signal))
             ax.plot(freqs, mag, color=cmap(norm_alpha[i]), linewidth=1.0,
                     alpha=0.85, label=f"α={alphas[ni]:.3f}" if i < 4 else "")
@@ -569,11 +454,9 @@ def plot_frequency_response(
         if row_idx == 0:
             ax.legend(fontsize=7, ncol=2, frameon=True)
 
-        # Mark frequency range
         ax.axvline(0.0, color="gray", linestyle="--", linewidth=0.5, alpha=0.5)
         ax.set_xlim(0, 0.5)
 
-        # Colorbar
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(alphas.min(), alphas.max()))
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, shrink=0.92)
@@ -587,11 +470,6 @@ def plot_frequency_response(
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-
-# ---------------------------------------------------------------------------
-# Plot: ASRNN (adaptive LIF) comparison
-# ---------------------------------------------------------------------------
-
 def plot_asrnn_comparison(
     all_responses: Dict[str, Dict[int, Tuple[torch.Tensor, torch.Tensor]]],
     all_alphas: Dict[str, Dict[int, np.ndarray]],
@@ -599,15 +477,6 @@ def plot_asrnn_comparison(
     out_dir: str,
     T: int = 100,
 ):
-    """Compare SPRiF impulse response with the trained ASRNN (adaptive LIF) kernel.
-
-    For each task with an available ASRNN checkpoint, pick 3 SPRiF neurons
-    (slow / medium / fast alpha). For each SPRiF neuron, we also pick the
-    ASRNN neuron whose tau_m best matches the SPRiF-derived tau_effective, so
-    both curves start with visually comparable time-scale. This isolates the
-    *shape* difference (exponential vs. decay+oscillation) rather than a scale
-    mismatch.
-    """
     tasks = [t for t in ["pSMNIST", "GSC", "ECG"]
              if t in all_responses and t in asrnn_taus and asrnn_taus[t] is not None]
     if not tasks:
@@ -616,22 +485,20 @@ def plot_asrnn_comparison(
 
     n_rows = len(tasks)
     n_cols = 3
-    # Column order matches percentile_indices below: 10th → median → 90th percentile of α.
-    # Small α ⇒ short τ (fast decay); large α ⇒ long τ (slow decay / long memory).
+
     labels = ["Fast α (short memory)", "Medium α", "Slow α (long memory)"]
 
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 3.5 * n_rows))
     if n_rows == 1:
         axes = axes.reshape(1, -1)
 
-    # Collect raw curve data so the figure can be re-plotted from disk.
     dump: Dict[str, np.ndarray] = {}
 
     for row_idx, task_name in enumerate(tasks):
         slow_resp, _ = all_responses[task_name][0]
         alphas = all_alphas[task_name][0]
         asrnn_tau = asrnn_taus[task_name]
-        asrnn_resp = compute_asrnn_impulse_response(asrnn_tau, T)  # (H_asrnn, T)
+        asrnn_resp = compute_asrnn_impulse_response(asrnn_tau, T)
 
         alpha_sorted = np.sort(alphas)
         n_alpha = len(alpha_sorted)
@@ -646,7 +513,6 @@ def plot_asrnn_comparison(
             alpha_val = alphas[ni]
             tau_sprif = float(np.clip(-1.0 / np.log(alpha_val + 1e-8), 0.1, 500.0))
 
-            # Match ASRNN neuron by closest tau_m
             asrnn_idx = int(np.argmin(np.abs(asrnn_tau - tau_sprif)))
             tau_asrnn = float(asrnn_tau[asrnn_idx])
 
@@ -657,7 +523,6 @@ def plot_asrnn_comparison(
             )
             asrnn_curve = asrnn_resp[asrnn_idx]
 
-            # Save raw (unnormalized) curves + metadata for reproduction.
             prefix = f"{task_name}_col{ci}"
             dump[f"{prefix}_sprif_x_real"] = sprif_x_real
             dump[f"{prefix}_sprif_osc_mag"] = osc_mag
@@ -665,9 +530,8 @@ def plot_asrnn_comparison(
             dump[f"{prefix}_meta"] = np.array(
                 [alpha_val, tau_sprif, tau_asrnn, ni, asrnn_idx],
                 dtype=np.float64,
-            )  # order: alpha_sprif, tau_sprif, tau_asrnn, sprif_neuron_idx, asrnn_neuron_idx
+            )
 
-            # Normalize both curves by their own peak for shape comparison
             def _norm(x):
                 m = np.max(np.abs(x)) + 1e-12
                 return x / m
@@ -700,19 +564,12 @@ def plot_asrnn_comparison(
     plt.close(fig)
     print(f"  Saved: {save_path}")
 
-    # Persist raw curves so the figure can be reproduced without re-running the
-    # full pipeline (loading checkpoints, computing impulse responses).
     npz_path = os.path.join(out_dir, "asrnn_comparison_data.npz")
     dump["_tasks"] = np.array(tasks)
     dump["_col_labels"] = np.array(labels)
     dump["_T"] = np.array(T)
     np.savez(npz_path, **dump)
     print(f"  Saved: {npz_path}")
-
-
-# ---------------------------------------------------------------------------
-# Data export
-# ---------------------------------------------------------------------------
 
 def save_raw_impulse_data(
     all_responses: Dict[str, Dict[int, Tuple[torch.Tensor, torch.Tensor]]],
@@ -722,20 +579,6 @@ def save_raw_impulse_data(
     out_dir: str,
     T: int,
 ):
-    """Dump full raw curves so every plot can be regenerated offline.
-
-    File: raw_impulse_responses.npz
-      For each (task, layer):
-        <task>_L<li>_slow_resp     : (H, T, 3) float32 — SPRiF slow-state (x_real, x1, x2)
-        <task>_L<li>_membrane      : (H, T)    float32 — SPRiF membrane potential
-        <task>_L<li>_alpha         : (H,)      float32
-        <task>_L<li>_omega         : (H,)      float32
-      For each task with ASRNN pretrained:
-        <task>_asrnn_tau_m         : (H_asrnn,) float32
-        <task>_asrnn_impulse       : (H_asrnn, T) float32
-      Meta:
-        _T, _tasks_with_asrnn
-    """
     dump: Dict[str, np.ndarray] = {"_T": np.array(T)}
     for task_name, layer_map in all_responses.items():
         for li, (slow_resp, mem_resp) in layer_map.items():
@@ -760,13 +603,11 @@ def save_raw_impulse_data(
     np.savez_compressed(npz_path, **dump)
     print(f"  Saved: {npz_path}")
 
-
 def save_impulse_stats(
     all_alphas: Dict[str, Dict[int, np.ndarray]],
     all_omegas: Dict[str, Dict[int, np.ndarray]],
     out_dir: str,
 ):
-    """Save per-neuron spectral parameters + derived timescale to CSV."""
     records = []
     for task_name in ["pSMNIST", "GSC", "ECG"]:
         if task_name not in all_alphas:
@@ -789,21 +630,11 @@ def save_impulse_stats(
     df.to_csv(csv_path, index=False)
     print(f"  Saved: {csv_path}")
 
-
-# ---------------------------------------------------------------------------
-# Task registry
-# ---------------------------------------------------------------------------
-
 LOADERS = {
     "pSMNIST": ("Task_pSMNIST", _load_psmnist),
     "GSC": ("Task_GSC", _load_gsc),
     "ECG": ("Task_ECG", _load_ecg),
 }
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main():
     out_dir = FIGURE_DIR
@@ -814,7 +645,7 @@ def main():
     all_responses: Dict[str, Dict[int, Tuple[torch.Tensor, torch.Tensor]]] = {}
     all_alphas: Dict[str, Dict[int, np.ndarray]] = {}
     all_omegas: Dict[str, Dict[int, np.ndarray]] = {}
-    T = 100  # impulse response length
+    T = 100
 
     for task_name, (task_dir, loader_fn) in LOADERS.items():
         print(f"\n{'='*50}")
@@ -837,11 +668,10 @@ def main():
         all_omegas[task_name] = {}
 
         for li, layer in enumerate(model.layers):
-            # Only layer 0 gets clean impulse input; deeper layers receive spikes
+
             print(f"  Layer {li}: computing impulse responses for {layer.hidden_size} neurons...")
             slow_resp, mem_resp = compute_impulse_responses(layer, T=T, device=device)
 
-            # Extract alpha/omega for sorting / color-coding
             params = layer.get_spectral_parameters()
             alphas_np = params["alpha"].detach().cpu().numpy()
             omegas_np = params["omega"].detach().cpu().numpy()
@@ -879,6 +709,6 @@ def main():
 
     print("\nDone.")
 
-
 if __name__ == "__main__":
     main()
+

@@ -1,4 +1,3 @@
-"""pSMNIST-specific network definition using SPRiF neuron layers."""
 
 from typing import List
 
@@ -8,9 +7,7 @@ from torch.utils.data import Dataset
 
 from core_algorithm.sprif_layer import SPRiFNeuronLayer
 
-
 class PermutedMNIST(Dataset):
-    """Permuted MNIST dataset with fixed permutation."""
 
     def __init__(self, mnist: Dataset, perm: torch.Tensor):
         self.mnist = mnist
@@ -25,7 +22,6 @@ class PermutedMNIST(Dataset):
         permuted = unrolled[self.perm]
         permuted = permuted.reshape(-1, 1)
         return permuted, label
-
 
 class SPRiFpSMNISTNet(nn.Module):
     def __init__(
@@ -56,7 +52,6 @@ class SPRiFpSMNISTNet(nn.Module):
         nn.init.constant_(self.readout.bias, 0.0)
 
     def forward(self, x):
-        """Full BPTT forward pass (used for evaluation)."""
         out = x
         for layer in self.layers:
             out = layer(out, batch_first=True)
@@ -81,3 +76,4 @@ class SPRiFpSMNISTNet(nn.Module):
             out = layer(out, batch_first=True)
             rates.append(out.mean())
         return torch.stack(rates).mean()
+

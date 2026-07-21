@@ -1,4 +1,3 @@
-"""ECG-specific network definition using SPRiF neuron layers."""
 
 from typing import Dict, List, Optional
 
@@ -6,7 +5,6 @@ import torch
 import torch.nn as nn
 
 from core_algorithm.sprif_layer import SPRiFNeuronLayer
-
 
 class SPRiFECGModel(nn.Module):
     def __init__(
@@ -44,19 +42,17 @@ class SPRiFECGModel(nn.Module):
         self.readout = nn.Linear(hidden_sizes[-1], output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: [batch, time, features]
+
         out = x
 
         for layer in self.layers:
-            out = layer(out, batch_first=True)   # [batch, time, hidden]
+            out = layer(out, batch_first=True)
 
-        logits = self.readout(out)               # [batch, time, classes]
+        logits = self.readout(out)
 
-        return logits.permute(0, 2, 1)           # [batch, classes, time]
-
+        return logits.permute(0, 2, 1)
 
 def build_neuron_kwargs(config: dict) -> dict:
-    """Build neuron keyword arguments from a flat config dict."""
     kwargs: dict = {
         "threshold": config["neuron_threshold"],
         "init_std": config["neuron_init_std"],
@@ -76,9 +72,7 @@ def build_neuron_kwargs(config: dict) -> dict:
 
     return kwargs
 
-
 def _tensor_stats(t: torch.Tensor) -> Dict[str, float]:
-    """Compute summary statistics for a 1D or n-D tensor."""
     flat = t.detach().float().reshape(-1)
 
     return {
@@ -88,9 +82,7 @@ def _tensor_stats(t: torch.Tensor) -> Dict[str, float]:
         "max": float(flat.max().item()),
     }
 
-
 def _collect_internal_stats(model: nn.Module) -> dict:
-    """Collect per-layer and global spectral parameter statistics."""
     per_layer: list = []
 
     alpha_all: list = []
@@ -133,9 +125,9 @@ def _collect_internal_stats(model: nn.Module) -> dict:
         "per_layer": per_layer,
     }
 
-
 __all__ = [
     "SPRiFECGModel",
     "build_neuron_kwargs",
     "_collect_internal_stats",
 ]
+

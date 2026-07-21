@@ -8,11 +8,9 @@ StateDict = Dict[str, Tensor]
 lens = 0.5
 gamma = 0.5
 
-
 def gaussian(x: Tensor, mu: float = 0.0, sigma: float = 0.5) -> Tensor:
     denom = torch.sqrt(2 * torch.tensor(math.pi, device=x.device, dtype=x.dtype)) * sigma
     return torch.exp(-((x - mu) ** 2) / (2 * sigma**2)) / denom
-
 
 class ActFun_adp(torch.autograd.Function):
     @staticmethod
@@ -32,10 +30,8 @@ class ActFun_adp(torch.autograd.Function):
         )
         return grad_input * temp.to(dtype=grad_input.dtype) * gamma
 
-
 def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
-
 
 class SPRiFNeuronLayer(nn.Module):
     def __init__(
@@ -95,20 +91,18 @@ class SPRiFNeuronLayer(nn.Module):
             nn.init.orthogonal_(self.recurrent_linear.weight)
 
         with torch.no_grad():
-            # 线性空间均匀采样 tau_alpha
+
             tau_alpha = torch.empty(self.hidden_size).uniform_(
                 tau_alpha_range[0], tau_alpha_range[1]
             )
             alpha = torch.exp(-1.0 / tau_alpha)
             self.alpha_raw.copy_(self._safe_logit(alpha))
 
-            # 线性空间均匀采样 omega
             omega = torch.empty(self.hidden_size).uniform_(
                 omega_range[0], omega_range[1]
             )
             self.omega_raw.copy_(self._safe_logit(omega / math.pi))
 
-            # omega 依赖的动态 tau_rho 上界
             omega_norm = (omega - omega_range[0]) / (omega_range[1] - omega_range[0] + 1e-5)
             dynamic_upper = tau_rho_range[1] - omega_norm * (tau_rho_range[1] - tau_rho_range[0] * 1.5)
             dynamic_upper = torch.clamp(dynamic_upper, min=tau_rho_range[0] + 0.1)
@@ -118,7 +112,6 @@ class SPRiFNeuronLayer(nn.Module):
             rho = torch.exp(-1.0 / tau_rho)
             self.rho_raw.copy_(self._safe_logit(rho))
 
-            # 线性空间均匀采样 tau_eta
             tau_eta = torch.empty(self.hidden_size, 2).uniform_(
                 tau_eta_range[0], tau_eta_range[1]
             )
@@ -252,7 +245,6 @@ class SPRiFNeuronLayer(nn.Module):
         state: StateDict,
         batch_first: bool = False,
     ) -> Tuple[Tensor, StateDict]:
-        """Forward full sequence from external state. Returns (spikes, next_state)."""
         if batch_first:
             x = x.transpose(0, 1)
         T, B, F = x.shape
@@ -287,5 +279,5 @@ class SPRiFNeuronLayer(nn.Module):
             spike_seq = spike_seq.transpose(0, 1)
         return spike_seq
 
-
 __all__ = ["SPRiFNeuronLayer"]
+

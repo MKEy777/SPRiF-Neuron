@@ -42,7 +42,7 @@ python robustness/noise_benchmark.py
 python robustness/frequency_selectivity.py
 ```
 
-## Key design choices
+## Key Design Choices
 
 - Same noise generator seed (42) for SPRiF and ASRNN — fair comparison
 - Noise applied to raw features before model-specific preprocessing

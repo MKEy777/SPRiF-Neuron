@@ -1,0 +1,97 @@
+\relax 
+\citation{lecun1998gradient}
+\citation{laguna1997database}
+\citation{asrnn}
+\citation{warden2018speech}
+\citation{cramer2022heidelberg}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Supplementary Guide and Evidence Map}{1}{}\protected@file@percent }
+\newlabel{supp:sec:guide}{{1}{1}{}{section.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Consistency locks.}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Evidence map.}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Experimental Protocols and Reporting}{1}{}\protected@file@percent }
+\newlabel{supp:sec:protocols}{{2}{1}{}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Architectures and Optimization}{2}{}\protected@file@percent }
+\newlabel{supp:sec:architectures}{{2.1}{2}{}{subsection.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Seeds, Model Selection, and Reporting}{2}{}\protected@file@percent }
+\newlabel{supp:sec:reporting}{{2.2}{2}{}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Evaluation Metrics and Uncertainty}{2}{}\protected@file@percent }
+\newlabel{supp:sec:metrics}{{2.3}{2}{}{subsection.2.3}{}}
+\newlabel{eq:supp_seed_summary}{{1}{2}{}{equation.1}{}}
+\citation{li2018visualizing}
+\@writefile{lot}{\contentsline {table}{\numberline {S1}{\ignorespaces Architecture and optimization settings for the SPRiF benchmark entries. ``Rec'' denotes a recurrent SPRiF layer, LR decay denotes the StepLR multiplier and interval, and CE denotes cross-entropy.}}{3}{}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:supp_arch}{{S1}{3}{}{table.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Compute Environment}{3}{}\protected@file@percent }
+\newlabel{supp:sec:compute}{{2.4}{3}{}{subsection.2.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}S-MNIST Loss-Landscape Diagnostic}{3}{}\protected@file@percent }
+\newlabel{supp:sec:loss-landscape}{{2.5}{3}{}{subsection.2.5}{}}
+\newlabel{eq:supp_loss_landscape}{{2}{3}{}{equation.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Mechanism Variants and SI-DMS Evaluation}{4}{}\protected@file@percent }
+\newlabel{supp:sec:mechanism-sidms}{{3}{4}{}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Mechanism Variant Definitions}{4}{}\protected@file@percent }
+\newlabel{supp:sec:variant-definitions}{{3.1}{4}{}{subsection.3.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}SI-DMS Protocol}{4}{}\protected@file@percent }
+\newlabel{supp:sec:sidms-protocol}{{3.2}{4}{}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Condition-Level Grids}{4}{}\protected@file@percent }
+\newlabel{supp:sec:sidms-grids}{{3.3}{4}{}{subsection.3.3}{}}
+\newlabel{eq:supp_sidms_drop}{{3}{4}{}{equation.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Model Controls and Integrity Audit}{4}{}\protected@file@percent }
+\newlabel{supp:sec:sidms-integrity}{{3.4}{4}{}{subsection.3.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S1}{\ignorespaces S-MNIST loss-landscape diagnostic for SPRiF (top row) and LIF (bottom row). The 2D contours and 3D surfaces show cross-entropy over the same $25\times 25$ perturbation-coordinate grid, with a shared logarithmic color scale and common vertical range. Each model uses its own checkpoint-normalized random directions, while evaluation samples and grid coordinates are matched.}}{5}{}\protected@file@percent }
+\newlabel{fig:supp_loss_landscape}{{S1}{5}{}{figure.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S2}{\ignorespaces Mechanism variants corresponding to the main-paper ablation table.}}{5}{}\protected@file@percent }
+\newlabel{tab:supp_variant_defs}{{S2}{5}{}{table.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S3}{\ignorespaces SI-DMS task construction, controlled intervention, and matched-control configuration.}}{6}{}\protected@file@percent }
+\newlabel{tab:supp_sidms}{{S3}{6}{}{table.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S4}{\ignorespaces SI-DMS accuracy and paired loss at the 15\% intervention fraction (mean$\pm $standard deviation over three seeds; percentage points). Each seed-level quantity is averaged over the five delays before cross-seed aggregation.}}{6}{}\protected@file@percent }
+\newlabel{tab:supp_sidms_results}{{S4}{6}{}{table.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S2}{\ignorespaces SI-DMS fraction response at the unseen intervention count $K=40$. Curves are 3-seed means after averaging each seed over five delays; shaded bands show seed standard deviations. The point at 0\% is the clean condition, and 15\% is the intervention fraction used during training.}}{7}{}\protected@file@percent }
+\newlabel{fig:supp_sidms_fraction}{{S2}{7}{}{figure.2}{}}
+\newlabel{eq:supp_reset_residual}{{4}{7}{}{equation.4}{}}
+\newlabel{eq:supp_slow_insulation}{{5}{7}{}{equation.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Formal SPRiF Specification and Analysis Protocols}{7}{}\protected@file@percent }
+\newlabel{supp:sec:dynamics}{{4}{7}{}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Slow Spectral State}{7}{}\protected@file@percent }
+\newlabel{supp:sec:slow-state}{{4.1}{7}{}{subsection.4.1}{}}
+\newlabel{eq:supp_slow}{{6}{7}{}{equation.6}{}}
+\newlabel{eq:supp_AB}{{7}{7}{}{equation.7}{}}
+\newlabel{eq:supp_real_mode}{{8}{7}{}{equation.8}{}}
+\newlabel{eq:supp_rot_mode}{{10}{7}{}{equation.10}{}}
+\newlabel{eq:supp_param}{{11}{7}{}{equation.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{Bounded-input stability.}{7}{}\protected@file@percent }
+\newlabel{eq:supp_bibo_bound}{{12}{7}{}{equation.12}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {S5}{\ignorespaces SI-DMS integrity checks used to interpret the intervention results.}}{8}{}\protected@file@percent }
+\newlabel{tab:supp_sidms_integrity}{{S5}{8}{}{table.5}{}}
+\newlabel{eq:supp_osc_fixed_point}{{13}{8}{}{equation.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Fast Discharge State and Projective Reset}{8}{}\protected@file@percent }
+\newlabel{supp:sec:fast-state}{{4.2}{8}{}{subsection.4.2}{}}
+\newlabel{eq:supp_fast0}{{18}{8}{}{equation.18}{}}
+\newlabel{eq:supp_fast1}{{19}{8}{}{equation.19}{}}
+\newlabel{eq:supp_spike}{{20}{8}{}{equation.20}{}}
+\@writefile{toc}{\contentsline {paragraph}{Direct-reset invariance.}{8}{}\protected@file@percent }
+\newlabel{eq:supp_direct_reset_invariance}{{23}{8}{}{equation.23}{}}
+\citation{asrnn}
+\citation{hendrycks2019benchmarking}
+\citation{iwana2021empirical}
+\bibstyle{aaai2027}
+\bibdata{sprif2027}
+\bibcite{cramer2022heidelberg}{{1}{2022}{{Cramer et~al.}}{{Cramer, Stradmann, Schemmel, and Zenke}}}
+\bibcite{hendrycks2019benchmarking}{{2}{2019}{{Hendrycks and Dietterich}}{{}}}
+\bibcite{iwana2021empirical}{{3}{2021}{{Iwana and Uchida}}{{}}}
+\bibcite{laguna1997database}{{4}{1997}{{Laguna et~al.}}{{Laguna, Mark, Goldberger, and Moody}}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Surrogate Gradient}{9}{}\protected@file@percent }
+\newlabel{supp:sec:surrogate}{{4.3}{9}{}{subsection.4.3}{}}
+\newlabel{eq:supp_surrogate}{{24}{9}{}{equation.24}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Initialization, State Size, and Cost}{9}{}\protected@file@percent }
+\newlabel{supp:sec:initialization-cost}{{4.4}{9}{}{subsection.4.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Analysis Protocols}{9}{}\protected@file@percent }
+\newlabel{supp:sec:analysis-protocols}{{4.5}{9}{}{subsection.4.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Feature-Perturbation Diagnostic}{9}{}\protected@file@percent }
+\newlabel{supp:sec:perturbation-diagnostic}{{4.6}{9}{}{subsection.4.6}{}}
+\bibcite{lecun1998gradient}{{5}{1998}{{LeCun et~al.}}{{LeCun, Bottou, Bengio, and Haffner}}}
+\bibcite{li2018visualizing}{{6}{2018}{{Li et~al.}}{{Li, Xu, Taylor, Studer, and Goldstein}}}
+\bibcite{warden2018speech}{{7}{2018}{{Warden}}{{}}}
+\bibcite{asrnn}{{8}{2021}{{Yin, Corradi, and Boht{\'{e}}}}{{}}}
+\@writefile{lof}{\contentsline {figure}{\numberline {S3}{\ignorespaces Feature-space perturbation diagnostic using saved checkpoints. SPRiF and ASRNN are evaluated on GSC and QTDB under additive Gaussian noise, random feature zeroing, and mixed perturbations. The clean values in this diagnostic come from the saved checkpoints used for the perturbation sweep and need not equal the five-seed benchmark summaries in the main paper.}}{10}{}\protected@file@percent }
+\newlabel{fig:supp_robustness_diagnostic}{{S3}{10}{}{figure.3}{}}
+\gdef \@abspage@last{10}

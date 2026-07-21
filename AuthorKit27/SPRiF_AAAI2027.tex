@@ -278,7 +278,7 @@ Holding $I_t$ fixed, Eq.~\eqref{eq:slow_unrolled} gives $\partial\mathbf{x}_t/\p
 
 \subsection{Evaluation Questions and Protocol}
 
-The experiments address four questions: how SPRiF compares with published temporal SNNs, which design choices contribute to its accuracy, whether additional spike-triggered updates disrupt retained context, and what temporal dynamics the trained states learn. We evaluate five benchmarks spanning sequential images (S-MNIST and PS-MNIST), physiological signals (QTDB), frame-based speech (GSC), and event-driven speech (SHD). For SPRiF, Table~\ref{tab:main_results} reports the mean and standard deviation over five seeds after fixed-epoch training.
+The experiments address four questions: how SPRiF compares with published temporal SNNs, which design choices contribute to its accuracy, whether additional spike-triggered updates disrupt retained context, and what temporal dynamics the trained states learn. We evaluate five benchmarks spanning sequential images (S-MNIST and PS-MNIST), physiological signals (QTDB), frame-based speech (GSC), and event-driven speech (SHD). For SPRiF, Table~\ref{tab:main_results} reports the mean and standard deviation over five seeds.
 
 The evidence has two levels. Table~\ref{tab:main_results} provides a descriptive cross-paper comparison with recurrent SNNs using gated, adaptive, dendritic, resonate-and-fire, and other temporal neuron dynamics; their architectures and optimization protocols remain task-specific. The subsequent ablations and SI-DMS experiments use controlled variants to examine the SPRiF mechanism. The technical appendix specifies preprocessing, architectures, optimization, initialization, and reproducibility details.
 

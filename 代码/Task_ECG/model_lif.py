@@ -1,4 +1,3 @@
-"""ECG-specific network definition using LIF neuron layers."""
 
 from typing import Dict, List, Optional
 
@@ -6,7 +5,6 @@ import torch
 import torch.nn as nn
 
 from core_algorithm.lif_layer import LIFNeuronLayer
-
 
 class LIFECGModel(nn.Module):
     def __init__(
@@ -44,12 +42,13 @@ class LIFECGModel(nn.Module):
         self.readout = nn.Linear(hidden_sizes[-1], output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: [batch, time, features]
+
         out = x
 
         for layer in self.layers:
-            out = layer(out, batch_first=True)   # [batch, time, hidden]
+            out = layer(out, batch_first=True)
 
-        logits = self.readout(out)               # [batch, time, classes]
+        logits = self.readout(out)
 
-        return logits.permute(0, 2, 1)           # [batch, classes, time]
+        return logits.permute(0, 2, 1)
+
