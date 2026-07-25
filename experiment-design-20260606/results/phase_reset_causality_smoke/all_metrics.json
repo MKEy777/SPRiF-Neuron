@@ -2,7 +2,7 @@
   {
     "model": "asrnn",
     "seed": 1,
-    "checkpoint": "C:\\Users\\VECTOR\\Desktop\\SPRiF-Neuron\\experiment-design-20260606\\results\\phase_reset_causality_smoke\\raw\\asrnn\\seed_1\\checkpoint.pt",
+    "checkpoint": "raw\\asrnn\\seed_1\\checkpoint.pt",
     "clean_gate_passed": false,
     "clean_gate": {
       "delay_mse": 0.5804179906845093,
@@ -153,7 +153,7 @@
   {
     "model": "brf",
     "seed": 1,
-    "checkpoint": "C:\\Users\\VECTOR\\Desktop\\SPRiF-Neuron\\experiment-design-20260606\\results\\phase_reset_causality_smoke\\raw\\brf\\seed_1\\checkpoint.pt",
+    "checkpoint": "raw\\brf\\seed_1\\checkpoint.pt",
     "clean_gate_passed": false,
     "clean_gate": {
       "delay_mse": 0.5804179906845093,
@@ -304,7 +304,7 @@
   {
     "model": "lif",
     "seed": 1,
-    "checkpoint": "C:\\Users\\VECTOR\\Desktop\\SPRiF-Neuron\\experiment-design-20260606\\results\\phase_reset_causality_smoke\\raw\\lif\\seed_1\\checkpoint.pt",
+    "checkpoint": "raw\\lif\\seed_1\\checkpoint.pt",
     "clean_gate_passed": false,
     "clean_gate": {
       "delay_mse": 0.5804179906845093,
@@ -455,7 +455,7 @@
   {
     "model": "sprif",
     "seed": 1,
-    "checkpoint": "C:\\Users\\VECTOR\\Desktop\\SPRiF-Neuron\\experiment-design-20260606\\results\\phase_reset_causality_smoke\\raw\\sprif\\seed_1\\checkpoint.pt",
+    "checkpoint": "raw\\sprif\\seed_1\\checkpoint.pt",
     "clean_gate_passed": false,
     "clean_gate": {
       "delay_mse": 0.6125987768173218,

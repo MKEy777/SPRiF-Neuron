@@ -23,7 +23,7 @@ GRID = "#D8D8D8"
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.normpath(os.path.join(
-    ROOT, "..", "..", "..", "experiment-design-20260606", "results"))
+    ROOT, "..", "..", "results"))
 
 FREQ_ORDER = ["f1_0.01pi", "f2_0.05pi", "f3_0.10pi", "f4_0.25pi", "f5_0.50pi"]
 FREQ_LABELS = ["0.01" + "$\\pi$", "0.05" + "$\\pi$", "0.10" + "$\\pi$",

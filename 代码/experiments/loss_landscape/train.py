@@ -16,12 +16,12 @@ sys.path.insert(0, cfg.SMNIST_DIR)
 from core_algorithm.utils import set_seed
 
 def train_one_neuron(neuron_type, args, device):
-    print(f"\n{'='*60}\n训练神经元: {neuron_type}\n{'='*60}")
+    print(f"\n{'='*60}\nTraining neuron: {neuron_type}\n{'='*60}")
 
     train_loader, test_loader = get_loaders(args.batch_size, device, subset=args.subset)
     model = build_model(neuron_type, cfg).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"模型参数量: {n_params:,}")
+    print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=cfg.SCHEDULER_STEP, gamma=cfg.SCHEDULER_GAMMA)
@@ -110,7 +110,7 @@ def train_one_neuron(neuron_type, args, device):
                 "test_acc": best_acc,
             }, ckpt_path)
 
-    print(f"[{neuron_type}] 训练完成，最佳测试精度 {best_acc:.2f}%，权重 -> {ckpt_path}")
+    print(f"[{neuron_type}] training complete, best test acc {best_acc:.2f}%, weights -> {ckpt_path}")
     return best_acc
 
 def main():

@@ -33,10 +33,10 @@ DIRECTION_SEED = 123
 LANDSCAPE_EVAL_BATCHES = 4
 
 def get_args():
-    parser = argparse.ArgumentParser(description="S-MNIST 损失景观实验")
+    parser = argparse.ArgumentParser(description="S-MNIST Loss Landscape")
     parser.add_argument("--neuron", type=str, default="both",
                         choices=["sprif", "lif", "both"],
-                        help="训练/分析哪个神经元")
+                        help="Which neuron type to train/analyze")
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--lr", type=float, default=LR)
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
@@ -44,9 +44,9 @@ def get_args():
     parser.add_argument("--grid-resolution", type=int, default=GRID_RESOLUTION)
     parser.add_argument("--grid-range", type=float, default=GRID_RANGE)
     parser.add_argument("--eval-batches", type=int, default=LANDSCAPE_EVAL_BATCHES,
-                        help="每个网格点估计 loss 用的 batch 数")
+                        help="Number of batches for loss estimation per grid point")
     parser.add_argument("--subset", type=int, default=0,
-                        help="仅用前 N 个训练样本（0=全量，用于快速验证）")
+                        help="Use only first N training samples (0=all, for quick validation)")
     parser.add_argument("--skip-train", action="store_true")
     return parser.parse_args()
 

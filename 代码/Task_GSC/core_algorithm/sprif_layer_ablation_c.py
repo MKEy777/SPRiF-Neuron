@@ -1,4 +1,10 @@
 
+# SPRiF Ablation C: lambda=0
+# Paper Table 2, Appendix Sec. S2.1.
+# Reset direction fixed to [1,0] (no learned lambda_j).
+# Subtracts only from membrane coordinate.
+# Slow-fast state separation preserved.
+
 import math
 from typing import Dict, Optional, Tuple
 
@@ -7,6 +13,7 @@ from torch import Tensor, nn
 
 StateDict = Dict[str, Tensor]
 
+# Multi-Gaussian surrogate gradient (Appendix S3.3, Eq. S9)
 lens = 0.5
 gamma = 0.5
 
@@ -36,7 +43,8 @@ def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
 class SPRiFNeuronLayerAblationC(nn.Module):
-
+    # lambda=0 ablation: reset direction fixed at [1, 0].
+    # No learnable lambda_reset; same dynamics otherwise.
     def __init__(
         self,
         input_size: int,
@@ -45,10 +53,10 @@ class SPRiFNeuronLayerAblationC(nn.Module):
         recurrent: bool = False,
         bias: bool = False,
         init_std: float = 0.05,
-        tau_alpha_range: Tuple[float, float] = (2.0, 60.0),
-        tau_rho_range: Tuple[float, float] = (2.0, 40.0),
-        tau_eta_range: Tuple[float, float] = (0.8, 10.0),
-        omega_range: Tuple[float, float] = (0.04 * math.pi, 0.50 * math.pi),
+        tau_alpha_range: Tuple[float, float] = (10.0, 80.0),
+        tau_rho_range: Tuple[float, float] = (4.0, 30.0),
+        tau_eta_range: Tuple[float, float] = (0.8, 8.0),
+        omega_range: Tuple[float, float] = (0.04 * math.pi, 0.40 * math.pi),
     ) -> None:
         super().__init__()
 
@@ -149,6 +157,7 @@ class SPRiFNeuronLayerAblationC(nn.Module):
         omega = math.pi * torch.sigmoid(self.omega_raw)
         eta = torch.sigmoid(self.eta_raw).unsqueeze(0)
 
+        # Fixed reset direction [1, 0] (no learned lambda)
         dev = self.input_linear.weight.device
         ones = torch.ones(self.hidden_size, device=dev)
         zeros = torch.zeros(self.hidden_size, device=dev)

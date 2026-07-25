@@ -1,4 +1,9 @@
 
+# SPRiF Ablation B: Merged
+# Paper Table 2, Appendix Sec. S2.1.
+# Collapses slow spectral state and fast discharge state into single 3D state.
+# First coordinate is both membrane and reset target.
+
 import math
 from typing import Dict, Optional, Tuple
 
@@ -7,6 +12,7 @@ from torch import Tensor, nn
 
 StateDict = Dict[str, Tensor]
 
+# Multi-Gaussian surrogate gradient (Appendix S3.3, Eq. S9)
 lens = 0.5
 gamma = 0.5
 
@@ -36,7 +42,8 @@ def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
 class SPRiFNeuronLayerAblationB(nn.Module):
-
+    # Merged ablation: single 3D state (no fast discharge state).
+    # Membrane = x[..., 0], scalar reset on coord 0 only.
     def __init__(
         self,
         input_size: int,
@@ -150,6 +157,7 @@ class SPRiFNeuronLayerAblationB(nn.Module):
     def _slow_flow(
         self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]
     ) -> Tensor:
+        # Spectral slow-state update (full SPRiF A matrix, no fast state)
         x_real = x_prev[..., 0]
         x_osc_1 = x_prev[..., 1]
         x_osc_2 = x_prev[..., 2]
@@ -175,6 +183,7 @@ class SPRiFNeuronLayerAblationB(nn.Module):
         runtime: Dict[str, Tensor],
         input_current: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor, StateDict]:
+        # Single-state update: membrane = x[..., 0]; scalar reset on coord 0 only
         x_state = state["x"]
         prev_spike = state["prev_spike"]
 

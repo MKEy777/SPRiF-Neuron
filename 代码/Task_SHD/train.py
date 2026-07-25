@@ -1,5 +1,6 @@
 
 import argparse
+import math
 import os
 import random
 import warnings
@@ -76,6 +77,10 @@ def main():
         neuron_kwargs={
             "threshold": args.neuron_threshold,
             "init_std": args.neuron_init_std,
+            "tau_alpha_range": (10.0, 80.0),
+            "tau_rho_range": (4.0, 30.0),
+            "tau_eta_range": (0.8, 8.0),
+            "omega_range": (0.04 * math.pi, 0.40 * math.pi),
         },
     ).to(device)
 

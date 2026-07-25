@@ -29,7 +29,7 @@ def plot_contour(neurons):
     data = {nt: _load_landscape(nt) for nt in neurons}
     data = {nt: d for nt, d in data.items() if d is not None}
     if not data:
-        print("[contour] 无 landscape 数据，跳过")
+        print("[contour] no landscape data, skipping")
         return
 
     n = len(data)
@@ -66,13 +66,13 @@ def plot_contour(neurons):
     out = os.path.join(cfg.FIGURE_DIR, "loss_contour_2d.png")
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"[contour] 已保存 -> {out}")
+    print(f"[contour] saved -> {out}")
 
 def plot_surface(neurons):
     data = {nt: _load_landscape(nt) for nt in neurons}
     data = {nt: d for nt, d in data.items() if d is not None}
     if not data:
-        print("[surface] 无 landscape 数据，跳过")
+        print("[surface] no landscape data, skipping")
         return
 
     n = len(data)
@@ -104,13 +104,13 @@ def plot_surface(neurons):
     out = os.path.join(cfg.FIGURE_DIR, "loss_surface_3d.png")
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"[surface] 已保存 -> {out}")
+    print(f"[surface] saved -> {out}")
 
 def plot_profile(neurons):
     data = {nt: _load_landscape(nt) for nt in neurons}
     data = {nt: d for nt, d in data.items() if d is not None}
     if not data:
-        print("[profile] 无 landscape 数据，跳过")
+        print("[profile] no landscape data, skipping")
         return
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
@@ -141,13 +141,13 @@ def plot_profile(neurons):
     out = os.path.join(cfg.FIGURE_DIR, "loss_profile_1d.png")
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"[profile] 已保存 -> {out}")
+    print(f"[profile] saved -> {out}")
 
 def plot_profile_normalized(neurons):
     data = {nt: _load_landscape(nt) for nt in neurons}
     data = {nt: d for nt, d in data.items() if d is not None}
     if not data:
-        print("[profile_norm] 无 landscape 数据，跳过")
+        print("[profile_norm] no landscape data, skipping")
         return
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
@@ -183,13 +183,13 @@ def plot_profile_normalized(neurons):
     out = os.path.join(cfg.FIGURE_DIR, "loss_profile_normalized.png")
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"[profile_norm] 已保存 -> {out}")
+    print(f"[profile_norm] saved -> {out}")
 
 def plot_difference(neurons):
     loaded = {nt: _load_landscape(nt) for nt in neurons}
     loaded = {nt: d for nt, d in loaded.items() if d is not None}
     if "lif" not in loaded or "sprif" not in loaded:
-        print("[difference] 需要同时有 LIF 与 SPRiF，跳过")
+        print("[difference] need both LIF and SPRiF data, skipping")
         return
 
     g_lif = loaded["lif"]["loss_grid"]
@@ -217,7 +217,7 @@ def plot_difference(neurons):
     out = os.path.join(cfg.FIGURE_DIR, "loss_difference.png")
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"[difference] 已保存 -> {out}")
+    print(f"[difference] saved -> {out}")
 
 def main():
     os.makedirs(cfg.FIGURE_DIR, exist_ok=True)
@@ -232,7 +232,7 @@ def plot_combined(neurons):
     data = {nt: _load_landscape(nt) for nt in neurons}
     data = {nt: d for nt, d in data.items() if d is not None}
     if not data:
-        print("[combined] 无 landscape 数据，跳过")
+        print("[combined] no landscape data, skipping")
         return
 
     mpl.rcParams.update({
@@ -315,7 +315,7 @@ def plot_combined(neurons):
     fig.savefig(f"{out}.pdf", bbox_inches="tight")
     fig.savefig(f"{out}.svg", bbox_inches="tight")
     plt.close(fig)
-    print(f"[combined] 已保存 -> {out}.png / .pdf / .svg")
+    print(f"[combined] saved -> {out}.png / .pdf / .svg")
 
 if __name__ == "__main__":
     main()

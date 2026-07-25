@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--seed", type=int, default=1111)
 
-    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[30])
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[31])
     parser.add_argument("--out-size", type=int, default=6)
     parser.add_argument("--mode", type=str, default="srnn")
 

@@ -1,3 +1,12 @@
+# SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron
+# Paper Sec. 3.2, Eq. (2)-(6); Appendix S3 (formal spec).
+# Each neuron: slow spectral state x in R3 (real decay + damped rotation, Eq.3)
+# + fast discharge state u in R2 (membrane readout + reset target, Eq.4-5).
+# Projective reset [1,lambda_j] acts ONLY on fast state (Eq.5-6).
+# Timestep order: I_t -> x_t -> u_tilde -> v_t -> z_t -> u_t (Eq.2).
+# Task: GSC (init ranges: tau_alpha [10,80], tau_rho [4,30],
+#       tau_eta [0.8,8], omega [0.04pi,0.40pi]).
+
 import math
 from typing import Dict, Optional, Tuple
 import torch
@@ -5,6 +14,7 @@ from torch import Tensor, nn
 
 StateDict = Dict[str, Tensor]
 
+# Multi-Gaussian surrogate gradient (Appendix S3.3, Eq. S9)
 lens = 0.5
 gamma = 0.5
 
@@ -34,6 +44,12 @@ def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
 class SPRiFNeuronLayer(nn.Module):
+    # Per-neuron learnable parameters (Appendix S3.4):
+    # alpha/rho/omega -> spectral slow-state A matrix eigenvalues (Eq.3)
+    # eta (2 values) -> fast discharge state leaks (Eq.4)
+    # fast_coupling (kappa) -> cross-coupling in fast state (Eq.4)
+    # G (2x3) -> slow-to-fast projection matrix (Eq.4)
+    # lambda_reset (lambda_j) -> projective reset direction [1,lambda_j] (Eq.5)
     def __init__(
         self,
         input_size: int,
@@ -84,6 +100,7 @@ class SPRiFNeuronLayer(nn.Module):
         tau_eta_range: Tuple[float, float],
         omega_range: Tuple[float, float],
     ) -> None:
+        # Xavier uniform for W_in; orthogonal init for W_rec
         nn.init.xavier_uniform_(self.input_linear.weight)
         if self.input_linear.bias is not None:
             nn.init.zeros_(self.input_linear.bias)
@@ -178,6 +195,8 @@ class SPRiFNeuronLayer(nn.Module):
         }
 
     def _slow_flow(self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]) -> Tensor:
+        # Spectral slow-state: x_t = A*x_{t-1} + B*I_t (Eq.3)
+        # No direct local reset: Delta x_reset = 0 (Eq.6)
         x_real = x_prev[..., 0]
         x_osc_1 = x_prev[..., 1]
         x_osc_2 = x_prev[..., 2]
@@ -194,6 +213,8 @@ class SPRiFNeuronLayer(nn.Module):
         return torch.stack((x_next_0, x_next_1, x_next_2), dim=-1)
 
     def _fast_flow(self, u_prev: Tensor, x_t: Tensor, runtime: Dict[str, Tensor]) -> Tensor:
+        # Fast discharge pre-reset: u_tilde (Eq.4)
+        # Leaks eta_0,eta_1; cross-coupling kappa; slow-to-fast projection G
         eta = runtime["eta"]
         fast_coupling = runtime["fast_coupling"].unsqueeze(0)
 
@@ -209,6 +230,9 @@ class SPRiFNeuronLayer(nn.Module):
         return surrogate_spike(membrane_delta)
 
     def forward_step(self, x_t: Tensor, state: StateDict, runtime: Dict[str, Tensor], input_current: Optional[Tensor] = None) -> Tuple[Tensor, Tensor, StateDict]:
+        # Full timestep (Sec.3.2): I_t -> x_t -> u_tilde -> v_t -> z_t -> u_t
+        # Input current I_t = W_in*s_t + W_rec*z_{t-1} + b (Eq.2)
+        # Projective reset: u = u_tilde - z*theta*[1,lambda_j] (Eq.5)
         x_state = state["x"]
         u_state = state["u"]
         prev_spike = state["prev_spike"]

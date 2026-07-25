@@ -5,7 +5,7 @@ from sidms.reporting import summarize, summarize_curve
 def main():
     p = argparse.ArgumentParser(); p.add_argument("--input", default="results/all_metrics.json")
     p.add_argument("--output", default="results/summary.csv")
-    p.add_argument("--curve", help="额外输出 fraction-response 曲线 CSV")
+    p.add_argument("--curve", help="Also output fraction-response curve CSV")
     p.add_argument("--fraction", type=float, default=0.15)
     args = p.parse_args()
     path = Path(args.input)

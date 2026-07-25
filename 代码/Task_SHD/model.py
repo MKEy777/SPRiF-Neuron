@@ -35,8 +35,7 @@ class SPRiFSHDNet(nn.Module):
                     input_size=in_dim,
                     hidden_size=h,
                     recurrent=recurrent,
-                    threshold=neuron_kwargs.get("threshold", 1.0),
-                    init_std=neuron_kwargs.get("init_std", 0.2),
+                    **neuron_kwargs,
                 )
             )
             in_dim = h
@@ -47,8 +46,7 @@ class SPRiFSHDNet(nn.Module):
             input_size=hidden_sizes[-1],
             hidden_size=num_classes,
             recurrent=False,
-            threshold=neuron_kwargs.get("threshold", 1.0),
-            init_std=neuron_kwargs.get("init_std", 0.2),
+            **neuron_kwargs,
         )
 
     def forward(self, x):

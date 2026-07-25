@@ -1,4 +1,9 @@
 
+# SPRiF Ablation A: omega=0
+# Paper Table 2, Appendix Sec. S2.1.
+# Removes rotational coupling (omega fixed at 0, cos=1, sin=0).
+# Retains real decay path and slow-fast state separation.
+
 import math
 from typing import Dict, Optional, Tuple
 
@@ -7,6 +12,7 @@ from torch import Tensor, nn
 
 StateDict = Dict[str, Tensor]
 
+# Multi-Gaussian surrogate gradient (Appendix S3.3, Eq. S9)
 lens = 0.5
 gamma = 0.5
 
@@ -36,7 +42,8 @@ def surrogate_spike(input_tensor: Tensor) -> Tensor:
     return ActFun_adp.apply(input_tensor)
 
 class SPRiFNeuronLayerAblationA(nn.Module):
-
+    # Per-neuron parameters: same as full SPRiF but NO omega_raw.
+    # Slow-state spectral rotation is disabled (omega=0).
     def __init__(
         self,
         input_size: int,
@@ -45,9 +52,9 @@ class SPRiFNeuronLayerAblationA(nn.Module):
         recurrent: bool = False,
         bias: bool = False,
         init_std: float = 0.05,
-        tau_alpha_range: Tuple[float, float] = (2.0, 60.0),
-        tau_rho_range: Tuple[float, float] = (2.0, 40.0),
-        tau_eta_range: Tuple[float, float] = (0.8, 10.0),
+        tau_alpha_range: Tuple[float, float] = (10.0, 80.0),
+        tau_rho_range: Tuple[float, float] = (4.0, 30.0),
+        tau_eta_range: Tuple[float, float] = (0.8, 8.0),
     ) -> None:
         super().__init__()
 
@@ -164,6 +171,7 @@ class SPRiFNeuronLayerAblationA(nn.Module):
     def _slow_flow(
         self, x_prev: Tensor, input_current: Tensor, runtime: Dict[str, Tensor]
     ) -> Tensor:
+        # omega=0: rotational pair reduces to independent decay (cos0=1, sin0=0)
         x_real = x_prev[..., 0]
         x_osc_1 = x_prev[..., 1]
         x_osc_2 = x_prev[..., 2]

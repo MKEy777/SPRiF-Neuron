@@ -17,8 +17,7 @@ matplotlib.use("Agg")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIGURE_DIR = os.path.join(
-    os.path.dirname(ROOT),
-    "experiment-design-20260606",
+    ROOT,
     "results",
     "figures",
     "trajectory_analysis",
@@ -54,7 +53,7 @@ def _train_psmnist() -> str:
     cmd = [
         sys.executable, train_script,
         "--lr", "1e-2", "--epochs", "150", "--batch-size", "512",
-        "--seed", "0", "--hidden-sizes", "64", "256", "--mode", "srnn",
+        "--seed", "0", "--hidden-sizes", "64", "210", "--mode", "srnn",
     ]
     print(f"  Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=TASK_ABS, capture_output=False)
@@ -233,7 +232,7 @@ def main():
     print(f"Loading checkpoint: {os.path.basename(ckpt)}")
     model = SPRiFpSMNISTNet(
         input_size=1,
-        hidden_sizes=[64, 256],
+        hidden_sizes=[64, 210],
         num_classes=10,
         mode="srnn",
         warmup_steps=0,

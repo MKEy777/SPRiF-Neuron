@@ -1,3 +1,10 @@
+# SI-DMS Neuron Cell Implementations
+# Paper Sec. 4.4, Appendix S2.2-S2.4.
+# 6 models for Spike-Intervention Delayed Match-to-Sample task.
+# All cells support forced-spike interventions via _force():
+#   selected membrane coordinates placed above threshold before spike computation.
+# Forced spikes follow the model's ordinary reset rule (Appendix S2.4).
+
 from __future__ import annotations
 
 import math
@@ -10,6 +17,7 @@ from .surrogates import spike_fn
 
 State = Dict[str, torch.Tensor]
 
+# Place selected membrane coordinates above threshold; spike follows model's reset rule
 def _force(mem: torch.Tensor, threshold: torch.Tensor | float, mask: torch.Tensor,
            margin: float = 0.05):
     target = torch.as_tensor(threshold, device=mem.device, dtype=mem.dtype) + margin
@@ -38,6 +46,8 @@ class BaseCell(nn.Module):
         return torch.zeros((batch, self.hidden_size, *dims), device=device)
 
 class SPRiFFullCell(BaseCell):
+    # Full SPRiF: slow spectral state + fast discharge + projective reset [1,lambda_j]
+    # Paper Sec. 3.2, Eq. (2)-(5); Appendix S2.2
     def __init__(self, *args, learned_reset=True, **kwargs):
         super().__init__(*args, **kwargs)
         h = self.hidden_size
@@ -55,6 +65,7 @@ class SPRiFFullCell(BaseCell):
         return {"slow": self.zeros(batch, device, (3,)), "fast": self.zeros(batch, device, (2,))}
 
     def step(self, x, state, intervention, prev_spike=None):
+        # Slow spectral state (Eq.3) -> fast discharge (Eq.4) -> projective reset [1,lambda_j] (Eq.5)
         drive = self.drive(x, prev_spike)
         alpha, rho = torch.sigmoid(self.alpha_raw), torch.sigmoid(self.rho_raw)
         omega = math.pi * torch.sigmoid(self.omega_raw)
@@ -80,6 +91,8 @@ class SPRiFFullCell(BaseCell):
             "forced_hit": hit, "slow_pre_reset": slow, "fast_pre_reset": pre}
 
 class SPRiFMergedCell(BaseCell):
+    # Merged ablation: single 3D state, membrane=x[0], scalar reset on coord 0
+    # Paper Table 2, Appendix S2.1
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         h = self.hidden_size
@@ -91,6 +104,7 @@ class SPRiFMergedCell(BaseCell):
         return {"merged": self.zeros(batch, device, (3,))}
 
     def step(self, x, state, intervention, prev_spike=None):
+        # Merged: single-state spectral dynamics; membrane=x[0]; scalar reset on coord 0
         drive = self.drive(x, prev_spike)
         alpha, rho = torch.sigmoid(self.alpha_raw), torch.sigmoid(self.rho_raw)
         omega = math.pi * torch.sigmoid(self.omega_raw)
@@ -107,6 +121,8 @@ class SPRiFMergedCell(BaseCell):
         return z, {"merged": merged}, {"forced_hit": hit, "merged_pre_reset": pre}
 
 class LIFCell(BaseCell):
+    # Standard LIF baseline: v = alpha*v + (1-alpha)*I; reset: v -= z*theta
+    # Paper Eq. (1), Sec. 3.1
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log_tau = nn.Parameter(torch.full((self.hidden_size,), math.log(500e-3)))
@@ -114,6 +130,7 @@ class LIFCell(BaseCell):
     def initial_state(self, batch, device): return {"u": self.zeros(batch, device)}
 
     def step(self, x, state, intervention, prev_spike=None):
+        # LIF update: leaky membrane + scalar reset; forced spikes via _force()
         alpha = torch.exp(-self.dt / self.log_tau.exp().clamp_min(self.dt))
         u = alpha * state["u"] + (1 - alpha) * self.drive(x, prev_spike)
         u, hit = _force(u, self.threshold, intervention)
@@ -122,6 +139,8 @@ class LIFCell(BaseCell):
         return z, {"u": pre - z * self.threshold}, {"forced_hit": hit, "mem_pre_reset": pre}
 
 class ASRNNCell(BaseCell):
+    # Adaptive Spike RNN (Bozkurt et al., Nat. Mach. Intell. 2021):
+    # adaptive threshold b_t = rho*b_{t-1} + (1-rho)*z_{t-1}; theta_eff = theta + beta*b
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log_tau_m = nn.Parameter(torch.full((self.hidden_size,), math.log(200e-3)))
@@ -133,6 +152,7 @@ class ASRNNCell(BaseCell):
                 "spike": self.zeros(batch, device)}
 
     def step(self, x, state, intervention, prev_spike=None):
+        # ASRNN: adaptive threshold b_t; spike triggers reset AND adaptation recurrence
         alpha = torch.exp(-self.dt / self.log_tau_m.exp().clamp_min(self.dt))
         rho = torch.exp(-self.dt / self.log_tau_adp.exp().clamp_min(self.dt))
         b = rho * state["b"] + (1 - rho) * state["spike"]
@@ -143,6 +163,8 @@ class ASRNNCell(BaseCell):
         return z, {"mem": mem, "b": b, "spike": z}, {"forced_hit": hit, "mem_pre_reset": mem}
 
 class BRFCell(BaseCell):
+    # Bimodal Resonate-and-Fire (Niebert et al., ICML 2024):
+    # 2D resonant dynamics (u,v) with adaptive threshold q_t
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.omega = nn.Parameter(torch.full((self.hidden_size,), 10.0))
@@ -165,6 +187,7 @@ class BRFCell(BaseCell):
 
 def build_cell(name: str, input_size: int, hidden_size: int, dt_ms: int, threshold: float,
                recurrent: bool = False):
+    # Model registry: maps string names to cell constructors
     args = (input_size, hidden_size, dt_ms, threshold)
     kw = {"recurrent": recurrent}
     table = {"sprif_full": lambda: SPRiFFullCell(*args, learned_reset=True, **kw),

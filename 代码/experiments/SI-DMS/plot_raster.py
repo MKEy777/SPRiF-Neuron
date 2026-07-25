@@ -15,9 +15,9 @@ def main():
     p.add_argument("--checkpoint", required=True, help="<model>/seed_x/checkpoint.pt")
     p.add_argument("--output", default="results/figures/raster.png")
     p.add_argument("--delay", type=int, default=1600)
-    p.add_argument("--count", type=int, default=8, help="干预时刻数 K")
+    p.add_argument("--count", type=int, default=8, help="Number of intervention timesteps K")
     p.add_argument("--fraction", type=float, default=0.15)
-    p.add_argument("--sample", type=int, default=-1, help="batch 内样本索引（-1 自动选择 match 试次）")
+    p.add_argument("--sample", type=int, default=-1, help="Sample index within batch (-1 auto-selects match trial)")
     args = p.parse_args()
 
     cfg = ExperimentConfig.from_yaml(args.config)
@@ -124,7 +124,7 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=200)
     plt.close(fig)
-    print(f"saved {out}  (干预时刻数={len(interv_times)})")
+    print(f"saved {out}  (intervention timesteps={len(interv_times)})")
 
 if __name__ == "__main__":
     main()

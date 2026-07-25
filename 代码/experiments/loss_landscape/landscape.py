@@ -61,7 +61,7 @@ def _eval_loss(model, x_batches, y_batches, criterion):
 def compute_landscape(neuron_type, args, device):
     ckpt_path = os.path.join(cfg.CHECKPOINT_DIR, f"{neuron_type}_best.pth")
     if not os.path.exists(ckpt_path):
-        print(f"[跳过] 未找到 checkpoint: {ckpt_path}")
+        print(f"[skip] checkpoint not found: {ckpt_path}")
         return None
     ckpt = torch.load(ckpt_path, map_location=device)
 
@@ -87,7 +87,7 @@ def compute_landscape(neuron_type, args, device):
     coords = np.linspace(-R, R, N)
     loss_grid = np.zeros((N, N), dtype=np.float32)
 
-    print(f"[{neuron_type}] 计算 {N}x{N} 损失景观 ...")
+    print(f"[{neuron_type}] computing {N}x{N} loss landscape ...")
     for i, a in enumerate(coords):
         for j, b in enumerate(coords):
             _set_weights(model, base_weights, d1, d2, float(a), float(b))
@@ -101,7 +101,7 @@ def compute_landscape(neuron_type, args, device):
     np.savez(out_path, coords=coords, loss_grid=loss_grid,
              center_loss=loss_grid[N // 2, N // 2],
              test_acc=ckpt.get("test_acc", -1))
-    print(f"[{neuron_type}] 损失景观已保存 -> {out_path} "
+    print(f"[{neuron_type}] landscape saved -> {out_path} "
           f"(center loss={loss_grid[N//2, N//2]:.4f})")
     return out_path
 

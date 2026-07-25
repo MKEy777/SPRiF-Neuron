@@ -16,7 +16,7 @@ Compares SPRiF vs ASRNN accuracy under fixed-length training and noisy testing. 
 - **Subtractive dropout**: p ∈ {0.05, 0.10, 0.20}
 - **Mixed**: σ=0.05 + p=0.10
 
-Output: `robustness/robustness_benchmark.png` + `experiment-design-20260606/results/robustness_benchmark.json`
+Output: `robustness/robustness_benchmark.png` + `../../results/robustness_benchmark.json`
 
 ### R3: Sinusoidal Frequency-Perturbation Sensitivity (`frequency_selectivity.py`)
 
@@ -26,7 +26,7 @@ SPRiF-unique experiment. Injects sinusoidal perturbations at:
 
 Output: accuracy change per condition.
 
-Output: `robustness/frequency_selectivity.png` + `experiment-design-20260606/results/frequency_selectivity.json`
+Output: `robustness/frequency_selectivity.png` + `../../results/frequency_selectivity.json`
 
 ## ASRNN Baseline
 

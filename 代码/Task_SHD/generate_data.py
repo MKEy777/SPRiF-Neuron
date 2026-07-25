@@ -65,7 +65,7 @@ def generate_dataset(file_name: str, output_dir: str, dt=1e-3) -> int:
     return 0
 
 if __name__ == "__main__":
-    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    root = os.path.join(os.path.dirname(__file__))
     train_h5 = os.path.join(root, "data", "SHD", "shd_train.h5")
     test_h5 = os.path.join(root, "data", "SHD", "shd_test.h5")
     out_train = os.path.join(root, "data", "SHD", "train_1ms")

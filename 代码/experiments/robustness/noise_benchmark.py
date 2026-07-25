@@ -22,7 +22,7 @@ sns.set_context("paper", font_scale=1.2)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RESULTS_DIR = os.path.join(
-    os.path.dirname(ROOT), "experiment-design-20260606", "results"
+    ROOT, "results"
 )
 
 def _add_path(task_dir: str) -> str:

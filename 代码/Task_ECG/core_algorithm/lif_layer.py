@@ -1,4 +1,8 @@
 
+# LIF Baseline Neuron Layer
+# Reference: Paper Sec. 3.1, Eq. (1).
+# Standard LIF: v = beta*v_prev + (1-beta)*I; z = H(v-theta); reset: v -= z*theta
+
 import math
 from typing import Dict, Optional, Tuple
 
@@ -93,6 +97,7 @@ class LIFNeuronLayer(nn.Module):
         runtime: Dict[str, Tensor],
         input_current: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor, StateDict]:
+        # LIF update: v_tilde = beta*v + (1-beta)*I (Eq.1); z=H(v-theta); reset: v -= z*theta
         v_prev = state["v"]
         prev_spike = state["prev_spike"]
 

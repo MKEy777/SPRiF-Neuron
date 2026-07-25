@@ -21,8 +21,7 @@ sns.set_context("paper", font_scale=1.2)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FIGURE_DIR = os.path.join(
-    os.path.dirname(ROOT),
-    "experiment-design-20260606",
+    ROOT,
     "results",
     "figures",
     "impulse_analysis",
@@ -78,7 +77,7 @@ def _load_psmnist(task_dir: str) -> nn.Module:
         print(f"  Found checkpoint: {os.path.basename(ckpt)}")
         model = SPRiFpSMNISTNet(
             input_size=1,
-            hidden_sizes=[64, 256],
+            hidden_sizes=[64, 210],
             num_classes=10,
             mode="srnn",
             warmup_steps=0,
@@ -91,7 +90,7 @@ def _load_psmnist(task_dir: str) -> nn.Module:
         task_dir, "train.py",
         [
             "--lr", "1e-2", "--epochs", "150", "--batch-size", "512",
-            "--seed", "0", "--hidden-sizes", "64", "256", "--mode", "srnn",
+            "--seed", "0", "--hidden-sizes", "64", "210", "--mode", "srnn",
         ],
     )
     ckpt = _find_checkpoint(os.path.join(ROOT, task_dir), "SPRiFpSMNISTNet")
@@ -112,7 +111,7 @@ def _load_gsc(task_dir: str) -> nn.Module:
             num_classes=12,
             dropout=0.0,
             recurrent_flags=(True,),
-            neuron_kwargs={"threshold": 1.0, "init_std": 0.1},
+            neuron_kwargs={"threshold": 0.8, "init_std": 0.1},
         )
         model.load_state_dict(torch.load(ckpt, map_location="cpu", weights_only=True))
         return model
@@ -126,10 +125,10 @@ def _load_gsc(task_dir: str) -> nn.Module:
     _train_task(
         task_dir, "train.py",
         [
-            "--data-root", os.path.join("data", "SpeechCommands"),
-            "--lr", "3e-3", "--epochs", "150", "--batch-size", "200",
+            "--data-root", os.path.join("dataset", "SpeechCommands", "speech_commands_v0.02"),
+            "--lr", "5e-3", "--epochs", "150", "--batch-size", "128",
             "--seed", "42", "--hidden-sizes", "300",
-            "--neuron-threshold", "1.0", "--neuron-init-std", "0.1",
+            "--neuron-threshold", "0.8", "--neuron-init-std", "0.1",
         ],
     )
     ckpt = _find_checkpoint(os.path.join(ROOT, task_dir), "SPRiFGSCNet")
@@ -158,7 +157,7 @@ def _load_ecg(task_dir: str) -> nn.Module:
         input_size = train_x.shape[2]
         model = SPRiFECGModel(
             input_size=input_size,
-            hidden_sizes=[36],
+            hidden_sizes=[31],
             output_size=6,
             mode="srnn",
             neuron_kwargs={"threshold": 0.6, "init_std": 0.05, "bias": True},
@@ -176,8 +175,8 @@ def _load_ecg(task_dir: str) -> nn.Module:
         [
             "--train-mat", os.path.join("data", "QTDB_train.mat"),
             "--test-mat", os.path.join("data", "QTDB_test.mat"),
-            "--lr", "1e-2", "--epochs", "250", "--batch-size", "64",
-            "--seed", "1111", "--hidden-sizes", "36",
+            "--lr", "1e-2", "--epochs", "250", "--batch-size", "128",
+            "--seed", "1111", "--hidden-sizes", "31",
             "--neuron-threshold", "0.6",
         ],
     )

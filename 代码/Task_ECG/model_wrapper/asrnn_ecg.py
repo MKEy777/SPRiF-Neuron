@@ -73,7 +73,7 @@ class ASRNNECGNet(nn.Module):
     def __init__(
         self,
         input_size: int = 5,
-        hidden_size: int = 30,
+        hidden_size: int = 31,
         num_classes: int = 6,
         sub_seq_length: int = 10,
         device: str = "cpu",
