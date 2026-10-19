@@ -5,37 +5,37 @@ The style file: aaai2027.bst
 Database file #1: sprif2027.bib
 You've used 8 entries,
             2840 wiz_defined-function locations,
-            635 strings with 6132 characters,
-and the built_in function-call counts, 5697 in all, are:
-= -- 456
-> -- 293
+            635 strings with 6102 characters,
+and the built_in function-call counts, 5559 in all, are:
+= -- 451
+> -- 274
 < -- 2
-+ -- 113
-- -- 100
-* -- 413
-:= -- 920
++ -- 105
+- -- 92
+* -- 399
+:= -- 894
 add.period$ -- 32
 call.type$ -- 8
-change.case$ -- 66
+change.case$ -- 63
 chr.to.int$ -- 9
 cite$ -- 8
-duplicate$ -- 382
-empty$ -- 383
-format.name$ -- 120
-if$ -- 1103
+duplicate$ -- 376
+empty$ -- 380
+format.name$ -- 112
+if$ -- 1081
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 86
+missing$ -- 83
 newline$ -- 44
 num.names$ -- 32
-pop$ -- 178
+pop$ -- 175
 preamble$ -- 1
-purify$ -- 60
+purify$ -- 57
 quote$ -- 0
-skip$ -- 172
+skip$ -- 170
 stack$ -- 0
 substring$ -- 277
-swap$ -- 210
+swap$ -- 205
 text.length$ -- 2
 text.prefix$ -- 0
 top$ -- 0

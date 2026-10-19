@@ -41,6 +41,9 @@ datasets/
 *.log
 logs/
 
+# Temporary files
+tmp/
+
 # Environment
 .env
 .env.local

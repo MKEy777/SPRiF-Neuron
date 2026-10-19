@@ -1,4 +1,3 @@
-"""pSMNIST model using Ablation B layer (merged slow/fast, no separate fast state)."""
 from typing import List
 import torch
 import torch.nn as nn
@@ -30,7 +29,6 @@ class SPRiFpSMNISTNetAblationB(nn.Module):
         nn.init.constant_(self.readout.bias, 0.0)
 
     def forward(self, x):
-        """Full BPTT forward pass (used for evaluation)."""
         out = x
         for layer in self.layers:
             out = layer(out, batch_first=True)
@@ -47,3 +45,4 @@ class SPRiFpSMNISTNetAblationB(nn.Module):
     @staticmethod
     def detach_states(states):
         return [{k: v.detach() for k, v in state.items()} for state in states]
+

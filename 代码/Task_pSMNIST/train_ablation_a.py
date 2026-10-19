@@ -1,15 +1,3 @@
-"""
-SPRiF Ablation A — PS-MNIST training with ω=0 (no rotation coupling).
-
-Usage:
-    python train_ablation_a.py
-
-Compared to full SPRiF:
-    - ω is fixed to 0  →  cos=1, sin=0
-    - x¹' = ρ·x¹ + (1-ρ)·I  (no rotation from x²)
-    - x²' = ρ·x²             (no rotation from x¹)
-    - 3D slow state, 2D fast state, G (2×3), and projective reset unchanged
-"""
 
 import argparse
 import math
@@ -24,12 +12,7 @@ from torch.utils.data import DataLoader
 from lib import set_seed
 from model_ablation_a import PermutedMNIST, SPRiFpSMNISTNetAblationA
 
-
-# ------------------------------------------------------------------
-#  Diagnostic utilities
-# ------------------------------------------------------------------
 def diagnose_model(model, label=""):
-    """Print all learnable parameter stats for each SPRiF layer."""
     for li, layer in enumerate(model.layers):
         runtime = layer._precompute_runtime_params()
         alpha = runtime["alpha"].detach()
@@ -60,9 +43,7 @@ def diagnose_model(model, label=""):
     rw = model.readout.weight.detach()
     print(f"  [{label}] readout W:       norm={rw.norm():.4f}  abs_mean={rw.abs().mean():.6f}")
 
-
 def check_weight_nan(model):
-    """Return True if any parameter has NaN/Inf."""
     for name, p in model.named_parameters():
         if not torch.isfinite(p).all():
             print(f"  *** NaN/Inf in parameter: {name} ***")
@@ -70,29 +51,27 @@ def check_weight_nan(model):
             return True
     return False
 
-
 def get_args():
     parser = argparse.ArgumentParser(
         description="SPRiF Ablation A: PS-MNIST with ω=0 (no rotation coupling)"
     )
-    # Training
+
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--seed", type=int, default=0)
-    # Model
-    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 256])
+
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 210])
     parser.add_argument("--mode", type=str, default="srnn")
     parser.add_argument("--num-classes", type=int, default=10)
     parser.add_argument("--warmup-steps", type=int, default=0)
-    # TBPTT
+
     parser.add_argument("--tbptt-len", type=int, default=262,
                         help="TBPTT chunk length (0 = full BPTT)")
-    # Scheduler
+
     parser.add_argument("--scheduler-step", type=int, default=50)
     parser.add_argument("--scheduler-gamma", type=float, default=0.1)
     return parser.parse_args()
-
 
 def main():
     args = get_args()
@@ -101,7 +80,6 @@ def main():
     print(f"Device: {device}")
     print("Ablation A: ω=0, no rotation coupling (3D slow, 2D fast, G=2x3)")
 
-    # Data
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
     train_mnist = torchvision.datasets.MNIST(
         root="./data", train=True, download=True, transform=transform,
@@ -127,7 +105,6 @@ def main():
 
     print(f"Train samples: {len(train_dataset)}, Test samples: {len(test_dataset)}")
 
-    # Model
     model = SPRiFpSMNISTNetAblationA(
         input_size=1,
         hidden_sizes=list(args.hidden_sizes),
@@ -141,12 +118,10 @@ def main():
     print("\n=== Initial parameters ===")
     diagnose_model(model, label="init")
 
-    # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     criterion = nn.CrossEntropyLoss()
 
-    # Training loop
     best_test_acc = 0.0
 
     for epoch in range(1, args.epochs + 1):
@@ -187,15 +162,14 @@ def main():
                 valid_logits = logits_chunk[:, local_warmup:, :]
                 chunk_logits = valid_logits.mean(dim=1)
 
-                optimizer.zero_grad(set_to_none=True)
+                optimizer.zero_grad()
                 loss = criterion(chunk_logits, y)
 
-                # NaN detection BEFORE backward
                 if not torch.isfinite(loss):
                     print(f"\n*** NaN/Inf loss at epoch {epoch}, batch {batch_idx}, chunk {start} ***")
                     print(f"    chunk_logits: min={chunk_logits.min():.4f} max={chunk_logits.max():.4f}")
                     print(f"    chunk_logits has_nan={torch.isnan(chunk_logits).any()} has_inf={torch.isinf(chunk_logits).any()}")
-                    # Check state values
+
                     for i, ns in enumerate(new_states):
                         for k, v in ns.items():
                             print(f"    L{i} state['{k}']: shape={v.shape} min={v.min():.4f} max={v.max():.4f} "
@@ -206,7 +180,6 @@ def main():
 
                 loss.backward()
 
-                # Per-group gradient stats (only when close to typical crash epoch)
                 if epoch >= 40 and batch_idx == 0 and start == 0:
                     total_grad_norm = 0.0
                     for name, p in model.named_parameters():
@@ -219,10 +192,8 @@ def main():
                     if total_grad_norm > 10:
                         print(f"    [grad] total_norm (pre-clip) = {total_grad_norm:.2f}")
 
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
 
-                # Check for NaN in weights after step (only when close to crash)
                 if epoch >= 40:
                     if check_weight_nan(model):
                         nan_detected = True
@@ -245,14 +216,12 @@ def main():
 
         scheduler.step()
 
-        # --- Per-epoch diagnostics ---
         diagnose_model(model, label=f"epoch{epoch:03d}")
 
         if nan_detected:
             print(f"\n*** Training aborted at epoch {epoch} due to NaN ***")
             break
 
-        # Evaluation
         model.eval()
         test_loss = 0.0
         test_correct = 0
@@ -260,7 +229,7 @@ def main():
         with torch.no_grad():
             for x, y in test_loader:
                 x, y = x.to(device, non_blocking=pin_memory), y.to(device, non_blocking=pin_memory)
-                logits = model(x)  # Full BPTT for eval
+                logits = model(x)
                 loss = criterion(logits, y)
                 test_loss += loss.item() * x.size(0)
                 test_correct += (logits.argmax(dim=-1) == y).sum().item()
@@ -282,6 +251,6 @@ def main():
 
     print(f"\nAblation A complete. Best test accuracy: {best_test_acc:.2f}%")
 
-
 if __name__ == "__main__":
     main()
+

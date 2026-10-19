@@ -1,4 +1,3 @@
-"""SPRiF Ablation C - PS-MNIST with scalar reset (lambda=0)."""
 import argparse, torch, torch.nn as nn, torchvision, torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
@@ -11,7 +10,7 @@ def get_args():
     p.add_argument("--epochs", type=int, default=150)
     p.add_argument("--batch-size", type=int, default=512)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 256])
+    p.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 210])
     p.add_argument("--mode", type=str, default="srnn")
     p.add_argument("--num-classes", type=int, default=10)
     p.add_argument("--warmup-steps", type=int, default=0)
@@ -81,7 +80,7 @@ def main():
                 valid_logits = logits_chunk[:, local_warmup:, :]
                 chunk_logits = valid_logits.mean(dim=1)
 
-                opt.zero_grad(set_to_none=True)
+                opt.zero_grad()
                 loss = crit(chunk_logits, y)
                 loss.backward(); opt.step()
 
@@ -102,7 +101,7 @@ def main():
         with torch.no_grad():
             for x, y in test_ld:
                 x, y = x.to(device, non_blocking=pin_memory), y.to(device, non_blocking=pin_memory)
-                logits = model(x)  # Full BPTT for eval
+                logits = model(x)
                 loss = crit(logits, y)
                 vl += loss.item() * x.size(0)
                 vc += (logits.argmax(dim=-1) == y).sum().item()
@@ -114,3 +113,4 @@ def main():
             best = va
     print(f"\nAblation C complete. Best test acc: {best:.2f}%")
 if __name__ == "__main__": main()
+

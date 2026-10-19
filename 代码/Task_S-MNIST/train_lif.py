@@ -1,9 +1,3 @@
-"""
-LIF-S-MNIST: Sequential MNIST with LIF neuron networks.
-
-Usage:
-    python train_lif.py
-"""
 
 import argparse
 import os
@@ -19,14 +13,13 @@ from core_algorithm.utils import set_seed
 from model import SequentialMNIST
 from model_lif import LIFSMNISTNet
 
-
 def get_args():
     parser = argparse.ArgumentParser(description="LIF-S-MNIST: Sequential MNIST")
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 256])
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 210])
     parser.add_argument("--mode", type=str, default="sfnn")
     parser.add_argument("--num-classes", type=int, default=10)
     parser.add_argument("--warmup-steps", type=int, default=0)
@@ -34,7 +27,6 @@ def get_args():
     parser.add_argument("--scheduler-step", type=int, default=50)
     parser.add_argument("--scheduler-gamma", type=float, default=0.1)
     return parser.parse_args()
-
 
 def main():
     args = get_args()
@@ -81,7 +73,6 @@ def main():
     criterion = nn.CrossEntropyLoss()
 
     best_test_acc = 0.0
-    best_ckpt_path = None
 
     for epoch in range(1, args.epochs + 1):
         model.train()
@@ -118,7 +109,7 @@ def main():
                 valid_logits = logits_chunk[:, local_warmup:, :]
                 chunk_logits = valid_logits.mean(dim=1)
 
-                optimizer.zero_grad(set_to_none=True)
+                optimizer.zero_grad()
                 loss = criterion(chunk_logits, y)
                 loss.backward()
                 optimizer.step()
@@ -168,16 +159,10 @@ def main():
                 f"LIFSMNISTNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
-            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
-                try:
-                    os.remove(best_ckpt_path)
-                except OSError:
-                    pass
             torch.save(model.state_dict(), save_name)
-            best_ckpt_path = save_name
 
     print(f"\nTraining complete. Best test accuracy: {best_test_acc:.2f}%")
 
-
 if __name__ == "__main__":
     main()
+

@@ -3,44 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: SPRiF_AAAI2027.aux
 The style file: aaai2027.bst
 Database file #1: sprif2027.bib
-You've used 33 entries,
+You've used 31 entries,
             2840 wiz_defined-function locations,
-            727 strings with 10332 characters,
-and the built_in function-call counts, 21319 in all, are:
-= -- 1609
-> -- 1359
-< -- 1
-+ -- 504
-- -- 467
-* -- 1528
-:= -- 3699
-add.period$ -- 133
-call.type$ -- 33
-change.case$ -- 296
-chr.to.int$ -- 34
-cite$ -- 33
-duplicate$ -- 1415
-empty$ -- 1298
-format.name$ -- 553
-if$ -- 4004
-int.to.chr$ -- 4
+            740 strings with 10976 characters,
+and the built_in function-call counts, 24024 in all, are:
+= -- 1824
+> -- 1519
+< -- 8
++ -- 558
+- -- 524
+* -- 1812
+:= -- 3899
+add.period$ -- 129
+call.type$ -- 31
+change.case$ -- 310
+chr.to.int$ -- 32
+cite$ -- 31
+duplicate$ -- 1567
+empty$ -- 1468
+format.name$ -- 610
+if$ -- 4630
+int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 327
-newline$ -- 170
-num.names$ -- 132
-pop$ -- 727
+missing$ -- 373
+newline$ -- 159
+num.names$ -- 124
+pop$ -- 827
 preamble$ -- 1
-purify$ -- 266
+purify$ -- 277
 quote$ -- 0
-skip$ -- 608
+skip$ -- 717
 stack$ -- 0
-substring$ -- 572
-swap$ -- 682
-text.length$ -- 1
+substring$ -- 863
+swap$ -- 867
+text.length$ -- 8
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 297
+type$ -- 279
 warning$ -- 0
-while$ -- 149
+while$ -- 165
 width$ -- 0
-write$ -- 416
+write$ -- 408

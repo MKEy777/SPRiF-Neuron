@@ -1,14 +1,8 @@
-"""
-Standard LIF neuron layer with API compatible with SPRiFNeuronLayer.
 
-Exposes the same signatures (init_state, forward_step, forward, forward_with_state,
-get_spectral_parameters) so it can be used as a drop-in replacement in ECG models.
-
-Dynamics:
-    v_tilde = beta * v_{t-1} + (1 - beta) * input_current
-    spike = Heaviside(v_tilde - threshold)
-    v_next = v_tilde - spike * threshold   (soft reset)
-"""
+# LIF Baseline Neuron Layer
+# Reference: Paper Sec. 3.1, Eq. (1).
+# Standard LIF: v = beta*v_prev + (1-beta)*I; z = H(v-theta); reset: v -= z*theta
+# Learnable membrane time constant tau_m; same surrogate gradient as SPRiF.
 
 import math
 from typing import Dict, Optional, Tuple
@@ -19,7 +13,6 @@ from torch import Tensor, nn
 from core_algorithm.sprif_layer import surrogate_spike
 
 StateDict = Dict[str, Tensor]
-
 
 class LIFNeuronLayer(nn.Module):
     def __init__(
@@ -94,7 +87,6 @@ class LIFNeuronLayer(nn.Module):
         return {"beta": beta}
 
     def get_spectral_parameters(self) -> Dict[str, Tensor]:
-        """Return membrane time constant for compatibility with SPRiF API."""
         beta = torch.sigmoid(self.beta_raw)
         tau_m = -1.0 / torch.log(beta + 1e-8)
         return {"tau_m": tau_m}
@@ -106,6 +98,7 @@ class LIFNeuronLayer(nn.Module):
         runtime: Dict[str, Tensor],
         input_current: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Tensor, StateDict]:
+        # LIF update: v_tilde = beta*v + (1-beta)*I (Eq.1); z=H(v-theta); reset: v -= z*theta
         v_prev = state["v"]
         prev_spike = state["prev_spike"]
 
@@ -190,5 +183,5 @@ class LIFNeuronLayer(nn.Module):
 
         return spike_seq, state
 
-
 __all__ = ["LIFNeuronLayer"]
+

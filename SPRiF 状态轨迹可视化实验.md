@@ -164,7 +164,6 @@ $A_{\mathrm{probe}}$ 调到能让 hidden neurons 在 probe window 内明显产�
 \sin(\phi+\omega t)
 \end{bmatrix}
 $$
-
 只在 delay 阶段计算损失。
 
 也就是说，cue 阶段只负责把相位写入模型；delay 阶段没有相位输入，模型需要靠内部状态继续维持旋转轨迹。
@@ -174,7 +173,6 @@ $$
 # 5. 网络怎么搭
 
 使用一个很小的 SPRiF 网络即可：
-
 $$
 \mathrm{Input}
 \rightarrow
@@ -184,7 +182,6 @@ $$
 \rightarrow
 \hat{\mathbf{y}}_t
 $$
-
 建议设置：
 
 | 项目                 | 设置                             |
@@ -240,7 +237,6 @@ LIF 网络与 SPRiF 共享完全相同的输入、输出维度和训练设置。
 \hat{\mathbf{y}}_t-\mathbf{y}_t
 \right|_2^2
 $$
-
 可以加一个很小的 firing-rate regularization，避免完全不放电：
 
 # $$ \mathcal{L}

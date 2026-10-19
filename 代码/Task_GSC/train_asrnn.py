@@ -1,12 +1,3 @@
-"""
-Training script for ASRNN on Google Speech Commands (GSC).
-
-This script trains the ASRNN model for the robustness experiment comparison.
-
-Usage:
-    cd 代码/Task_GSC
-    python train_asrnn.py --data-root data/SpeechCommands --epochs 150
-"""
 
 import os
 import sys
@@ -18,16 +9,13 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 import torchvision
 from torch.optim.lr_scheduler import StepLR
 
-# Add paths
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "model_wrapper"))
 
-# Use the same data pipeline as train.py for consistent preprocessing.
 from data import SpeechCommandsDataset, Pad, MelSpectrogram, Rescale
 from model_wrapper.asrnn_gsc import ASRNNGSCNet
 
-# Hyperparameters (match train.py defaults)
 sr = 16000
 size = 16000
 n_fft = int(30e-3 * sr)
@@ -38,18 +26,11 @@ fmin = 20
 delta_order = 2
 stack = True
 
-
 def collate_fn(data):
-    x_batch = np.array([d[0] for d in data])
-    std = x_batch.std(axis=(0, 2), keepdims=True)
-    std[std == 0] = 1.0
-    return torch.tensor(x_batch / std).float(), torch.tensor([d[1] for d in data]).long()
-
+    return torch.tensor(np.array([d[0] for d in data])).float(), torch.tensor([d[1] for d in data]).long()
 
 def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, epochs, device):
-    """Training loop."""
     best_acc = 0.0
-    best_ckpt_path = None
 
     for epoch in range(epochs):
         model.train()
@@ -78,7 +59,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, ep
 
         train_acc = train_acc.data.cpu().numpy() / sum_sample
 
-        # Validation
         model.eval()
         valid_acc = 0
         sum_sample_valid = 0
@@ -96,21 +76,15 @@ def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, ep
         print(f'Epoch {epoch}: Train Loss: {train_loss_sum/len(train_loader):.4f}, '
               f'Train Acc: {train_acc:.4f}, Valid Acc: {valid_acc:.4f}')
 
-        # Save best model
         if valid_acc > best_acc and train_acc > 0.85:
             best_acc = valid_acc
             save_path = f'ASRNNGSCNet_acc{best_acc:.4f}.pth'
-            if best_ckpt_path is not None and best_ckpt_path != save_path and os.path.exists(best_ckpt_path):
-                try:
-                    os.remove(best_ckpt_path)
-                except OSError:
-                    pass
+
             torch.save(model.state_dict(), save_path)
             best_ckpt_path = save_path
             print(f'Saved best model: {save_path}')
 
     return best_acc
-
 
 def main():
     parser = argparse.ArgumentParser(description='Train ASRNN on GSC')
@@ -138,14 +112,12 @@ def main():
                         help='Random seed')
     args = parser.parse_args()
 
-    # Set seed
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # Data preprocessing (match train.py exactly)
     transform = torchvision.transforms.Compose(
         [
             Pad(size),
@@ -157,22 +129,18 @@ def main():
         ]
     )
 
-    # Match train.py: dataset lives under a single root containing
-    # testing_list.txt / validation_list.txt. The dataset class itself
-    # splits samples into train / valid based on those lists.
     data_root = args.data_root
     if not os.path.exists(data_root):
         print(f"Dataset not found at {data_root}")
         print("Please download GSC dataset first (e.g. python download_GSC.py)")
         return
 
-    # Build label dictionary by scanning sub-folders of the data root.
     label_dct = {}
     for w in os.listdir(data_root):
         full = os.path.join(data_root, w)
         if os.path.isdir(full) and w[0] != "_":
             label_dct[w] = len(label_dct)
-    # Collapse non-keyword classes into _unknown_ to match train.py's 12-class scheme.
+
     testing_words = ["yes", "no", "up", "down", "left", "right",
                      "on", "off", "stop", "go"]
     label_dct = {k: i for i, k in enumerate(testing_words + ["_silence_", "_unknown_"])}
@@ -185,7 +153,6 @@ def main():
 
     cache_root = args.cache_root if args.cache_root else data_root
 
-    # Create datasets
     train_dataset = SpeechCommandsDataset(
         data_root, label_dct, mode="train",
         transform=transform, cache_root=cache_root,
@@ -215,9 +182,8 @@ def main():
         pin_memory=torch.cuda.is_available(),
     )
 
-    # Create model
     model = ASRNNGSCNet(
-        input_size=120,  # 3 * 40
+        input_size=120,
         hidden_size=args.hidden_size,
         num_classes=12,
         device=str(device)
@@ -225,7 +191,6 @@ def main():
 
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
 
-    # Optimizer and scheduler
     criterion = nn.CrossEntropyLoss()
 
     base_params = [
@@ -247,10 +212,9 @@ def main():
 
     scheduler = StepLR(optimizer, step_size=50, gamma=0.5)
 
-    # Train
     best_acc = train(model, train_loader, valid_loader, criterion, optimizer, scheduler, args.epochs, device)
     print(f"\nTraining complete. Best validation accuracy: {best_acc:.4f}")
 
-
 if __name__ == "__main__":
     main()
+

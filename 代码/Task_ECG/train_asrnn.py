@@ -1,12 +1,3 @@
-"""
-Training script for ASRNN on ECG (QTDB Heartbeat Classification).
-
-This script trains the ASRNN model for the robustness experiment comparison.
-
-Usage:
-    cd 代码/Task_ECG
-    python train_asrnn.py --train-mat data/QTDB_train.mat --test-mat data/QTDB_test.mat --epochs 250
-"""
 
 import os
 import sys
@@ -18,7 +9,6 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.lr_scheduler import StepLR
 import scipy.io
 
-# Add paths
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "model_wrapper"))
@@ -26,11 +16,8 @@ sys.path.insert(0, os.path.join(ROOT, "model_wrapper"))
 from core_algorithm.utils import convert_dataset_wtime
 from model_wrapper.asrnn_ecg import ASRNNECGNet
 
-
 def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epochs, device, dims):
-    """Training loop for ECG."""
     best_acc = 0.0
-    best_ckpt_path = None
 
     for epoch in range(epochs):
         model.train()
@@ -43,11 +30,8 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
             labels = labels.view(-1, dims["samples"]).long().to(device)
 
             optimizer.zero_grad()
-            logits = model(images)  # [B, C, T]
+            logits = model(images)
 
-            # Dense per-timestep cross-entropy (matches SPRiF train.py convention).
-            # Multiply by T so the gradient scale is equivalent to summing over
-            # timesteps (not averaging), otherwise Adam sees a T-fold shrunk signal.
             l_task = criterion(
                 logits.permute(0, 2, 1).reshape(-1, logits.size(1)),
                 labels.reshape(-1),
@@ -58,7 +42,7 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
             train_loss_sum += train_loss.item()
             optimizer.step()
 
-            predicted = logits.argmax(dim=1)  # [B, T]
+            predicted = logits.argmax(dim=1)
             train_acc += (predicted == labels).sum()
             sum_samples += labels.numel()
 
@@ -67,7 +51,6 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
 
         train_acc = train_acc.data.cpu().numpy() / sum_samples
 
-        # Validation
         model.eval()
         valid_acc = 0
         sum_samples_valid = 0
@@ -76,8 +59,8 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
             for images, labels in test_loader:
                 images = images.view(-1, dims["samples"], dims["input"]).to(device)
                 labels = labels.view(-1, dims["samples"]).long().to(device)
-                logits = model(images)  # [B, C, T]
-                predicted = logits.argmax(dim=1)  # [B, T]
+                logits = model(images)
+                predicted = logits.argmax(dim=1)
                 valid_acc += (predicted == labels).sum()
                 sum_samples_valid += labels.numel()
 
@@ -86,21 +69,14 @@ def train(model, train_loader, test_loader, criterion, optimizer, scheduler, epo
         print(f'Epoch {epoch}: Train Loss: {train_loss_sum/len(train_loader):.4f}, '
               f'Train Acc: {train_acc:.4f}, Valid Acc: {valid_acc:.4f}')
 
-        # Save best model (放宽阈值：只要验证准确率提升就保存)
         if valid_acc > best_acc:
             best_acc = valid_acc
             save_path = f'ASRNNECGModel_acc{best_acc:.4f}.pth'
-            if best_ckpt_path is not None and best_ckpt_path != save_path and os.path.exists(best_ckpt_path):
-                try:
-                    os.remove(best_ckpt_path)
-                except OSError:
-                    pass
             torch.save(model.state_dict(), save_path)
             best_ckpt_path = save_path
             print(f'Saved best model: {save_path}')
 
     return best_acc
-
 
 def main():
     parser = argparse.ArgumentParser(description='Train ASRNN on ECG')
@@ -114,20 +90,18 @@ def main():
                         help='Batch size')
     parser.add_argument('--lr', type=float, default=1e-2,
                         help='Learning rate')
-    parser.add_argument('--hidden-size', type=int, default=36,
+    parser.add_argument('--hidden-size', type=int, default=30,
                         help='Hidden layer size')
     parser.add_argument('--seed', type=int, default=1111,
                         help='Random seed')
     args = parser.parse_args()
 
-    # Set seed
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # Load data
     if not os.path.exists(args.train_mat):
         print(f"Training data not found at {args.train_mat}")
         print("Please place QTDB_train.mat in data/")
@@ -143,7 +117,6 @@ def main():
     print(f'Sequence length: {seq_dim}, Input dimension: {input_dim}')
     print(f'Training samples: {nb_of_sample}, Test samples: {len(test_x)}')
 
-    # Create data loaders
     sub_seq_length = 10
     hidden_dim = args.hidden_size
     output_dim = 6
@@ -154,7 +127,6 @@ def main():
     test_data = TensorDataset(torch.from_numpy(test_x * 1.), torch.from_numpy(test_y))
     test_loader = DataLoader(test_data, shuffle=True, batch_size=args.batch_size, drop_last=False)
 
-    # Create model
     model = ASRNNECGNet(
         input_size=input_dim,
         hidden_size=hidden_dim,
@@ -165,7 +137,6 @@ def main():
 
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
 
-    # Optimizer and scheduler
     criterion = nn.CrossEntropyLoss()
 
     base_params = [
@@ -192,10 +163,9 @@ def main():
         "sub_seq": sub_seq_length
     }
 
-    # Train
     best_acc = train(model, train_loader, test_loader, criterion, optimizer, scheduler, args.epochs, device, dims)
     print(f"\nTraining complete. Best validation accuracy: {best_acc:.4f}")
 
-
 if __name__ == "__main__":
     main()
+

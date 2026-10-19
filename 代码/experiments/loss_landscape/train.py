@@ -1,14 +1,3 @@
-"""
-S-MNIST 损失景观实验 — 训练脚本（TBPTT）。
-
-训练 SPRiF 与 LIF 两种神经元网络，保存最佳权重到 checkpoints/{neuron}_best.pth。
-训练采用 TBPTT（截断反向传播），与 Task_S-MNIST/train.py 一致，
-每个 chunk 独立 backward+step，chunk 间 detach 状态。
-
-用法：
-    python train.py --neuron both
-    python train.py --neuron sprif --epochs 5 --subset 2000   # 快速验证
-"""
 import os
 import sys
 
@@ -24,16 +13,15 @@ from data import get_loaders
 from models import build_model
 
 sys.path.insert(0, cfg.SMNIST_DIR)
-from core_algorithm.utils import set_seed  # noqa: E402
-
+from core_algorithm.utils import set_seed
 
 def train_one_neuron(neuron_type, args, device):
-    print(f"\n{'='*60}\n训练神经元: {neuron_type}\n{'='*60}")
+    print(f"\n{'='*60}\nTraining neuron: {neuron_type}\n{'='*60}")
 
     train_loader, test_loader = get_loaders(args.batch_size, device, subset=args.subset)
     model = build_model(neuron_type, cfg).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"模型参数量: {n_params:,}")
+    print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=cfg.SCHEDULER_STEP, gamma=cfg.SCHEDULER_GAMMA)
@@ -53,7 +41,6 @@ def train_one_neuron(neuron_type, args, device):
             y = y.to(device, non_blocking=pin)
             B, T, _ = x.shape
 
-            # ---------------- TBPTT ----------------
             tbptt_len = cfg.TBPTT_LEN
             states = model.init_states(B, device=device, dtype=x.dtype)
             batch_loss, chunk_count = 0.0, 0
@@ -69,7 +56,7 @@ def train_one_neuron(neuron_type, args, device):
                     out, ns = layer.forward_with_state(out, states[i], batch_first=True)
                     new_states.append(ns)
 
-                logits_chunk = model.readout(out)  # (B, chunk_len, C)
+                logits_chunk = model.readout(out)
 
                 local_warmup = max(model.warmup_steps - start, 0)
                 if local_warmup >= logits_chunk.size(1):
@@ -87,7 +74,7 @@ def train_one_neuron(neuron_type, args, device):
                 batch_loss += loss.item()
                 chunk_count += 1
                 logits_list.append(chunk_logits.detach())
-                states = model.detach_states(new_states)  # 截断反向传播
+                states = model.detach_states(new_states)
 
             train_loss += batch_loss / max(chunk_count, 1) * B
             with torch.no_grad():
@@ -97,7 +84,6 @@ def train_one_neuron(neuron_type, args, device):
 
         scheduler.step()
 
-        # ---------------- 评估（全 BPTT）----------------
         model.eval()
         test_correct, test_total = 0, 0
         with torch.no_grad():
@@ -124,9 +110,8 @@ def train_one_neuron(neuron_type, args, device):
                 "test_acc": best_acc,
             }, ckpt_path)
 
-    print(f"[{neuron_type}] 训练完成，最佳测试精度 {best_acc:.2f}%，权重 -> {ckpt_path}")
+    print(f"[{neuron_type}] training complete, best test acc {best_acc:.2f}%, weights -> {ckpt_path}")
     return best_acc
-
 
 def main():
     args = get_args()
@@ -138,6 +123,6 @@ def main():
     for nt in neurons:
         train_one_neuron(nt, args, device)
 
-
 if __name__ == "__main__":
     main()
+
