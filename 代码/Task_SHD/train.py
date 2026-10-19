@@ -19,7 +19,7 @@ from data import SHDDataset
 warnings.filterwarnings("ignore")
 
 def get_args():
-    parser = argparse.ArgumentParser(description="SPRiF-SHD: Spiking Heidelberg Digits")
+    parser = argparse.ArgumentParser(description="TNNLS scalar-reset SPRiF (11 local coefficients): SPRiF-SHD: Spiking Heidelberg Digits")
 
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=100)
@@ -50,8 +50,8 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    train_dataset = SHDDataset(args.train_dir, train=True)
-    test_dataset = SHDDataset(args.test_dir, train=False)
+    train_dataset = SHDDataset.from_directory(args.train_dir)
+    test_dataset = SHDDataset.from_directory(args.test_dir)
 
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size,
@@ -140,7 +140,7 @@ def main():
             best_test_acc = test_acc
             hs_str = "hs" + "".join(str(h) for h in args.hidden_sizes)
             save_name = (
-                f"SPRiFSHDNet_{hs_str}_bs{args.batch_size}"
+                f"TNNLS11_SPRiFSHDNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
             torch.save(model.state_dict(), save_name)

@@ -5,7 +5,7 @@ import torch
 from sidms.config import ExperimentConfig
 from sidms.engine import evaluate_grid, train_model
 
-MODELS = ["sprif_full", "sprif_merged", "sprif_lambda0", "lif", "asrnn", "brf"]
+MODELS = ["sprif_scalar"]
 
 def main():
     p = argparse.ArgumentParser(); p.add_argument("--config", default="config/default.yaml")

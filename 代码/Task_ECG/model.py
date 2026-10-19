@@ -89,11 +89,11 @@ def _collect_internal_stats(model: nn.Module) -> dict:
     rho_all: list = []
     omega_all: list = []
     eta_all: list = []
-    lambda_all: list = []
+    readout_all: list = []
 
     for layer_idx, layer in enumerate(model.layers):
         spectral = layer.get_spectral_parameters()
-        lambda_reset = layer.lambda_reset.detach()
+        readout = spectral["bar_G"].detach()
 
         layer_stats = {
             "layer_idx": layer_idx,
@@ -101,7 +101,7 @@ def _collect_internal_stats(model: nn.Module) -> dict:
             "rho": _tensor_stats(spectral["rho"]),
             "omega": _tensor_stats(spectral["omega"]),
             "eta": _tensor_stats(spectral["eta"]),
-            "lambda_reset": _tensor_stats(lambda_reset),
+            "bar_G": _tensor_stats(readout),
         }
 
         per_layer.append(layer_stats)
@@ -110,14 +110,14 @@ def _collect_internal_stats(model: nn.Module) -> dict:
         rho_all.append(spectral["rho"].reshape(-1))
         omega_all.append(spectral["omega"].reshape(-1))
         eta_all.append(spectral["eta"].reshape(-1))
-        lambda_all.append(lambda_reset.reshape(-1))
+        readout_all.append(readout.reshape(-1))
 
     global_stats = {
         "alpha": _tensor_stats(torch.cat(alpha_all)),
         "rho": _tensor_stats(torch.cat(rho_all)),
         "omega": _tensor_stats(torch.cat(omega_all)),
         "eta": _tensor_stats(torch.cat(eta_all)),
-        "lambda_reset": _tensor_stats(torch.cat(lambda_all)),
+        "bar_G": _tensor_stats(torch.cat(readout_all)),
     }
 
     return {

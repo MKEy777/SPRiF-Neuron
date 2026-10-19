@@ -1,5 +1,10 @@
 # Reset Direction Analysis (λ)
 
+This directory documents the historical Full model. The current TNNLS primary
+model has no learned reset direction, so this analysis does not apply to its
+checkpoints. Reproducing these historical outputs requires the original
+implementation from the `论文发布代码` branch and the corresponding checkpoints.
+
 ## Objective
 Analyze the learned projective reset directions λ_j of SPRiF — verify that λ is genuinely learned (non-trivial distribution) and exhibits meaningful correlation with firing rates and spectral parameters.
 

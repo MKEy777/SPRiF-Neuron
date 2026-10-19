@@ -18,7 +18,7 @@ from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 warnings.filterwarnings("ignore")
 
 def get_args():
-    parser = argparse.ArgumentParser(description="SPRiF-GSC: Google Speech Commands")
+    parser = argparse.ArgumentParser(description="TNNLS scalar-reset SPRiF (11 local coefficients): SPRiF-GSC: Google Speech Commands")
 
     parser.add_argument("--lr", type=float, default=5e-3)
     parser.add_argument("--epochs", type=int, default=150)
@@ -219,7 +219,7 @@ def main():
 
             hs_str = "hs" + "".join(str(h) for h in args.hidden_sizes)
             save_name = (
-                f"SPRiFGSCNet_{hs_str}_bs{args.batch_size}"
+                f"TNNLS11_SPRiFGSCNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_val_acc:.4f}.pth"
             )
             torch.save(model.state_dict(), save_name)

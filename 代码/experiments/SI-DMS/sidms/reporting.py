@@ -1,8 +1,9 @@
 import random
 from collections import defaultdict
 
-MECHANISM_MODELS = {"sprif_full", "sprif_merged", "sprif_lambda0"}
-REFERENCE_MODEL = "sprif_full"
+MECHANISM_MODELS = {"memory_reset5", "real_modes3"}
+LEGACY_MODELS = {"sprif_full", "sprif_merged", "sprif_lambda0"}
+REFERENCE_MODEL = "sprif_scalar"
 CHANCE = 0.5
 
 def _mean(xs):
@@ -61,7 +62,9 @@ def summarize(rows, intervention_fraction=0.15):
         grouped[row["model"]].append(row)
 
     per_model = {m: _per_seed_metrics(v, intervention_fraction) for m, v in grouped.items()}
-    ref_drops = [s["abs_drop"] for s in per_model.get(REFERENCE_MODEL, {}).values()]
+    # Legacy-only files retain their original reference and result identity.
+    reference = REFERENCE_MODEL if REFERENCE_MODEL in per_model else "sprif_full"
+    ref_drops = [s["abs_drop"] for s in per_model.get(reference, {}).values()]
 
     output = []
     for model in sorted(grouped):
@@ -71,10 +74,14 @@ def summarize(rows, intervention_fraction=0.15):
         rel_drop = [s["rel_drop"] for s in seeds.values()]
         clean_lo, clean_hi = _bootstrap_ci(clean, seed=1)
         drop_lo, drop_hi = _bootstrap_ci(abs_drop, seed=2)
-        pval = float("nan") if model == REFERENCE_MODEL else _bootstrap_pvalue(ref_drops, abs_drop, seed=3)
+        pval = float("nan") if model == reference else _bootstrap_pvalue(ref_drops, abs_drop, seed=3)
+        role = ("primary_model" if model == REFERENCE_MODEL else
+                "legacy_model" if model in LEGACY_MODELS else
+                "mechanism_ablation" if model in MECHANISM_MODELS else "external_baseline")
         output.append({
             "model": model,
-            "role": "mechanism_ablation" if model in MECHANISM_MODELS else "external_baseline",
+            "role": role,
+            "reference_model": reference,
             "n_seeds": len(seeds),
             "clean_accuracy": _mean(clean),
             "clean_ci_lo": clean_lo, "clean_ci_hi": clean_hi,
@@ -82,7 +89,7 @@ def summarize(rows, intervention_fraction=0.15):
             "abs_drop": _mean(abs_drop),
             "abs_drop_ci_lo": drop_lo, "abs_drop_ci_hi": drop_hi,
             "rel_drop": _mean([r for r in rel_drop if r == r]),
-            "p_vs_sprif_full": pval,
+            "p_vs_" + reference: pval,
         })
     return output
 

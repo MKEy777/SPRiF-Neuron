@@ -14,7 +14,7 @@ from core_algorithm.utils import set_seed, convert_dataset_wtime
 from model import SPRiFECGModel, build_neuron_kwargs, _collect_internal_stats
 
 def get_args():
-    parser = argparse.ArgumentParser(description="SPRiF-ECG: QTDB ECG Classification")
+    parser = argparse.ArgumentParser(description="TNNLS scalar-reset SPRiF (11 local coefficients): SPRiF-ECG: QTDB ECG Classification")
 
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=250)
@@ -167,7 +167,7 @@ def main():
             best_test_acc = test_acc
             hs_str = "hs" + "".join(str(h) for h in args.hidden_sizes)
             save_name = (
-                f"SPRiFECGModel_{hs_str}_bs{args.batch_size}"
+                f"TNNLS11_SPRiFECGModel_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
             torch.save(model.state_dict(), save_name)

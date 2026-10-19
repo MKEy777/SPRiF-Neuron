@@ -1,13 +1,43 @@
-# SPRiF: Spectral Projective Reset Integrate-and-Fire Neuron Networks
+# SPRiF Neuron Networks (TNNLS Scalar-Reset Model)
 
 Official implementation of SPRiF neuron networks across multiple benchmark tasks.
 
+## TNNLS branch (2026-10-05)
+
+The five primary `train.py` entries now use the scalar-reset SPRiF model:
+three spectral coordinates, one auxiliary filter, and one membrane. The neuron
+learns eleven local coefficients; the second row of `bar_G` absorbs the former
+coupling scale. Only the membrane is reset, and its drive uses the previous filter
+state. New checkpoints have the `TNNLS11_` prefix.
+
+Dataset membership, preprocessing, readout, training budget, and checkpoint
+selection are retained. S-MNIST, PS-MNIST, ECG, and SHD use train/test;
+the supplied GSC entry uses train/valid and selects on valid. No third split is
+introduced. SHD reads NPY files from the supplied train/test directories.
+
+Independent sequences start at zero, as defined by the current manuscript.
+The threshold convention is `H(0)=1`; surrogate/reset gradients are retained.
+Historical ablation files remain historical models. The reset-direction analysis
+requires the original implementation and its checkpoints. New benchmark results
+must come from new runs.
+
+SI-DMS registers the new model as `sprif_scalar`, and its default queue contains
+that model. Historical IDs retain their original meaning. The planned capacity
+controls and paired SI-DMS evaluation protocol remain separate implementation work.
+
+Run synthetic behavior checks from this directory:
+
+```powershell
+python -m pytest tests/test_sprif_scalar.py experiments/SI-DMS/tests -q
+```
+
 ## Architecture
 
-SPRiF (Spectral Projective Reset Integrate-and-Fire) is a bio-inspired spiking neuron model combining:
+The current SPRiF spiking neuron model combines:
 
 - **Slow dynamics (3-state)**: one leaky integrator + one damped oscillatory pair
-- **Fast dynamics (2-state)**: slow-to-fast coupling driving per-neuron leakage
+- **Auxiliary filter (1-state)**: unreset linear filter with a delayed membrane drive
+- **Membrane (1-state)**: scalar voltage with subtractive spike reset
 - **Surrogate gradient**: multi-Gaussian surrogate for differentiable spike training
 
 ## Directory Structure
@@ -15,7 +45,7 @@ SPRiF (Spectral Projective Reset Integrate-and-Fire) is a bio-inspired spiking n
 ```
 ├── Task_GSC/                # Google Speech Commands (12-class keyword spotting)
 ├── Task_ECG/                # QTDB ECG classification (6-class heartbeat)
-├── Task_S-MNIST/            # Sequential MNIST (10-digit classification, row-by-row)
+├── Task_S-MNIST/            # Sequential MNIST (784 scalar pixel inputs)
 ├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit, random pixel order)
 ├── Task_SHD/                # Spiking Heidelberg Digits (20-class digit recognition)
 ├── experiments/             # Analysis scripts for paper figures

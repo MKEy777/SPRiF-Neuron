@@ -14,7 +14,7 @@ from core_algorithm.sprif_layer import SPRiFNeuronLayer
 from model import PermutedMNIST, SPRiFpSMNISTNet
 
 def get_args():
-    parser = argparse.ArgumentParser(description="SPRiF-pSMNIST: Permuted Sequential MNIST")
+    parser = argparse.ArgumentParser(description="TNNLS scalar-reset SPRiF (11 local coefficients): SPRiF-pSMNIST: Permuted Sequential MNIST")
 
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=150)
@@ -165,7 +165,7 @@ def main():
             best_test_acc = test_acc
             hs_str = "hs" + "".join(str(h) for h in args.hidden_sizes)
             save_name = (
-                f"SPRiFpSMNISTNet_{hs_str}_bs{args.batch_size}"
+                f"TNNLS11_SPRiFpSMNISTNet_{hs_str}_bs{args.batch_size}"
                 f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
             )
             torch.save(model.state_dict(), save_name)

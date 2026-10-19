@@ -45,6 +45,46 @@ class BaseCell(nn.Module):
     def zeros(self, batch, device, dims=()):
         return torch.zeros((batch, self.hidden_size, *dims), device=device)
 
+class SPRiFScalarCell(BaseCell):
+    """TNNLS model: x in R3, delayed scalar filter h, and scalar-reset membrane."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        h = self.hidden_size
+        self.alpha_raw = nn.Parameter(torch.full((h,), 3.0))
+        self.rho_raw = nn.Parameter(torch.full((h,), 2.0))
+        self.omega_raw = nn.Parameter(torch.zeros(h))
+        self.eta_raw = nn.Parameter(torch.ones(h, 2))
+        self.bar_G = nn.Parameter(torch.empty(h, 2, 3))
+        nn.init.normal_(self.bar_G, std=0.05)
+        with torch.no_grad():
+            # The former SI-DMS coupling initialized at zero; absorb that scale.
+            self.bar_G[:, 1].zero_()
+
+    def initial_state(self, batch, device):
+        return {"x": self.bar_G.new_zeros(batch, self.hidden_size, 3, device=device),
+                "h": self.bar_G.new_zeros(batch, self.hidden_size, device=device),
+                "u": self.bar_G.new_zeros(batch, self.hidden_size, device=device)}
+
+    def step(self, x, state, intervention, prev_spike=None):
+        drive = self.drive(x, prev_spike)
+        alpha, rho = torch.sigmoid(self.alpha_raw), torch.sigmoid(self.rho_raw)
+        omega = math.pi * torch.sigmoid(self.omega_raw)
+        x0, x1, x2 = state["x"].unbind(-1)
+        spectral = torch.stack((alpha * x0 + (1 - alpha) * drive,
+                                rho * (torch.cos(omega) * x1 - torch.sin(omega) * x2)
+                                + (1 - rho) * drive,
+                                rho * (torch.sin(omega) * x1 + torch.cos(omega) * x2)), -1)
+        eta = torch.sigmoid(self.eta_raw)
+        projection = torch.einsum("bhk,hpk->bhp", spectral, self.bar_G)
+        h = eta[:, 1] * state["h"] + projection[..., 1]
+        membrane = eta[:, 0] * state["u"] + state["h"] + projection[..., 0]
+        membrane, hit = _force(membrane, self.threshold, intervention)
+        z = spike_fn(membrane - self.threshold)
+        return z, {"x": spectral, "h": h, "u": membrane - z * self.threshold}, {
+            "forced_hit": hit, "slow_pre_reset": spectral,
+            "h_pre_reset": h, "mem_pre_reset": membrane}
+
+
 class SPRiFFullCell(BaseCell):
     # Full SPRiF: slow spectral state + fast discharge + projective reset [1,lambda_j]
     # Paper Sec. 3.2, Eq. (2)-(5); Appendix S2.2
@@ -190,7 +230,8 @@ def build_cell(name: str, input_size: int, hidden_size: int, dt_ms: int, thresho
     # Model registry: maps string names to cell constructors
     args = (input_size, hidden_size, dt_ms, threshold)
     kw = {"recurrent": recurrent}
-    table = {"sprif_full": lambda: SPRiFFullCell(*args, learned_reset=True, **kw),
+    table = {"sprif_scalar": lambda: SPRiFScalarCell(*args, **kw),
+             "sprif_full": lambda: SPRiFFullCell(*args, learned_reset=True, **kw),
              "sprif_lambda0": lambda: SPRiFFullCell(*args, learned_reset=False, **kw),
              "sprif_merged": lambda: SPRiFMergedCell(*args, **kw), "lif": lambda: LIFCell(*args, **kw),
              "asrnn": lambda: ASRNNCell(*args, **kw), "brf": lambda: BRFCell(*args, **kw)}
