@@ -1,0 +1,279 @@
+\documentclass[letterpaper]{article}
+\usepackage[submission]{aaai2027}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\frenchspacing
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\allowdisplaybreaks
+\setcounter{secnumdepth}{2}
+\renewcommand{\thetable}{S\arabic{table}}
+\newcommand{\pending}{\textit{Pending}}
+
+\title{Technical Appendix for\\SPRiF: Spectral Memory and Scalar Reset for Spiking Neurons}
+\author{Anonymous Submission}
+\affiliations{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Model Definition}
+
+The current SPRiF neuron stores $(x^0,x^1,x^2,h,u^0)$. For a scalar input current $I_t$, its spectral state evolves as
+\begin{equation}
+\mathbf{x}_t=A\mathbf{x}_{t-1}+BI_t,
+\label{eq:supp_slow}
+\end{equation}
+with
+\begin{equation}
+A=\begin{bmatrix}
+\alpha&0&0\\
+0&\rho\cos\omega&-\rho\sin\omega\\
+0&\rho\sin\omega&\rho\cos\omega
+\end{bmatrix},\quad
+B=\begin{bmatrix}1-\alpha\\1-\rho\\0\end{bmatrix}.
+\label{eq:supp_AB}
+\end{equation}
+The auxiliary filter and membrane update are
+\begin{align}
+h_t&=\eta_1h_{t-1}+\bar{\mathbf{g}}_1^\top\mathbf{x}_t,
+\label{eq:supp_auxiliary}\\
+\widetilde{u}_t^0&=\eta_0u_{t-1}^0+h_{t-1}+\mathbf{g}_0^\top\mathbf{x}_t,
+\label{eq:supp_membrane}\\
+z_t&=H(\widetilde{u}_t^0-\theta),
+\label{eq:supp_spike}\\
+u_t^0&=\widetilde{u}_t^0-z_t\theta.
+\label{eq:supp_reset}
+\end{align}
+The previous auxiliary value $h_{t-1}$ is used in Eq.~\eqref{eq:supp_membrane}, even when $h_t$ has already been computed. The spectral and auxiliary states receive no direct local reset. All dynamics coefficients are per-neuron, with
+\begin{equation}
+\bar G=\begin{bmatrix}\mathbf{g}_0^\top\\\bar{\mathbf{g}}_1^\top\end{bmatrix}\in\mathbb{R}^{2\times3}
+\label{eq:supp_readout}
+\end{equation}
+learned directly. The coefficient multiplying $h_{t-1}$ is fixed at one. The threshold is a fixed task setting.
+
+For a recurrent layer, the input vector is
+\begin{equation}
+\mathbf I_t=W_{\mathrm{in}}\mathbf s_t+W_{\mathrm{rec}}\mathbf z_{t-1}+\mathbf b.
+\label{eq:supp_current}
+\end{equation}
+Each neuron uses its own component of this vector. The recurrent term is omitted for feedforward layers.
+
+\section{Absorbing the Auxiliary Coupling}
+\label{supp:sec:reparameterization}
+
+The earlier five-state SPRiF-Full used an auxiliary coordinate $u_t^1$, a coupling coefficient $\kappa$, two readout vectors $\mathbf g_0,\mathbf g_1$, and a learned reset coefficient $\lambda$. Removing the auxiliary reset first gives the scalar-reset model
+\begin{align}
+u_t^1&=\eta_1u_{t-1}^1+\mathbf g_1^\top\mathbf x_t,\\
+\widetilde u_t^0&=\eta_0u_{t-1}^0+\kappa u_{t-1}^1+\mathbf g_0^\top\mathbf x_t,\\
+u_t^0&=\widetilde u_t^0-z_t\theta.
+\label{eq:supp_old_scalar}
+\end{align}
+For a time-independent per-neuron coupling, define
+\begin{equation}
+h_t=\kappa u_t^1,\qquad \bar{\mathbf g}_1=\kappa\mathbf g_1.
+\label{eq:supp_mapping}
+\end{equation}
+Multiplying the first equation by $\kappa$ yields Eq.~\eqref{eq:supp_auxiliary}; substituting $h_{t-1}$ yields Eq.~\eqref{eq:supp_membrane}. The auxiliary state is retained. Its amplitude is represented by $\bar{\mathbf g}_1$ and its initial value rather than a separate coupling coefficient.
+
+This mapping assumes that the original readout row is free and that the auxiliary coordinate has no separately constrained amplitude or independent output that must be preserved. No division by $\kappa$ is used. When $\kappa=0$, the corresponding mapping has $h_{\mathrm{init}}=0$ and $\bar{\mathbf g}_1=\mathbf0$, preserving the membrane and spike outputs.
+
+For fixed parameters, identical inputs, and corresponding initial states,
+\begin{equation}
+h_{\mathrm{init}}=\kappa u_{\mathrm{init}}^1,
+\label{eq:supp_initial_mapping}
+\end{equation}
+the mapped scalar-reset model has the same membrane and spike sequence as Eq.~\eqref{eq:supp_old_scalar}. In a recurrent network, equality of the previous spikes also gives equality of the next input currents, so the correspondence extends step by step through the network.
+
+Removing the learned auxiliary reset changes the original Full model. Absorbing the coupling is a reparameterization of the scalar-reset model after that removal. Directly optimizing $\bar{\mathbf g}_1$ changes the optimization coordinates and need not reproduce training trajectories obtained by separately optimizing $\kappa$ and $\mathbf g_1$. Historical accuracies are therefore not transferred to the new training runs.
+
+\section{Intrinsic Memory Dynamics and Stability}
+
+The spectral parameters and both leaks use
+\begin{equation}
+\begin{aligned}
+\alpha&=\sigma(\alpha_{\mathrm{raw}}),& \rho&=\sigma(\rho_{\mathrm{raw}}),\\
+\omega&=\pi\sigma(\omega_{\mathrm{raw}}),& \eta_i&=\sigma(\eta_{i,\mathrm{raw}}),
+\end{aligned}
+\label{eq:supp_param}
+\end{equation}
+for $i\in\{0,1\}$. For finite raw variables, $\alpha,\rho,\eta_i\in(0,1)$ and $\omega\in(0,\pi)$.
+
+\subsection{Spectral Bound and Impulse Response}
+
+Let $q=\max(\alpha,\rho)<1$ and suppose $|I_t|\le M$. Because the rotational block is $\rho R_\omega$, $\|A^k\|_2=q^k$. Starting with $\mathbf x_{-1}$, unrolling Eq.~\eqref{eq:supp_slow} for $t\ge0$ gives
+\begin{equation}
+\|\mathbf x_t\|_2\le q^{t+1}\|\mathbf x_{-1}\|_2+\|B\|_2 M\frac{1-q^{t+1}}{1-q}.
+\label{eq:supp_bibo_bound}
+\end{equation}
+Thus bounded current produces a bounded spectral state, with
+\begin{equation}
+X=\|\mathbf x_{-1}\|_2+\frac{\|B\|_2M}{1-q}
+\end{equation}
+as one uniform upper bound on its norm.
+
+For a unit impulse at $t=0$ and zero initial state, the spectral response is
+\begin{align}
+x_k^0&=(1-\alpha)\alpha^k,\\
+x_k^1&=(1-\rho)\rho^k\cos(k\omega),\\
+x_k^2&=(1-\rho)\rho^k\sin(k\omega),
+\label{eq:supp_impulse}
+\end{align}
+for $k\ge0$. The auxiliary impulse response is
+\begin{equation}
+h_k=\sum_{\ell=0}^k\eta_1^{k-\ell}\bar{\mathbf g}_1^\top A^\ell B.
+\label{eq:supp_auxiliary_impulse}
+\end{equation}
+
+\subsection{Auxiliary Bound and Four-Dimensional Representation}
+
+Unrolling the auxiliary recurrence and using $\|\mathbf x_t\|_2\le X$ gives
+\begin{equation}
+|h_t|\le\eta_1^{t+1}|h_{-1}|+\|\bar{\mathbf g}_1\|_2X\frac{1-\eta_1^{t+1}}{1-\eta_1}.
+\label{eq:supp_auxiliary_bound}
+\end{equation}
+The auxiliary state is therefore bounded for finite readout coefficients and bounded input. Its decay can be faster or slower than individual spectral modes; no strict slow/fast ordering is required.
+
+With $\mathbf m_t=[\mathbf x_t^\top,h_t]^\top$, the intrinsic memory pathway is
+\begin{equation}
+\mathbf m_t=F\mathbf m_{t-1}+LI_t,
+\label{eq:supp_memory_system}
+\end{equation}
+where
+\begin{equation}
+F=\begin{bmatrix}A&\mathbf0\\\bar{\mathbf g}_1^\top A&\eta_1\end{bmatrix},\quad
+L=\begin{bmatrix}B\\\bar{\mathbf g}_1^\top B\end{bmatrix}.
+\label{eq:supp_memory_matrix}
+\end{equation}
+The spectrum is $\{\alpha,\rho e^{\mathrm i\omega},\rho e^{-\mathrm i\omega},\eta_1\}$. The block structure establishes intrinsic stability even if some poles coincide. The explicit bounds above avoid interpreting its spectral radius as an exact norm contraction for the entire four-dimensional matrix. These bounds concern the memory pathway under a bounded current, not the complete recurrent network with learned feedback.
+
+\section{Direct Reset Identity}
+
+Let superscripts $-$ and $+$ denote states immediately before and after the current local reset. Then
+\begin{equation}
+\begin{aligned}
+\mathbf x_t^+&=\mathbf x_t^-,& h_t^+&=h_t^-,\\
+u_t^0&=\widetilde u_t^0-z_t\theta.
+\end{aligned}
+\label{eq:supp_direct_reset_invariance}
+\end{equation}
+The direct reset residuals of both the spectral and auxiliary states are exactly zero. This identity holds for either spike outcome. In a recurrent layer, a spike can still change $I_{t+1}$ through the ordinary recurrent pathway.
+
+\section{Initialization, Parameters, and Surrogate Gradient}
+
+\subsection{Initialization and Constraints}
+
+For each decay $q\in\{\alpha,\rho,\eta_0,\eta_1\}$, a sampled time constant $\tau_q$ in steps maps to $q=\exp(-1/\tau_q)$ and then to its raw sigmoid parameter. The frequency is mapped to its raw variable using $\omega/\pi$. The two rows of $\bar G$ are optimized directly without a separate trainable coupling or reset-direction coefficient.
+
+When initializing from a specified legacy scalar-reset parameter draw, the corresponding readout initialization is
+\begin{equation}
+\bar{\mathbf g}_{1,\mathrm{init}}=\kappa_{\mathrm{init}}\mathbf g_{1,\mathrm{init}},\quad
+h_{\mathrm{init}}=\kappa_{\mathrm{init}}u^1_{\mathrm{init}}.
+\label{eq:supp_init_conversion}
+\end{equation}
+Zero initial states remain zero under this mapping. The distribution of the legacy coefficient and readout draws must be specified to reproduce this initialization. A new direct initialization of $\bar{\mathbf g}_1$ is also possible, but its rule must be reported separately.
+
+Separate penalties or constraints on the legacy coupling, readout row, or auxiliary amplitude do not automatically remain equivalent under the mapping. Any such terms require an explicit treatment in the new objective before training. The actual readout initialization and regularization choices have not yet been frozen; they belong to the experimental protocol, rather than the forward-equivalence claim.
+
+\subsection{State Size and Parameter Count}
+
+The current model stores five state values $(x^0,x^1,x^2,h,u^0)$. The trainable dynamics parameters per neuron are
+\begin{equation}
+\alpha_{\mathrm{raw}},\rho_{\mathrm{raw}},\omega_{\mathrm{raw}},\eta_{0,\mathrm{raw}},\eta_{1,\mathrm{raw}},\text{ and the six entries of }\bar G,
+\end{equation}
+for eleven in total. Thresholds are fixed task settings; synaptic matrices, biases, and readout-layer parameters are separate. Eleven is the coefficient count of this parameterization, not a claim that it is a globally minimal realization.
+
+For layer width $n$, local state updates cost $O(n)$ because the state size is fixed. Dense recurrent multiplication costs $O(n^2)$. These asymptotic expressions do not replace measurements of latency, storage, memory, or training time.
+
+\subsection{Surrogate Gradient}
+
+The hard threshold uses $v_t=\widetilde u_t^0$. During backpropagation, its derivative is replaced by the multi-Gaussian surrogate~\cite{asrnn}:
+\begin{equation}
+\begin{aligned}
+\frac{\partial z_t}{\partial v_t}\approx\gamma\big[&a_0\mathcal N(v_t-\theta;0,\sigma_0^2)\\
+&-a_1\mathcal N(v_t-\theta;\mu_1,\sigma_1^2)\\
+&-a_1\mathcal N(v_t-\theta;-\mu_1,\sigma_1^2)\big],
+\end{aligned}
+\label{eq:supp_surrogate}
+\end{equation}
+with $\sigma_0=0.5$, $a_0=1.15$, $\mu_1=0.5$, $\sigma_1=3.0$, $a_1=0.15$, and $\gamma=0.5$, as in the original manuscript specification. The forward dynamics use the hard spike and scalar reset.
+
+\section{Capacity-Matched Structural Controls}
+
+\subsection{MEMORY\_RESET5}
+
+This control uses the current spectral state before reset, denoted $\mathbf x_t^-$, for both readouts. After spike generation and membrane reset, it applies
+\begin{equation}
+\widehat B=\frac{B}{\|B\|_2},\qquad
+\mathbf x_t^+=\mathbf x_t^- -\gamma_{\mathrm{mem}}z_t\theta\widehat B,
+\label{eq:supp_memory_reset}
+\end{equation}
+where $\gamma_{\mathrm{mem}}=1$ is fixed. The next timestep uses $\mathbf x_t^+$; the current auxiliary value was computed from $\mathbf x_t^-$ and receives no additional direct reset. All other dynamics match the main model. The control therefore retains five states and eleven trainable dynamics coefficients.
+
+This control tests a specific soft-reset path through the spectral memory. It does not reset all four memory/filter coordinates. Although $B$ is theoretically nonzero for $\alpha,\rho\in(0,1)$, handling a numerically tiny norm must be specified before training. Reset magnitudes, input scale, and readout scale must be recorded because a fixed coefficient does not guarantee equal functional perturbation strength across states.
+
+\subsection{REAL\_MODES3}
+
+This control replaces $A$ and $B$ with
+\begin{equation}
+A_{\mathrm{real}}=\operatorname{diag}(a_1,a_2,a_3),\quad
+B_{\mathrm{real}}=\begin{bmatrix}1-a_1\\1-a_2\\1-a_3\end{bmatrix},
+\label{eq:supp_real_modes}
+\end{equation}
+where each $a_i\in(0,1)$ is learned independently through a sigmoid parameter. The auxiliary and membrane dynamics, scalar reset, and learned $\bar G$ are unchanged. Three real decay coefficients replace $\alpha,\rho,\omega$, preserving five states and eleven dynamics coefficients.
+
+The first real decay uses the spectral real-mode initialization range; the second and third are sampled independently from the rotational damping range. The singular values and numerical rank of $[B_{\mathrm{real}},A_{\mathrm{real}}B_{\mathrm{real}},A_{\mathrm{real}}^2B_{\mathrm{real}}]$ must be reported with a specified rank tolerance. Repeated or nearly repeated poles can reduce effective controllability. The original zero-rotation control, whose third coordinate is undriven from zero initialization, is not this three-real-mode control.
+
+\section{Experimental Protocol and Result Provenance}
+
+\subsection{Settings to Be Frozen Before New Runs}
+
+The new benchmark runs use seeds $\{0,1,2,42,1111\}$. For each task, the data split, preprocessing, readout, validation metric, checkpoint rule, initialization, and training budget must be fixed before the formal runs. No new training has yet been performed. Table~\ref{tab:supp_protocol_status} distinguishes pending settings from completed measurements.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}p{0.38\columnwidth}p{0.56\columnwidth}@{}}
+\toprule
+Item & Current record\\
+\midrule
+Forward model & Five states, eleven dynamics coefficients\\
+Formal seeds & $0,1,2,42,1111$\\
+Data and selection protocol & \pending\\
+Readout initialization and penalties & \pending\\
+New accuracy measurements & \pending\\
+New computational measurements & \pending\\
+\bottomrule
+\end{tabular}
+\caption{Status of the experimental record for the new parameterization. Pending entries are not inferred from the historical runs.}
+\label{tab:supp_protocol_status}
+\end{table}
+
+The existing benchmark tasks are serialized MNIST and its permuted version~\cite{lecun1998gradient}, the QT Database~\cite{laguna1997database}, Google Speech Commands~\cite{warden2018speech}, and Spiking Heidelberg Digits~\cite{cramer2022heidelberg}. The original task-specific settings provide starting configurations, but do not establish which data splits and checkpoint rules will be used in the new runs.
+
+\subsection{SI-DMS and Statistical Units}
+
+SI-DMS uses a recurrent hidden layer to retain a cue through a delay before a match/non-match probe. Selected membrane coordinates are overwritten above threshold before spike computation; forced spikes then follow native reset and recurrent propagation. The intervention is therefore a joint perturbation of membrane, spike, reset, and feedback pathways.
+
+SPRiF, MEMORY\_RESET5, and ASRNN are trained separately under clean training and intervention training with $K\in\{0,1,2,4,8\}$, $f=15\%$. Evaluation includes $K=40$, $f=15\%$ and the additional 2500-ms delay. For seed $s$ and delay $d$, paired loss is
+\begin{equation}
+\Delta\mathrm{Acc}_{s,d}(K,f)=\mathrm{Acc}_{s,d}(0)-\mathrm{Acc}_{s,d}(K,f).
+\label{eq:supp_sidms_drop}
+\end{equation}
+Clean and stressed evaluation use identical task inputs within a seed and delay. Each seed is summarized across the five delays before computing the mean and sample standard deviation across independent training seeds; the 2500-ms results are also shown separately. Delays and individual test trials do not replace independent training seeds.
+
+\subsection{Historical Measurements}
+
+The original manuscript reports a five-state, thirteen-coefficient Full model with independently learned auxiliary coupling and reset direction. Its scalar-reset ablation retains the independent coupling and has twelve dynamics coefficients. The benchmark, ablation, SI-DMS, impulse-response, loss-landscape, feature-perturbation, and reset-direction figures in that manuscript retain those original model identities.
+
+For example, the old scalar-reset model has PS-MNIST accuracy $95.32\pm0.18\%$, QTDB accuracy $87.78\pm0.30\%$, and GSC accuracy $94.22\pm0.22\%$. Its reported SI-DMS clean accuracy is $99.4\pm0.0\%$, with a $4.2\pm0.2$ percentage-point loss at $K=40$, $f=15\%$, under the original three-seed intervention-training protocol. These measurements are historical references rather than outcomes of the new eleven-coefficient training runs. New result tables and dynamic figures will use newly measured results for the current model.
+
+\bibliography{sprif2027}
+\end{document}

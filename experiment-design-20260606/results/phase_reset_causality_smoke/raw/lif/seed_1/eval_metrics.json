@@ -1,7 +1,7 @@
 {
   "model": "lif",
   "seed": 1,
-  "checkpoint": "C:\\Users\\VECTOR\\Desktop\\SPRiF-Neuron\\experiment-design-20260606\\results\\phase_reset_causality_smoke\\raw\\lif\\seed_1\\checkpoint.pt",
+  "checkpoint": "checkpoint.pt",
   "clean_gate_passed": false,
   "clean_gate": {
     "delay_mse": 0.5804179906845093,

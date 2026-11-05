@@ -1,4 +1,3 @@
-"""S-MNIST model using Ablation B layer (merged slow/fast, no separate fast state)."""
 
 from typing import List
 
@@ -8,9 +7,7 @@ from torch.utils.data import Dataset
 
 from core_algorithm.sprif_layer_ablation_b import SPRiFNeuronLayerAblationB
 
-
 class SequentialMNIST(Dataset):
-    """Sequential MNIST dataset — pixels read row-by-row (no permutation)."""
 
     def __init__(self, mnist: Dataset):
         self.mnist = mnist
@@ -22,7 +19,6 @@ class SequentialMNIST(Dataset):
         img, label = self.mnist[idx]
         seq = img.reshape(-1, 1)
         return seq, label
-
 
 class SPRiFSMNISTNetAblationB(nn.Module):
     def __init__(
@@ -53,7 +49,6 @@ class SPRiFSMNISTNetAblationB(nn.Module):
         nn.init.constant_(self.readout.bias, 0.0)
 
     def forward(self, x):
-        """Full BPTT forward pass (used for evaluation)."""
         out = x
         for layer in self.layers:
             out = layer(out, batch_first=True)
@@ -70,3 +65,4 @@ class SPRiFSMNISTNetAblationB(nn.Module):
     @staticmethod
     def detach_states(states):
         return [{k: v.detach() for k, v in state.items()} for state in states]
+

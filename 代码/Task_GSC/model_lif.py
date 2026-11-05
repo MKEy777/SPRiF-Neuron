@@ -1,10 +1,8 @@
-"""GSC-specific network definition using LIF neuron layers."""
 
 import torch
 import torch.nn as nn
 
 from core_algorithm.lif_layer import LIFNeuronLayer
-
 
 class LIFGSCNet(nn.Module):
     def __init__(
@@ -43,3 +41,4 @@ class LIFGSCNet(nn.Module):
         pooled = out.mean(dim=1)
         log_probs = torch.log_softmax(self.classifier(pooled), dim=-1)
         return log_probs, {"spike_rate": out.mean()}
+

@@ -1,4 +1,3 @@
-"""S-MNIST-specific network definition using LIF neuron layers."""
 
 from typing import List, Optional
 
@@ -6,7 +5,6 @@ import torch
 import torch.nn as nn
 
 from core_algorithm.lif_layer import LIFNeuronLayer
-
 
 class LIFSMNISTNet(nn.Module):
     def __init__(
@@ -63,3 +61,4 @@ class LIFSMNISTNet(nn.Module):
             out = layer(out, batch_first=True)
             rates.append(out.mean())
         return torch.stack(rates).mean()
+

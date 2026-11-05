@@ -1,0 +1,1733 @@
+
+[PAGE 1]
+14298 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+NiSNN-A: Noniterative Spiking Neural Network
+With Attention With Application to Motor
+Imagery EEG Classification
+Chuhan Zhang
+ , Graduate Student Member, IEEE , Wei Pan
+ , Member, IEEE,
+and Cosimo Della Santina
+ , Senior Member, IEEE
+Abstract— Motor imagery (MI), an important category in
+electroencephalogram (EEG) research, often intersects with
+scenarios demanding low energy consumption, such as portable
+medical devices and isolated environment operations. Traditional
+deep learning (DL) algorithms, despite their effectiveness, are
+characterized by significant computational demands accom-
+panied by high energy usage. As an alternative, spiking
+neural networks (SNNs), inspired by the biological functions
+of the brain, emerge as a promising energy-efficient solution.
+However, SNNs typically exhibit lower accuracy than their
+counterpart convolutional neural networks (CNNs). Although
+attention mechanisms successfully increase network accuracy
+by focusing on relevant features, their integration in the SNN
+framework remains an open question. In this work, we combine
+the SNN and the attention mechanisms for the EEG classification,
+aiming to improve precision and reduce energy consumption.
+To this end, we first propose a noniterative leaky integrate-
+and-fire (NiLIF) neuron model, overcoming the gradient issues
+in traditional SNNs that use iterative LIF neurons for long
+time steps. Then, we introduce the sequence-based attention
+mechanisms to refine the feature map. We evaluated the proposed
+noniterative SNN with attention (NiSNN-A) model on two MI
+EEG datasets, OpenBMI and BCIC IV 2a. Experimental results
+demonstrate that: 1) our model outperforms other SNN models
+by achieving higher accuracy and 2) our model increases energy
+efficiency compared with the counterpart CNN models (i.e.,
+by 2.13 times) while maintaining comparable accuracy.
+Index Terms— Attention mechanism, electroencephalogram
+(EEG) classification, motor imagery (MI), spiking neural
+networks (SNNs).
+I. I NTRODUCTION
+E
+LECTR
+OENCEPHALOGRAMS (EEGs), whether cap-
+tured through noninvasive electrodes on the scalp or
+directly via invasive devices, are the cornerstone of the
+rapidly evolving domain of brain–computer interfaces (BCIs).
+Received 9 December 2023; revised 5 September 2024; accepted 22 January
+2025. Date of publication 14 March 2025; date of current version 6 August
+2025. This work was supported in part by the European Union’s Horizon
+Europe Program from Project EMERGE under Grant 101070918 and in part
+by the TU Delft AI Labs Programme. The work of Wei Pan was supported
+by the European Union’s Horizon 2020 Research and Innovation Programme
+under Grant 951847. (Corresponding author: Wei Pan.)
+Chuhan Zhang and Cosimo Della Santina are with the Department of
+Cognitive Robotics, Faculty of Mechanical Engineering, Delft University of
+Technology, 2628 CD Delft, The Netherlands (e-mail: C.Zhang-8@tudelft.nl;
+C.DellaSantina@tudelft.nl).
+Wei Pan is with the Department of Computer Science, The University of
+Manchester, M13 9PL Manchester, U.K. (e-mail: wei.pan@manchester.ac.uk).
+This article has supplementary downloadable material available at
+https://doi.org/10.1109/TNNLS.2025.3538335, provided by the authors.
+Digital Object Identifier 10.1109/TNNLS.2025.3538335
+Therefore, the accurate classification of EEG signals has
+attracted substantial attention over the years—with applica-
+tions ranging from advanced neurorehabilitation techniques [1]
+to diagnostics and real-time health monitoring [2]. Within
+the realm of BCI, motor imagery (MI) holds a distinctive
+place [3]. MI refers to the mental imagination of specific
+movements by subjects, leading to the generation of distinct
+EEG patterns. Accurately classifying these EEG signals opens
+up application possibilities in advanced fields such as robot
+control and assistive technologies [4].
+Recently, deep learning (DL) methods, such as convolu-
+tional neural networks (CNNs) [5], recurrent neural networks
+(RNNs) [6], and Transformers [7] have received increasing
+interest as a mean for classifying EEG signals [8], [9],
+[10], [11]. At present, in addition to conventional CNNs or
+RNNs, DL of EEG incorporates many other technologies [12],
+[13], [14], [15], [16]. Attention mechanisms [17], inspired
+by human cognitive processes, enhance the model’s focus
+on relevant features, facilitating more efficient and accurate
+feature extraction [18]. Attention mechanisms have been
+successfully applied to EEG classification. More details are
+presented in Section II-B. However, all of these methods
+suffer from the current limitation of high energy consumption,
+which poses a significant barrier to deployment in low energy
+scenarios, such as edge devices for healthcare [19] or robot
+control [20].
+In this work, we investigate the use of spiking neural
+networks (SNNs) for EEG classification. This technique
+mimics how biological neurons operate, allowing it to be
+used to interpret natural neuronal signals [21]. SNNs also
+offer a promising avenue for reducing energy consumption
+due to their event-based nature [22], [23], [24], which is
+attractive in view of edge applications. More details on
+the state of the art of SNN in EEG classification are
+provided in Section II-C. We propose a novel integration
+of SNNs and the attention mechanism, especially for EEG
+classification. At the core of our approach sits a newly
+proposed noniterative leaky integrate-and-fire (NiLIF) neuron,
+which approximates the neural dynamics of the biological
+LIF and mitigates the gradient problem by avoiding long-
+term dependencies. The second methodological contribution
+is the sequence-based attention model for EEG data, which
+can simultaneously obtain the attention scores of feature maps.
+The noniterative SNN with attention (NiSNN-A) models boost
+both the efficiency and accuracy of the execution process. It is
+2162-237X © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence
+and similar technologies. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 2]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14299
+worth noting that some work has investigated attention SNNs,
+which, however, specifically targeted computer vision (CV)
+[25]. As we show in our experimental comparison, this method
+is not suitable for classifying long-term data such as EEG.
+The contributions of this article can be summarized as
+follows.
+1) We propose a novel NiLIF neuron model for SNNs,
+which eliminates the gradient problem caused by long-
+term dependencies while retaining the biology-inspired
+temporal properties of the LIF model.
+2) We introduce a sequence-based attention mechanism for
+SNNs, improving the classification accuracy.
+3) We show the combination of NiSNNs with attention
+mechanisms for MI EEG classification, simultaneously
+achieving high accuracy and reducing energy consump-
+tion.
+The rest of this article is organized as follows. Section III
+introduces our proposed NiSNN-A models. Section IV gives
+the experimental details. The results and discussion are
+conducted in Section V. Section VI concludes this article.
+II. R ELATED WORKS
+In this section, the related works are introduced.
+Section II-A illustrates the application of DL techniques
+specific to EEG signal processing. Subsequently, Section II-B
+illustrates the works with attention mechanisms. Finally, the
+applications of SNN in EEG classification are described in
+Section II-C.
+A. DL Methods for EEG
+In recent years, integrating DL techniques into EEG
+classification has gained significant traction [26]. CNN stands
+out among these techniques, particularly due to its ability
+to identify spatial–temporal patterns within the complex,
+multidimensional EEG data [27], [28], [29]. For instance,
+a temporal–spatial CNN was employed for EEG classification
+in [30] and [31]. The work in [32] introduced EEGNet,
+which integrates a separable convolutional layer following
+the temporal and spatial modules. Enhancing the CNN
+architecture, Huang et al. [33] and Humayun et al. [34]
+incorporated residual blocks for classification. Another note-
+worthy approach is presented in [35], where an autoencoder
+is built upon the CNN framework. Furthermore, this work
+adopted a subject-independent training paradigm, emphasizing
+its scalability on varied EEG data from different subjects.
+Apart from CNNs, long short-term memory (LSTM) networks
+have also been recognized for EEG classification due to their
+inherent ability to process time sequences effectively [36],
+[37], [38]. These methods are limited in high energy
+consumption, making them difficult to use on some edge
+devices with low-energy requirements.
+B. Attention Mechanism
+The Transformer architecture and attention mechanism,
+originally introduced in [17] for natural language processing
+tasks, have seen increasing adoption in many other machine
+learning tasks [39], [40]. These methods are now being
+explored in the field of EEG classification, given their ability
+to handle time sequence data. The attention mechanism is
+particularly important for EEG data analysis. It holds the
+potential to enhance classification accuracy and emphasizes
+specific segments of the data, offering deeper insights into
+EEG signal characteristics. Various attention models have
+emerged in the field of EEG classification. For instance,
+Liu et al. [13] present a spatial and temporal attention
+model integrated with CNN. This approach leverages two
+distinct CNN modules to derive spatial and temporal attention
+scores separately, subsequently using four convolutional layers
+for classification. Meanwhile, Zhang et al. [41] apply a
+multihead attention module, as described in [17], combined
+with five convolutional layers to classify EEG signals.
+Direct applications of the Transformer attention structures
+from [17] for EEG classification are evident in [42] and [43].
+Beyond solely leveraging CNN and attention mechanisms,
+some studies have integrated additional techniques. For
+instance, Luo et al. [44] introduce a mirrored input approach
+combined with an attention model that operates across each
+data record. In a more intricate approach, Ma et al. [45]
+deploy the spatial, spectral, and temporal Transformers, each
+catering to a different input data type. A popular EEG
+processing methodology, time–frequency common spatial
+pattern (TFCSP), is highlighted in [46]. This method
+intertwines a two-layer CNN and an attention model, feeding
+their concatenated outputs into a classifier. A notable trend is
+the use of global attention in conjunction with three sequential
+models, as shown in [47], [48], and [49]. These works
+employ three sequential attention models, each dedicated to a
+single dimension. By utilizing global average pooling (GAP),
+they efficiently diminish unrelated dimensions and consolidate
+the attention scores across the three output dimensions.
+These models effectively achieved the goal of EEG signal
+classification. However, these methods have the limitation of
+high energy consumption due to the use of attention CNN,
+making them difficult to use on some edge devices with
+low-energy requirements. Also, they lack a special focus on
+data from different channels and different time areas, which
+is important in EEG data. Attention mechanisms for SNNs
+specific to CV tasks [25] are discussed in Section III-B.
+Cai et al. [50] also proposed a vision-based SNN attention
+mechanism, in which spatial-channel-temporal-fused attention
+works at each time step and layer of the spike trains, providing
+strong robustness. However, Cai et al. [50] require attention
+calculation at each time step in an iterative manner, which
+takes a long time to execute due to a large number of loops.
+C. Spiking Neural Networks
+In recent years, SNNs have garnered increasing attention
+within the neural computing community with broad applica-
+tions, such as CV and robot control [23], [51], [52], [53], [54].
+Their growing significance can be attributed to their closer
+resemblance to biological neural systems than CNNs. SNNs,
+by simulating the discrete, spike-based communication found
+in actual neurons, promise enhanced efficiency and energy
+savings. However, this bioinspired approach comes with
+challenges, particularly during training. The gradient back-
+propagation, a staple in training CNNs, presents difficulties for
+SNNs due to their nondifferentiable spiking nature. To address
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 3]
+14300 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+this, various training methods have been proposed [55], [56]:
+from leveraging evolutionary algorithms to adjust synaptic
+weights [57], to employing biologically inspired synaptic
+update rules like spiking-time dependent plasticity (STDP)
+[58]. Some researchers have also explored converting a well-
+trained CNN into their SNN counterparts [59], while others
+have advocated for using surrogate gradients for continuing
+backpropagation [60]. Given the biology-inspired and efficient
+attributes of SNNs, several works have successfully applied
+SNNs in the domain of EEG signal classification, showcasing
+their potential in real-world applications. For example,
+Antelis and Falcon [61] employed particle swarm optimization
+as an evolutionary algorithm for weight updates, combined
+with an unsupervised classifier like K -nearest neighbors
+and multilayer perceptron; however, their approach was not
+end-to-end and involved manual feature extraction. Studies
+that utilized STDP include [62], which integrated manual
+feature extraction methods such as fast Fourier transform and
+discrete wavelet transform with a 3-D SNN reservoir and
+supervised classifiers. Similarly, Kasabov and Capecci [63]
+adopted an unsupervised learning framework, implementing
+a 3-D SNN reservoir model. Wu et al. [64] combined the
+3-D reservoir with a support vector machine as the classifier.
+Highlighting conversion techniques, Yan et al. [65] explored
+a tree structure, demonstrating the energy efficiency benefits
+of SNNs through a CNN-to-SNN conversion, while another
+work by Yan et al. [66] utilized power spectral density for
+feature extraction before such a conversion. Back propagation-
+like methodologies also found their adaptation in SNNs and
+EEG classification realm with work [67] using SpikeProp [68].
+SpikeProp uses solutions of dynamics equations to represent
+the membrane potentials and uses backpropagation to calculate
+the timing of output spikes. However, SpikeProp considers
+a single input spike and output spike while our NiLIF
+model allows arbitrary inputs and multiple output spikes.
+In particular, the inputs to the NiLIF neuron can even be
+continuous values. Liao et al. [15] were notably the first to
+employ directly trained SNNs for EEG signal classification.
+However, these methods have limitations when deepening
+the networks and seeking to learn complex representations.
+There are also some works using parallel techniques in
+SNNs [69] considering the membrane potential without a reset
+mechanism, which is different from our method.
+III. M ETHODS
+In this section, we introduce the novel NiLIF neuron in
+Section III-A. Subsequently, the proposed attention models are
+delineated in Section III-B. Finally, Section III-C describes the
+network architecture of the proposed NiSNN-A.
+A. LIF Neuron
+Neurons serve as the fundamental components of neural
+networks. In this section, the iterative LIF neuron model is
+presented in Section III-A1. Then, our proposed NiLIF neuron
+model is detailed in Section III-A2. Finally, the comparisons
+are discussed in Section III-A3.
+1) Background (Iterative LIF Neuron Model): In the SNN
+community, the leaky integrate-and-fire (LIF) neuron model
+is widely used. It strikes a balance between simplicity and
+Fig. 1. Iterative LIF neuron model and the NiLIF neuron model. (a) Iterative
+LIF neuron model. The membrane potential ut+1 is computed recurrently, with
+each time step depending on its previous state ut and the output spikes ot from
+the preceding time step. (b) NiLIF neuron model. The matrix Lin is used to
+calculate the input stimulus and accumulation processes, and the matrix Lout
+is used to approximate the output spikes. The final membrane potential U and
+output spikes O are obtained simultaneously rather than iteratively.
+biologically inspired characteristics. The LIF model can be
+described using the following equations:
+Membrane Potential:
+
+
+τ du(tc)
+dtc
+= −u (tc) + wx(tc), if u(tc) ≤ Vth
+lim
+1→0+
+u(tc + 1) = ures, if u(tc) > Vth
+ures =
+{
+u(tc) − Vth, with soft reset mechanism
+ur , with hard reset mechanism
+Spike Generation:
+o(tc) = g(uc)
+g(a) =
+{
+0, if a ≤ Vth
+1, if a > Vth
+(1)
+where τ ∈ R is the membrane time constant and u(tc) ∈ R
+represents the neuron’s membrane potential at continuous time
+tc ∈ R. wx(tc) ∈ R is the input stimulus at time tc ∈ R,
+represented as the weighted input to the present layer in
+the neural network. w is the trainable parameter. Vth ∈ R
+is the membrane potential threshold. Specifically, when the
+membrane potential exceeds the threshold Vth, a spike is
+produced. When the membrane potential remains below the
+threshold, no spike is generated. After generating a spike, the
+membrane potential decreases to a reset potential ures ∈ R.
+Two types of reset mechanisms deal with the membrane
+potential after generating spikes: soft and hard reset. The soft
+reset mechanism resets the membrane potential by reducing
+the threshold potential Vth; while the hard reset mechanism
+resets the membrane potential to a defined potential value
+ur ∈ R. o(tc) ∈ R represents the output spike at time tc. The
+function g(·) is the Heaviside step function, which describes
+the spike firing process.
+To adapt to the requirements of backpropagation in neural
+networks, an iterative LIF neuron model [60] with the soft
+reset mechanism is introduced
+ut+1 = λ
+(
+ut − Vthot )
++ wx t
+ot = g
+(
+ut )
+(2)
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 4]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14301
+where λ ∈ R denotes the decay rate of the membrane
+potential. We use ut to represent u(tc = t), where t ∈ N
+represents the discrete time step in the iterative LIF neuron
+model. Similarly, ot means o(tc = t) and x t means x(tc = t).
+In this way, the membrane potential updates step by step,
+recurrently making the LIF neuron dynamics trainable by a
+network. However, the Heaviside step function g(·) in the
+firing process makes it nondifferentiable. This characteristic
+brings challenges for gradient backpropagation. To address
+this limitation, surrogate functions have been proposed [70].
+Nowadays, the sigmoid functions are commonly employed as
+surrogate functions due to their capability to emulate the spike
+firing process, especially when associated with a high value
+of α: Sigmoid( x) = (1/(1 + e−αx )). Therefore, the gradient
+backpropagation in the iterative LIF with the sigmoid functions
+can be described as follows:
+∂o
+∂u = ∂Sigmoid(u)
+∂u = Sigmoid(u)(1 − Sigmoid(u))α. (3)
+2) Noniterative LIF Neuron Model: As described in (2),
+the membrane potential ut+1 in iterative LIF depends on the
+output ot and membrane potential ut of the preceding time
+steps, which introduces complex neuron dynamics and long-
+term dependencies in gradient propagation [71]. Therefore, for
+cases with long time steps, the gradient problem caused by
+long-term dependencies hinders the model’s high performance.
+Thus, we propose an NiLIF model designed to approximate
+the neuron dynamics and avoid long-term dependencies.
+The LIF model has input stimulation, accumulation, and
+firing processes. To achieve these functions, the core idea
+behind the NiLIF model is first to consider the stimulation
+and accumulation effects over all time steps, then approximate
+the firing process with maximum sparsity, and finally
+obtain the approximate neuron dynamics without long-term
+dependencies.
+The effects on time step t of the input stimulation without
+firing at time step i can be computed by solving different
+equation (1): ut = wxie−((t−i)/τ )δt, where δt is the fixed
+time increment used to discretize the continuous time domain.
+We utilize the function L(·) to represent the leaky component
+as L(t) = e−(t/τ )δt. Therefore, the effects of all previous time
+steps on time step t is expressed as follows:
+ϵt
+in =
+t∑
+i=0
+wxi L(t − i) (4)
+where ϵt
+in represents the input stimulus and accumulation
+effects without firing. Naturally, (4) can be represented using
+matrix format
+Ein = X Lin (5)
+where Ein ∈ R1×(tn +1) is defined as the effect matrix,
+X ∈ R1×(tn +1) is defined as the weighted input matrix, and
+Lin ∈ R(tn +1)×(tn +1) is defined as the leaky matrix
+Ein =
+[
+ϵ0
+in ϵ1
+in · · · ϵtn
+in
+]
+X =
+[wx 0 wx 1 · · · wx tn
+]
+Lin =
+
+
+1 L(1) · · · L(tn)
+0 1 · · · L(tn − 1)
+..
+. .
+.
+. . . . .
+.
+.
+0 0 · · · 1
+
+. (6)
+Therefore, the stimulus and accumulation dynamics of the LIF
+neuron are represented.
+In addition, we approximate the firing dynamics of the LIF
+neuron. We propose to use the term ϵout to represent the impact
+of output spikes from the previous time steps on the current
+time step t
+ϵt
+out =
+t−1∑
+i=0
+oi VthL(t − i − 1) (7)
+where oi Vth represents the soft reset mechanism. When no
+spike is generated (o i = 0), oi Vth is 0, which means no output
+spike effect at this time step i. When a spike is generated at
+time step i (oi = 1), the membrane potential in the next step
+will decrease by the threshold Vth, which will affect the current
+membrane potential with a leakage coefficient L(t − i − 1).
+(7) can be represented using matrix format
+Eout = OLout (8)
+where Eout ∈ R1×(tn +1) is defined as the output spikes effect
+matrix, O ∈ R1×(tn +1) is defined as the output spikes matrix,
+and Lout ∈ R(tn +1)×(tn +1) is defined as the output leaky matrix
+Eout =
+[
+ϵ0
+out ϵ1
+out · · · ϵtn
+out
+]
+O =
+[o0 o1 · · · otn
+]
+Lout =
+
+
+0 Vth VthL(1) · · · VthL(tn − 1)
+0 0 Vth · · · VthL(tn − 2)
+0 0 0 · · · VthL(tn − 3)
+..
+. .
+.
+. .
+.
+. . . . .
+.
+.
+0 0 0 · · · 0
+
+. (9)
+Therefore, the firing process dynamics are represented. The
+neuron dynamics consisting of input stimulation, accumula-
+tion, and firing process are expressed as follows:
+ut = ϵt
+in − ϵt
+out
+=
+t∑
+i=0
+wxi L(t − i) −
+t−1∑
+i=0
+oi VthL(t − i − 1) (10)
+with the matrix format as follows:
+U = Ein − Eout = Ein−OLout. (11)
+In (10), the output spikes o are the only part that needs to
+be solved. Given the accurate membrane potential U and the
+Heaviside function g(·), we have the following identity:
+O = g(U ) = g(Ein−OLout) (12)
+where only O is the unknown variable. To solve (11),
+we propose the following proposition.
+Proposition 1: Given an LIF neuron with stimulus, accu-
+mulation, and firing dynamics (11), the inequality
+g(Ein − I1Lout) ≤ O ≤ g(Ein) (13)
+always holds where O ∈ R1×(tn +1) is the output spike matrix,
+I1 ∈ R1×(tn +1) is the all-ones matrix and Lout is defined in (6).
+Proof: We use (12) to prove Proposition 1. Because O =
+g(U ), we have min( g(U )) ≤ O ≤ max(g(U )). This implies
+g(min(U )) ≤ O ≤ g(max(U )). Given U = Ein−OLout,
+we can write
+g(min(Ein−OLout)) ≤ O ≤ g(max(Ein−OLout)). (14)
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 5]
+14302 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+Then, we have
+g(Ein − max(O)Lout) ≤ O ≤ g(Ein − min(O)Lout). (15)
+Since O represents the binary output spikes matrix, it follows
+that I0 ≤ O ≤ I1. Thus, we obtain
+g(Ein − I1Lout) ≤ O ≤ g(Ein − I0Lout) (16)
+which finally simplifies as Proposition 1. □
+Thus, we use Proposition 1 to estimate O in (11) as
+U = Ein − ˆOLout, where ˆO is the estimated output spikes.
+To ensure the sparsity of the output spikes (i.e., to minimize
+O), it is essential to consider the case of minimalU. Therefore,
+the membrane potential U is estimated as follows:
+U = Ein − max(O)Lout = Ein − g(Ein)Lout
+O = g(U ). (17)
+Therefore, the neuron dynamics of the NiLIF model
+with the soft reset mechanism can be represented
+as follows:
+ut =
+t∑
+i=0
+wxi L(t − i)
+−
+t−1∑
+i=0
+g
+( i∑
+k=0
+wx kL(i − k)
+)
+VthL(t − 1 − i),
+ot = g
+(
+ut )
+. (18)
+We aim to preserve the input gradient values without
+introducing significant neuron changes. Therefore, we utilize
+the derivative as follows during backpropagation:
+∂o
+∂u =
+{
+1, if 0 < u < 1
+0, else. (19)
+The pseudocode of the NiLIF model is shown in
+Algorithm 1. We present the derivations of the dynamics in
+this section.
+3) Comparison (Iterative LIF and NiLIF Neurons): The
+flow diagrams for the two neurons are shown in Fig. 1. The
+iterative LIF neuron operates in a recurrent manner, relying
+on the output from the preceding time step for its next
+computation. Conversely, the NiLIF model simultaneously
+processes data from all time steps, requiring only a few matrix
+operations to determine the membrane potential and output
+spikes for all time steps. The nonloop characteristic of the
+NiLIF neuron could avoid the gradient issues caused by long-
+term dependencies. We assume the loss isL ∈ R1×(tn +1), which
+is equal to the summation of the loss lt ∈ R of each time step
+t. The gradient derivation for both LIF neuron models during
+backpropagation is shown as follows:
+∂ L
+∂w =
+tn∑
+t=0
+∂lt
+∂w =
+tn∑
+t=0
+∂lt
+∂ot
+∂ot
+∂ut
+∂ut
+∂w . (20)
+Therefore, we introduce two propositions regarding (∂ut /∂w)
+in two LIF neuron models, respectively, to compare the
+gradient issues. Proposition 2 shows the gradient equation
+of the iterative LIF neuron, and Proposition 3 introduces the
+gradient equation of the NiLIF neuron.
+Algorithm 1 Pseudocode for the NiLIF Model
+Input Time steps t, threshold v, decay constant τ, input x.
+function L_IN_MATRIX (t, τ)
+e ← zeros((t, t))
+for i, j ∈ range(t) do
+if j > i then
+e[i][ j] ← exp(−((( j − i))/τ ))
+end if
+if i = j then e[i][ j] = 1 end if
+end for
+return e
+end function
+function L_OUT _MATRIX (e, v)
+s ← zeros(e)
+for i, j ∈ range(t) do
+if j > i then s[i][ j] = e[i][ j − 1]v end if
+end for
+return s
+end function
+procedure NI_LIF
+function __INIT __(t , v)
+e ← L_IN_MATRIX t, s ← L_OUT _MATRIX e, v
+end function
+function FORWARD (x)
+u ← xe, o ← (u > v)s , u ← u − o, o ← (u > v)
+return o
+end function
+end procedure
+Proposition 2: Given an iterative LIF neuron with the
+dynamics in (2), the limit condition
+∀ut
+I, lim
+t→∞
+∂ut
+I
+∂w = 0 (21)
+always holds, where ut
+I is the membrane potential of the
+iterative LIF neuron at the time step t.
+Proof: In the iterative LIF neuron model, (∂utn
+I /∂w) is
+derived in (26), as shown at the bottom of the next page, which
+is composed of a summation of two parts of accumulated
+gradient multiplication ∏tn −1
+i=0 (∂ui+1
+I /∂ui
+I). According to (2),
+(∂ui+1
+I /∂ui
+I) is equal to the decay rate λ ∈ (0, 1) which is less
+than 1. Therefore, lim t→∞
+∏t−1
+i=0(∂ui+1
+I /∂ui
+I) = limt→∞ λ t =
+0, which causes lim t→∞(∂ut
+I/∂w) = 0. □
+Proposition 3: Given an NiLIF neuron with the dynamics
+in (18), the limit condition
+∃ut
+Ni, s.t. lim
+t→∞
+∂ut
+Ni
+∂w ̸= 0 (22)
+always holds where ut
+Ni is the membrane potential of the NiLIF
+neuron at the time step t.
+Proof: We construct a specific example to prove ∃utn
+Ni,
+s.t. lim tn →∞(∂utn
+Ni/∂w) ̸= 0. We use the symbol f (n) to
+represent the term ∑n
+i=0 wxi L(t − i) in (18). Therefore, the
+membrane potential ut
+Ni can be represented as follows:
+ut
+Ni = f (t) −
+t−1∑
+i=0
+g( f (i))VthL(t − 1 − i). (23)
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 6]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14303
+Therefore, (∂ut
+Ni/∂w) is derived as follows:
+∂ut
+Ni
+∂w = ∂ f (t)
+∂w −
+t−1∑
+i=0
+∂g( f (i))
+∂ f (i)
+∂ f (i)
+∂w VthL(t − 1 − i). (24)
+There exists w > 0, x t > 0, ∀i < t, xi < 0 such that
+∀i < t, f (i) < 0 and f (t) ∈ (0, 1). In this case,
+(∂g( f (i))/∂ f (i)) is equal to 0 based on (19). Equation (24)
+is derived as follows:
+∂ut
+Ni
+∂w = ∂ f (t)
+∂w =
+t∑
+i=0
+xi L(t − i). (25)
+In the case of ∑t
+i=0 wxi L(t − i) is in (0, 1) and w > 0,∑t
+i=0 xi L(t − i) is not 0. Therefore, we prove that ∃utn
+Ni,
+s.t. lim tn →∞(∂utn
+Ni/∂w) ̸= 0. □
+Propositions 2 and 3 show that when the number of time
+steps is large, the iterative LIF neuron has the vanishing
+gradient problem, but the NiLIF neuron does not. As well
+known in [71], the presence of a continuously accumulated
+gradient multiplication part, ∏tn −1
+i (∂ui+1
+I /∂ui
+I), can cause
+gradient vanishing issues during training. Conversely, the gra-
+dient equations of the proposed NiLIF only contain the
+summation term, which can avoid the gradient issue caused by
+accumulated multiplication. A detailed comparison of gradient
+problems is in the Appendix (see Supplementary Material).
+In our NiLIF model, the final membrane potential U is
+decided by the approximate term g(Ein) and takes the minimal
+border of the actual situation. Ein overestimates the output
+spikes, resulting in g(Ein) being greater than it should be,
+yielding a reduced final membrane potential U and fewer
+output spikes in O. Therefore, NiLIF exhibits greater sparsity
+than the iterative LIF model, as shown in Fig. 2. Given the
+same input spike train, the NiLIF neuron produces fewer
+Fig. 2. Illustrative comparison between the iterative LIF and NiLIF models.
+Both models utilize the same input spike train as shown in the uppermost
+figure, however, with different outputs. From the third figure, both models
+produce an output spike at time step 4. Notably, the NiLIF model does not
+generate a second spike at time step 9 due to higher sparsity.
+spikes than its iterative counterpart. The sparsity brings more
+energy efficiency during execution.
+B. Attention Model
+In this section, we present the proposed attention models.
+The fundamental goal of the attention mechanism is to employ
+neural networks to compute the attention score, which is
+applied across the entire feature map, assigning weights to
+the features and extracting useful ones. In the context of
+EEG signals, the original input data are shaped as RB×C×D,
+where B ∈ N is the batch size, C ∈ N represents the
+channel size and D ∈ N is the length of data for each
+channel. We segment the data into timepieces, resulting in a
+new size of RB×C×S×T , where S is the number of timepieces
+and T ∈ N is the number of time steps in each segment.
+It is important to note that the multiplication result of S and
+∂ut
+I
+∂w = ∂ut
+I
+∂ut−1
+I
+∂ut−1
+I
+∂w + ∂ut
+I
+∂ot−1
+∂ot−1
+∂w + x t−1
+= ∂ut
+I
+∂ut−1
+I
+[
+∂ut−1
+I
+∂ut−2
+I
+∂ut−2
+I
+∂w + ∂ut−2
+I
+∂ot−2
+∂ot−2
+∂w + x t−2
+]
++ ∂ut
+I
+∂ot−1
+∂ot−1
+∂w + x t−1
+= ∂ut
+I
+∂ut−1
+I
+[
+∂ut−1
+I
+∂ut−2
+I
+[
+∂ut−2
+I
+∂ut−3
+I
+[
+· · ·
+[∂u2
+I
+∂u1
+I
+[∂u1
+I
+∂u0
+I
+∂u0
+I
+∂w + ∂u1
+I
+∂o0
+∂o0
+∂w + x 0
+]
++ ∂u2
+I
+∂o1
+∂o1
+∂w + x 1
+]
++ · · ·
+]
++ ∂ut−2
+I
+∂ot−3
+∂ot−3
+∂w + x t−3
+]
++ ∂ut−1
+I
+∂ot−2
+∂ot−2
+∂w + x t−2
+]
++ ∂ut
+I
+∂ot−1
+∂ot−1
+∂w + x t−1
+=
+tn∑
+i=1
+[tn −1∏
+k=i
+∂uk+1
+I
+∂uk
+I
+]
+xi−1 +
+tn∑
+i=2
+[tn −1∏
+k=i
+∂uk+1
+I
+∂uk
+I
+]
+∂ui
+I
+∂oi−1 ∂w =
+tn∑
+i=2
+tn∑
+i=2
+[tn −1∏
+k=i
+∂uk+1
+I
+∂uk
+I
+]
+
+ 
+Accumulating
+gradient multiplication
+
+
+
+xi−1 + ∂ui
+I
+∂oi−1
+∂oi−1
+∂w  
+Accumulating
+gradient multiplication
+
+
+
++
+tn −1∏
+i=1
+∂ui+1
+I
+∂ui
+I
+  
+Accumulating
+gradient multiplication
+x 0 (26)
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 7]
+14304 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+Fig. 3. Illustration of the linear attention model. The linear attention model
+integrates position embedding with the input data. This model employs three
+linear layers to obtain the query, key, and value matrices. The attention score
+is computed through the multiplication of the query and key matrices, then
+undergoing normalization through a Softmax function. To produce the final
+enhanced output, an additional linear layer is utilized in the final step.
+T should equal D. Given that EEG data typically presents
+as long temporal sequences, it is important to determine
+which timepieces are crucial for classification. Thus, our
+attention model places particular emphasis on the dimension
+S. We introduce two distinct attention mechanisms: Sequence
+attention (Seq-attention), as described in Section III-B1, and
+channel sequence attention (ChanSeq-attention), as detailed
+in Section III-B2. Section III-B3 presents global-attention,
+a special case of ChanSeq-attention.
+Contrary to the sequential attention models like those
+in [25], our intention is to utilize a single model to
+capture the attention score simultaneously. We introduce
+two model architectures for each attention mechanism: the
+linear architecture and the convolutional architecture. Fig. 3
+illustrates how the architecture of the linear attention differs
+from the attention model described in Fig. 4. The distinction
+between these architectures lies in their methods for attention
+score computation: the linear architecture incorporates fully
+connected layers, whereas the convolutional architecture
+employs convolutional layers. Notably, both Seq-attention and
+ChanSeq-attention have linear and convolutional versions.
+1) Seq-Attention Mechanism: The sequence attention mech-
+anism mainly focuses on identifying which timepieces require
+attention. The linear Seq-attention (Linear-Seq-attention)
+model is given as follows after reshaping the input data into
+dimension RB×S×(C×T ):
+q = Qfc(x + p), Qfc : RB×S×(C×T ) → RB×d1×S×d2
+k = Kfc(x + p), Kfc : RB×S×(C×T ) → RB×d1×S×d2
+v = Vfc(x + p), Vfc : RB×S×(C×T ) → RB×d1×S×d2
+A = Softmax
+( qk ⊤
+√dk
+)
+, A ∈ RB×d1×S×S
+ˆx = Av, ˆx ∈ RB×d1×S×d2
+hlinear-seq(x) = FCseq
+(
+ˆx
+)
+FCseq : RB×d1×S×d2 → RB×C×S×T (27)
+where Qfc, Kfc and Vfc are the three linear layers to generate
+the query matrix q, the key matrix k, and the value matrix v,
+respectively. In particular, these matrices adhere to dimensions
+RB×d1×S×d2, where d1 and d2 represent hyperparameters. p
+is the position embedding [17]. Subsequently, the attention
+score A is the matrix product derived by q K⊤, followed by
+Fig. 4. Illustration of convolutional attention model. Two convolutional
+layers are employed to get the query and key matrices in the convolutional
+attention model. The attention score is computed through matrix multiplication
+and subsequently normalized by the Softmax function. A matrix operation
+then integrates the attention score with the input data. Depending on the
+model variant, this can manifest as matrix multiplication in the Seq-attention
+model (refer to Section III-B1) and the ChanSeq-attention model (detailed in
+Section III-B2), or as an elementwise product in the Global-attention model
+(see Section III-B3). In the final step, a trainable parameter, denoted by β,
+is introduced to balance the original and refined features.
+normalization. By applying the Softmax function to A, weights
+are assigned to the values in v. Then, a fully connected layer
+produces the final output hlinear-seq(x), which represents the
+input data enhanced with attention.
+The convolutional Seq-attention (Conv-Seq-attention)
+model is presented as follows:
+q = Qconv(x), Qconv : RB×S×C×T → RB×S×(d×C×T )
+k = Kconv(x), Kconv : RB×S×C×T → RB×S×(d×C×T )
+A = Softmax
+(
+qk ⊤)
+, A ∈ RB×S×S
+ˆx = Ax , ˆx ∈ RB×C×S×T
+hconv-seq(x) = α ˆx + x (28)
+where Qconv and Kconv are the two convolutional layers
+with reshape techniques. Similar to the Linear-Seq-attention
+mechanism, they are designated to generate the query matrix
+q and key matrix k, respectively. Within this model, d
+serves as a hyperparameter. Unlike its linear counterpart, the
+Conv-Seq-attention model omits the computation of the value
+matrix and instead directly calculates the attention score A by
+multiplying the matrix. Subsequent to the Softmax function,
+these weights are integrated with the input data via matrix
+multiplication. Finally, the Conv-Seq-attention introduces a
+trainable parameter α to modulate the balance between the
+attention-enhanced result and the original input data.
+Both the Linear-Seq-attention and Conv-Seq-attention
+mechanisms yield attention scores of size RS×S in the last
+two dimensions. Then, they utilize matrix multiplication to
+produce the final enhanced feature map. In this way, attention
+is exclusively directed toward different timepieces and their
+interaction without consideration of information from other
+dimensions.
+2) ChanSeq-Attention Mechanism: Typically, EEG signals
+are collected from multiple channels. For example, the
+OpenBMI dataset that we use in this work has 62 chan-
+nels [72]. Beyond directing attention to timepieces, it is also
+valuable to be concerned with which channels receive the most
+attention. Thus, we introduce an attention mechanism named
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 8]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14305
+the ChanSeq-attention mechanism, designed to determine
+when and where the features must be focused.
+The equations for linear ChanSeq-attention (Linear-
+ChanSeq-attention) are as follows:
+q = Qfc(x + p), Qfc : RB×C×S×T → RB×C×d1×S×d2
+k = Kfc(x + p), Kfc : RB×C×S×T → RB×C×d1×S×d2
+v = Vfc(x + p), Vfc : RB×C×S×T → RB×C×d1×S×d2
+A = Softmax
+( qk ⊤
+√dk
+)
+, A ∈ RB×C×d1×S×S
+ˆx = Av, ˆx ∈ RB×C×d1×S×d2
+hlinear-chanseq(x) = FCchanseq
+(
+ˆx
+)
+FCchanseq : RB×C×d1×S×d2 → RB×C×S×T (29)
+where the meaning of the parameters is the same as in
+Linear-Seq-attention. However, it is worth noting that to
+implement attention across both channels and timepieces
+simultaneously, the dimensions of Qfc, Kfc, and Vfc are
+adjusted to RB×C×d1×S×d2 instead of RB×d1×S×d2. The new
+channel dimension C is consistently maintained throughout
+the entirety of the model.
+The equations of corresponding convolutional Conv-
+ChanSeq-attention are as follows:
+q = Qconv(x), Qconv : RB×C×S×T → RB×C×S×(d×T )
+k = Kconv(x), Kconv : RB×C×S×T → RB×C×S×(d×T )
+A = Softmax
+(
+qk ⊤)
+, A ∈ RB×C×S×S
+ˆx = Ax , ˆx ∈ RB×C×S×T
+hconv-chanseq(x) = α ˆx + x (30)
+where the parameters in this context hold the same
+representations as those in the Conv-Seq-attention. Mirroring
+the adjustments in Linear-ChanSeq-attention, Qconv and Kconv
+have dimensions RB×C×S×(d×T ), which is different from the
+previous approach of merging the C and T dimensions. As a
+result, the attention score A is characterized by a size of
+RB×C×S×S, facilitating the attention across various channels
+while accounting for different timepieces.
+3) Global-Attention Mechanism: In this section, we go
+further from the ChanSeq-attention. Given input data with
+dimensions RB×C×S×T , not only are channels and timepieces
+considered but also the specific time steps are important.
+To address this, we introduce the global-attention mechanism,
+which operates attention across all three dimensions: C, S, and
+T . It decides when, where, and which feature is essential.
+The global-attention can be viewed as a special case of the
+Conv-ChanSeq-attention when the dimensions of S and T are
+equal. The corresponding equations are presented as follows:
+q = Qconv(x), Qconv : RB×C×S×T → RB×C×S×(d×T )
+k = Kconv(x), Kconv : RB×C×S×T → RB×C×T ×(d×S)
+A = Softmax
+(
+qk ⊤)
+, A ∈ RB×C×S×T
+ˆx = A ⊙ x, ˆx ∈ RB×C×S×T
+hconv-global(x) = α ˆx + x. (31)
+In this article, the parameters align with those defined in
+the Conv-ChanSeq-attention. In particular, when S and T
+have same dimension sizes, both A and x have the size
+of RB×C×S×T . Contrary to the Conv-ChanSeq-attention, the
+Global-attention employs elementwise product instead of
+matrix multiplication when calculating enhanced feature map
+ˆx in (31). Consequently, with A having dimensions RB×C×S×T ,
+each time step in each timepiece of each channel receives
+a specific attention score to improve the feature map. This
+method distinguishes itself from other attention models by
+directly enhancing the data.
+C. Network Architecture
+In this section, we present the network architectures shown
+in Fig. 5. Fig. 5(a) illustrates the architecture of NiSNN-
+A, which utilizes a two-layer residual spiking convolutional
+framework. The first spiking layer can be seen as a spiking
+encoder as proposed in [15]. The membrane potential batch
+normalization introduced in [73] is also embedded in the
+NiLIF neurons. The NiLIF neuron yields a binary sequence
+as the output. To preserve the binary nature of the data
+stream, a max pooling layer is used to reduce dimensionality.
+After the second spiking layer, the proposed attention model
+is integrated. Finally, two linear layers without activation
+functions are employed to classify the output labels.
+To compare and verify that the proposed attention
+mechanism can also be applied to the CNN network,
+we show the attention CNN counterpart to the NiSNN-A in
+Fig. 5(b). The CNN architecture mirrors the SNNs to regulate
+extraneous variables, encompassing a two-layer convolutional
+residual framework. After each convolutional layer, a batch
+normalization layer is applied, followed by the rectified linear
+unit (ReLU) activation function. The average pooling layer is
+then used to reduce the dimension.
+In particular, since the SNN network has the characteristics
+of binary data flow, the input data for both the second
+spiking layer and the first linear layer consists of accumulator
+operations (ACs). In contrast, all operations within the CNN
+are multiplicative and accumulate (MAC) operations.
+IV. E XPERIMENTS
+In this section, we outline the details of the experiment.
+Details about the dataset and its processing can be found
+in Section IV-A. The network configuration is elaborated
+in Section IV-B. Finally, the approach to energy analysis is
+presented in Section IV-C.
+A. Dataset
+In this study, we utilized the BCIC IV 2a dataset [74] and
+the OpenBMI dataset [72] to evaluate the performance of the
+NiSNN-A.
+The BCIC IV 2a dataset consists of EEG MI recordings
+from nine participants, with each participant having 288 trials
+across 20 channels. Each trial lasts 3 s and is recorded at
+a sampling frequency of 250 Hz. The OpenBMI dataset,
+which is larger in scale, includes EEG MI signals from
+54 participants, with each participant providing 400 trials
+across 62 channels. These trials are 4 s with a sampling
+frequency of 1000 Hz. The channels selected from OpenBMI
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 9]
+14306 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+Fig. 5. Network architecture overview. (a) NiSNN-A architecture. The SNN has a residual block containing two spiking layers. Instead of traditional batch
+normalization layers and activation functions, the model employs LIF neurons to transform real-valued data streams into spikes. Notably, the proposed NiLIF
+neurons are utilized, leveraging the Heaviside function during the feed-forward phase and the surrogate derivation during backpropagation. Max pooling layers
+are adopted after spiking layers to maintain a binary data flow. After the second spiking layer, an attention mechanism is integrated to refine the feature
+maps. The final stage of the model consists of two fully connected layers for classification. (b) Attention CNN architecture. The overarching architecture of
+the CNN closely mirrors that of the SNN, encompassing a single residual block with two 2-D convolutional layers. A batch normalization layer follows the
+convolutional layer and utilizes the ReLU function as its activation function. The network employs average pooling layers for downsampling.
+TABLE I
+ARCHITECTURE OF NETWORKS DURING TRAINING . B IS THE BATCH SIZE , C IS THE CHANNEL SIZE , S IS THE
+NUMBER OF TIMEPIECES , AND T IS THE NUMBER OF TIME POINTS IN EACH TIMEPIECE
+include FC-5/3/1/2/4/6, C-5/3/1/z/2/4/6, and CP-5/3/1/z/2/4/6,
+whereas the selected channels for BCIC IV 2a are FC-
+3/1/z/2/4, C-5/3/1/z/2/4/6, CP-3/1/z/2/4, and P-1/z/2. The tasks
+of both datasets are to classify MI EEG signals for left-hand
+and right-hand movements.
+The experiments train the networks to identify the common
+features in EEG signals. We take the subject-independent
+approach as utilized in [35], which reserves data from one
+subject for testing and uses data from the remaining subjects
+for training. Specifically, for OpenBMI, the training data
+includes 53 subjects’ recordings, totaling 21 200 trials, and the
+test data comprises 200 trials. For BCIC IV 2a, the training
+data includes eight subjects’ trials, totaling 2304 trials, with
+the test dataset comprising 144 trials. For both datasets, each
+trial contains 400 time steps after downsampling. Therefore,
+this strategy ensures that the model is tested on unseen data,
+reinforcing its scalability and practical applicability.
+Throughout the training phase, we cycle each subject as
+a test case. The overall performance is then calculated by
+averaging the accuracy from all cycles. Therefore, each model
+undergoes training and testing 54 times for OpenBMI and nine
+times for BCIC IV 2a, respectively, to ascertain the final result
+and remove some uncertainty.
+B. Network Setups
+As described in Section IV-A, the input data have a
+dimension size of RB×C×S×T , where B denotes the batch size,
+C is the channel size, S indicates the number of timepieces,
+and T is the number of time steps within each timepiece. In the
+experiment, the batch size is 64 and the channel size is 20.
+Each trial is segmented into 20 timepieces, rendering S and
+T as 20. Also, we set the threshold Vth in the NiLIF as 0.5.
+The network parameters are shown in Table I. The first
+convolutional layer acts as a spiking encoder, only considering
+the information within each timepiece with a kernel size
+of (1, 5). The second convolutional layer plays the role of
+classifier, taking into account both intratimepieces and inner
+timepiece information with a kernel size of (10, 10). All
+pooling layers employ the kernel size (2, 2). The first linear
+layer reduces the flattened data dimension to 20, and the
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 10]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14307
+TABLE II
+FLOP S OF MODEL EXECUTIONS . CNN M ODELS ONLY HAVE MAC O PERATION , AND SNN M ODELS HAVE MAC, AC conv, AND ACfc
+OPERATIONS . x IS 4 810 040, y IS 1 170 040, a IS 4 000 000 AND b IS 10 000
+final linear layer reduces it further to 2, thereby having
+the final classification result. Within the attention layer, the
+hyperparameters d1 and d2 are set to 6 and 20, respectively,
+for all linear attention models. For convolutional attention
+models, the hyperparameter d is set to 8. The models are
+trained for 20 epochs. We employ a well-trained CNN model
+as a pretrained network for its corresponding SNN model to
+accelerate the training procedure. During the training process,
+we adopted the Adam optimizer with a learning rate of 0.001.
+The cross-entropy loss is utilized as the loss function
+CE_Loss(y, p) = −
+n∑
+n
+yn log(pn) (32)
+where y represents the label of the data and p is the network’s
+output.
+C. Energy Analysis
+For analyzing the energy consumption of CNN and SNN
+models, we adopt the same energy analysis method in [25],
+which calculates the network’s floating point operations
+(FLOPs).
+The main operations within neural networks in this context
+can be categorically divided into three primary types: the
+convolutional layer, the linear layer, and matrix multiplication.
+The FLOPs associated with each of these operations can be
+described as follows:
+FLOPsn
+conv = kn
+0kn
+1 hnwncncn−1
+FLOPsn
+fc = i non
+FLOPsmm = m1nm 2 (33)
+where for the nth convolutional layer, kn
+0 and kn
+1 denote the
+dimensions of the convolutional kernel, while hn and wn
+represent the dimensions of the output map. In addition,
+cn and cn−1 specify the size of the input and output data
+channels, respectively. For the nth linear layer, i n represents
+the input size and on denotes the output size. Finally, for matrix
+multiplication involving two matrices of dimensions [m1, n]
+and [n, m2], the FLOPs are determined as the product of these
+three dimensions.
+In the CNN models, all network data consist of real-
+valued numbers, which makes all operations MAC. The energy
+analysis is divided into the FLOPs corresponding to the
+standard vanilla CNN model, denoted by x, and the FLOPs for
+the additional attention model. Given our consistent network
+architecture for all models, the value of x remains constant,
+4 810 040. In the SNN models, the FLOPs analysis is more
+complicated. As elaborated in Section III-C, the inputs to the
+second convolutional and first linear layers are all binary.
+Consequently, these layers employ AC operations, which
+accumulate weight directly without involving multiplications.
+It is worth noting that the number of AC operations is
+contingent upon the spike rate, given that accumulation
+happens only when the input is 1. Thus, the spike rates
+of these two layers emerge as important parameters when
+quantifying the AC operations within SNN models. The rest
+of the SNN retains the use of MAC operations, mirroring the
+corresponding CNN models. Therefore, the FLOPs assessment
+for SNN models can be partitioned into three parts: AC of the
+binary layers, MAC of the rest of the SNN model, and the
+MAC of the additional attention model. The MAC of the rest
+of the SNN model could be divided into two parts: the MAC
+of LIF neurons and the MAC of the rest of the NiSNN model.
+We present the MAC of the rest SNN model with NiLIF
+neurons as y, which is a constant across all SNN models with
+NiLIF neurons, calculated as 1 170 040. The MAC of SNN
+with iterative LIF neurons is less than y, which is calculated
+as y − 180 000. It should be highlighted that while the FLOPs
+associated with iterative LIF neurons are fewer than those
+of NiLIF neurons, the latter are implemented using matrix
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 11]
+14308 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+TABLE III
+ACCURACY AND ENERGY PERFORMANCE OF LEFT H V ERSUS RIGHT H. S UBJECT -INDEPENDENT CLASSIFICATION
+USING THE BCIC IV 2 A DATASET FOR SNN S WITH ATTENTION MECHANISMS
+TABLE IV
+ACCURACY AND ENERGY PERFORMANCE OF LEFT H V ERSUS RIGHT H. S UBJECT -INDEPENDENT CLASSIFICATION
+USING THE OPEN BMI D ATASET FOR SNN S WITH ATTENTION MECHANISMS
+operations, whereas the former rely on loop structures, leading
+to increased execution time. The original AC for the second
+convolutional layer is 4 000 000, denoted by a, while for the
+first linear layer, it is 10 000, represented as b.
+The final FLOPs comparison of models is shown in Table II.
+Details on model selection are provided in Section V-A.
+We choose the vanilla CNN and SNN as baseline models for
+comparing MAC and AC operations, respectively. All spiking
+rates are calculated by the average of two dataset experiments.
+For each experiment, the spiking rates are calculated over all
+subjects. Table II shows that the proposed model can reduce
+the energy consumption from both MAC and AC calculation.
+After the FLOPs analysis, we could calculate the total energy
+cost. We adopt the same assumption as in [25] that the data for
+various operations are implemented as floating point 32 bits
+in 45-nm technology, where the MAC energy is 4.6 pJ and
+the AC energy is 0.9 pJ. The detailed energy is listed in
+Tables III and IV.
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 12]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14309
+V. R ESULTS AND DISCUSSION
+In this section, we describe the results of the proposed
+attention models which are delineated in Section V-A. Then,
+a discussion along with the result visualization is provided in
+Section V-B.
+A. Comparison With State-of-the-Art Methods
+Tables III and IV list the comparison performances of
+various attention mechanisms with CNNs and SNNs on
+two EEG datasets. We have chosen seven CNN models
+with attention mechanisms for EEG classification as our
+benchmark. Autthasam et al. [35] have proposed a vanilla
+CNN model, employing a subject-independent approach for
+training and testing phases. Furthermore, Huang et al. [33]
+incorporated residual blocks into the CNN model. Of the seven
+baseline models, five models employ attention mechanisms.
+It is worth noting that [47] and [49] employ a global-attention
+mechanism that encompasses all three dimensions. However,
+their approach is characterized by extracting attention scores
+individually for each dimension after using the pooling meth-
+ods to minimize unrelated dimensions. This stands differently
+from the methodology of our proposed global-attention model.
+A total of ten models were chosen as the SNN baselines. It is
+worth noting that in the context of EEG signal processing, the
+iterative LIF model struggles with the long time steps, poten-
+tially leading to gradient issues. Therefore, we adopted the
+proposed NiLIF neuron in other baseline models. Concerning
+the attention mechanism, the baseline models are from the
+image attention SNN model developed for CV , as introduced
+in [25]. This approach composes various dimensional attention
+components sequentially to achieve the attention score, diverg-
+ing from our proposed models that utilize a singular model.
+The accuracy metric was determined by the ratio of
+correctly classified samples to the total number of samples,
+as given by
+Accuracy = TP + TN
+TP + TN + FP + FN (34)
+where TP, TN, FP, and FN represent true positive, true
+negative, false positive, and false negative, respectively. For
+energy analysis, we adopted the unit microjoules to quantify
+the energy consumption of the networks as discussed in
+Section IV-C.
+The experimental results show that the proposed NiSNN-As
+can achieve the best performance among SNN models, which
+are 0.6615 and 0.7 for the BCIC IV 2a dataset and OpenBMI
+dataset, respectively. This accuracy is comparable with the
+CNN models, with the additional advantage of consuming
+around two times less energy.
+Notably, compared with the iterative LIF neuron model, the
+proposed NiLIF model improves the accuracy by 0.1 for BCIC
+IV 2a dataset and 0.2 for OpenBMI dataset, respectively, while
+reducing the energy cost. Tables III and IV show that the firing
+rate of NiLIF neurons is much lower than of iterative LIF
+neurons, which illustrates the sparsity of our proposed method.
+The proposed NiSNN and attention mechanisms can be used
+separately. We present the comparison results of NiSNN
+and the proposed attention mechanisms on various datasets
+in the Appendix (see Supplementary Material), showing the
+proposed methods’ feasibility.
+Fig. 6. Generated attention visualization example, using our global NiSNN-A
+model. The top figure shows the input EEG signals. In the following figure,
+black scatters represent the spikes after encoding. The shade of orange blocks
+represents the degree of attention. The darker orange block shows a higher
+attention score, and the lighter orange block represents a lower one. In the
+last figure, the black curve represents the average value of the input EEG on
+20 channels.
+B. Discussion
+The experimental results highlight the potential of the
+attention mechanism in improving the classification accuracy
+of EEG signals, especially for SNN models. To understand
+more clearly how the attention mechanism works, we provide
+a visualization that illustrates the role of the attention score
+A in the entire feature map. Fig. 6 intuitively represents
+the attention score A of the global-attention model. The
+top part of the figure depicts the input 20-channel EEG
+signals in a numeric format. The second part shows the
+spikes after the spiking encoder, represented by the black
+raster. The orange blocks represent the attention scores after
+normalization. Darker orange indicates higher attention scores,
+while lighter orange indicates lower ones. It illustrates the
+inner operation of the attention mechanism, highlighting the
+model’s ability to allocate variable attention to different
+regions of the EEG signal, answering when, where, and
+what information is relevant. However, unlike understandable
+visualizations of attention mechanisms in visual tasks, the
+physiological meaning of attention scores is not intuitive.
+Therefore, we show the averaging effect in the third part
+of the figure. We show the mean of the 20-channel EEG
+signal, represented by the black line. The orange shading
+represents higher or lower attention scores. Interestingly, the
+attention mechanism emphasizes time steps around 30–40,
+corresponding to the most apparent drop in the EEG signal,
+revealing the importance of this sudden change in the EEG
+signal. By employing such a dynamic weighting method, the
+model ensures that the important regions of the input are
+prioritized, potentially contributing to the high accuracy in
+classification tasks.
+From an energy consumption point of view, the results
+highlight the significance of employing SNNs, which achieve
+accuracy comparable with CNN models and offer a twofold
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 13]
+14310 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+reduction in energy use. This efficiency can be important in
+applications where power consumption is a concern, such as
+portable EEG devices or real-time EEG monitoring systems.
+Therefore, SNNs present promising potential for these energy-
+conscious edge devices.
+VI. C ONCLUSION
+This article introduced an NiSNN-A model, encompassing
+NiLIF neurons and diverse attention mechanisms. The newly
+proposed NiLIF neuron retains the biological attributes
+of traditional LIF neurons while efficiently handling long
+temporal data. This design avoids long loops in execution and
+gradient challenges by approximating the neuron dynamics
+and calculating synchronously. Subsequently, the attention
+mechanism emphasizes important parts of the feature
+map. Notably, all our proposed attention models integrate
+computations within one singular model instead of using
+sequential architectures. We employed the BCIC IV 2a
+and OpenBMI datasets for validation, adopting a subject-
+independent approach to demonstrate the model’s capabilities
+in uniformed feature extraction for unfamiliar participants. The
+results indicate that our approach surpasses other SNN models
+in accuracy performance. It achieves accuracy comparable
+to its CNN counterparts but improves energy efficiency.
+Furthermore, our attention visualization results reveal that our
+model improves the classification task’s accuracy and offers
+deeper insights into EEG signal interpretation.
+This article has provided a way for novel methodologies in
+EEG classification, focusing on potential cooperation between
+attention mechanisms and SNN architectures. In the future,
+as the field of EEG signal processing continues to evolve, our
+findings require continued innovation and adaptive strategies
+to address challenges.
+REFERENCES
+[1] A. Tsiamalou et al., “EEG in neurorehabilitation: A bibliometric analysis
+and content review,” Neurol. Int., vol. 14, no. 4, pp. 1046–1061,
+Dec. 2022.
+[2] C. Del Percio et al., “What a single electroencephalographic (EEG)
+channel can tell us about Alzheimer’s disease patients with mild
+cognitive impairment,” Clin. EEG Neurosci., vol. 54, no. 1, pp. 21–35,
+2023.
+[3] A. Singh, A. A. Hussain, S. Lal, and H. W. Guesgen, “A comprehensive
+review on critical issues and possible solutions of motor imagery based
+electroencephalography brain-computer interface,” Sensors, vol. 21,
+no. 6, p. 2173, Mar. 2021.
+[4] J. Zhang and M. Wang, “A survey on robots controlled by motor imagery
+brain-computer interfaces,” Cognit. Robot., vol. 1, pp. 12–24, Jan. 2021.
+[5] S. Rajwal and S. Aggarwal, “Convolutional neural network-based EEG
+signal analysis: A systematic review,” Arch. Comput. Methods Eng.,
+vol. 30, no. 6, pp. 3585–3615, 2023.
+[6] S. Alhagry, A. A. Fahmy, and R. A. El-Khoribi, “Emotion recognition
+based on EEG using LSTM recurrent neural network,” Int. J. Adv.
+Comput. Sci. Appl., vol. 8, no. 10, pp. 355–358, 2017.
+[7] Y . Song, Q. Zheng, B. Liu, and X. Gao, “EEG conformer: Convolutional
+transformer for EEG decoding and visualization,” IEEE Trans. Neural
+Syst. Rehabil. Eng., vol. 31, pp. 710–719, 2022.
+[8] O.-Y . Kwon, M.-H. Lee, C. Guan, and S.-W. Lee, “Subject-independent
+brain–computer interfaces based on deep convolutional neural networks,”
+IEEE Trans. Neural Netw. Learn. Syst., vol. 31, no. 10, pp. 3839–3852,
+Oct. 2020.
+[9] J.-S. Bang, M.-H. Lee, S. Fazli, C. Guan, and S.-W. Lee, “Spatio-
+spectral feature representation for motor imagery classification using
+convolutional neural networks,” IEEE Trans. Neural Netw. Learn. Syst.,
+vol. 33, no. 7, pp. 3038–3049, Jul. 2022.
+[10] S. Zhang et al., “An explainable and generalizable recurrent neural
+network approach for differentiating human brain states on EEG dataset,”
+IEEE Trans. Neural Netw. Learn. Syst., vol. 35, no. 6, pp. 7339–7350,
+Jun. 2024.
+[11] Y . Wu, Y . Yang, J. S. Xiao, C. Zhou, H. Sui, and H. Li,
+“Invariant spatiotemporal representation learning for cross-patient
+seizure classification,” 2025. [Online]. Available: https://openreview.net/
+forum?id=TkbjqexD8w
+[12] C. Ju and C. Guan, “Tensor-CSPNet: A novel geometric deep learning
+framework for motor imagery classification,” IEEE Trans. Neural Netw.
+Learn. Syst., vol. 34, no. 12, pp. 10955–10969, Dec. 2023.
+[13] X. Liu, Y . Shen, J. Liu, J. Yang, P. Xiong, and F. Lin, “Parallel
+spatial–temporal self-attention CNN-based motor imagery classification
+for BCI,” Frontiers Neurosci., vol. 14, Dec. 2020, Art. no. 587520.
+[14] E. Eldele et al., “An attention-based deep learning approach for sleep
+stage classification with single-channel EEG,” IEEE Trans. Neural Syst.
+Rehabil. Eng., vol. 29, pp. 809–818, 2021.
+[15] X. Liao, Y . Wu, Z. Wang, D. Wang, and H. Zhang, “A convolutional
+spiking neural network with adaptive coding for motor imagery
+classification,” Neurocomputing, vol. 549, Sep. 2023, Art. no. 126470.
+[16] Y . Zhang et al., “Improving EEG decoding via clustering-based multitask
+feature learning,” IEEE Trans. Neural Netw. Learn. Syst., vol. 33, no. 8,
+pp. 3587–3597, Aug. 2022.
+[17] A. Vaswani et al., “Attention is all you need,” in Proc. Adv. Neural Inf.
+Process. Syst., vol. 30, 2017, pp. 1–15.
+[18] S. Li, Q. Yan, and P. Liu, “An efficient fire detection method
+based on multiscale feature extraction, implicit deep supervision and
+channel attention mechanism,” IEEE Trans. Image Process., vol. 29,
+pp. 8467–8475, 2020.
+[19] S. Abirami and P. Chitra, “Energy-efficient edge based real-time
+healthcare support system,” in Advances in Computers, vol. 117, no. 1.
+Amsterdam, The Netherlands: Elsevier, 2020, pp. 339–368.
+[20] Z. Huang and M. Wang, “A review of electroencephalogram signal
+processing methods for brain-controlled robots,” Cognit. Robot., vol. 1,
+pp. 111–124, Jan. 2021.
+[21] S. Wo´ zniak, A. Pantazi, T. Bohnstingl, and E. Eleftheriou, “Deep
+learning incorporating biologically inspired neural dynamics and in-
+memory computing,” Nat. Mach. Intell., vol. 2, no. 6, pp. 325–336,
+2020.
+[22] C. D. Schuman, S. R. Kulkarni, M. Parsa, J. P. Mitchell, P. Date, and
+B. Kay, “Opportunities for neuromorphic computing algorithms and
+applications,” Nature Comput. Sci., vol. 2, no. 1, pp. 10–19, Jan. 2022.
+[23] Y . Liu and W. Pan, “Spiking neural-networks-based data-driven control,”
+Electronics, vol. 12, no. 2, p. 310, Jan. 2023.
+[24] M. Ali Siddiqi et al., “A lightweight architecture for real-time neuronal-
+spike classification,” 2023, arXiv:2311.04808.
+[25] M. Yao et al., “Attention spiking neural networks,” IEEE Trans. Pattern
+Anal. Mach. Intell., vol. 45, no. 8, pp. 9393–9410, Aug. 2023.
+[26] A. Al-Saegh, S. A. Dawwd, and J. M. Abdul-Jabbar, “Deep learning
+for motor imagery EEG-based classification: A review,” Biomed. Signal
+Process. Control, vol. 63, Jan. 2021, Art. no. 102172.
+[27] J. Cui, Z. Lan, O. Sourina, and W. Müller-Wittig, “EEG-based cross-
+subject driver drowsiness recognition with an interpretable convolutional
+neural network,” IEEE Trans. Neural Netw. Learn. Syst., vol. 34, no. 10,
+pp. 7921–7933, Oct. 2023.
+[28] H. Dong, A. Supratak, W. Pan, C. Wu, P. M. Matthews, and Y . Guo,
+“Mixed neural network approach for temporal sleep stage classification,”
+IEEE Trans. Neural Syst. Rehabil. Eng., vol. 26, no. 2, pp. 324–333,
+Feb. 2018.
+[29] J. Wang, R. Gao, H. Zheng, H. Zhu, and C.-J. R. Shi, “SSGCNet: A
+sparse spectra graph convolutional network for epileptic EEG signal
+classification,” IEEE Trans. Neural Netw. Learn. Syst., vol. 35, no. 9,
+pp. 12157–12171, Sep. 2024.
+[30] H. Dose, J. S. Møller, H. K. Iversen, and S. Puthusserypady, “An end-to-
+end deep learning approach to MI-EEG signal classification for BCIs,”
+Exp. Syst. Appl., vol. 114, pp. 532–542, Dec. 2018.
+[31] Y . Li, L. Guo, Y . Liu, J. Liu, and F. Meng, “A temporal–spectral-
+based squeeze-and-excitation feature fusion network for motor imagery
+EEG decoding,” IEEE Trans. Neural Syst. Rehabil. Eng., vol. 29,
+pp. 1534–1545, 2021.
+[32] V . Lawhern, A. Solon, N. Waytowich, S. M. Gordon, C. Hung, and
+B. J. Lance, “EEGNet: A compact convolutional neural network for
+EEG-based brain–computer interfaces,” J. Neural Eng., vol. 15, no. 5,
+2018, Art. no. 056013.
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 14]
+ZHANG et al.: NiSNN-A WITH APPLICATION TO MOTOR IMAGERY EEG CLASSIFICATION 14311
+[33] J.-S. Huang, W.-S. Liu, B. Yao, Z.-X. Wang, S.-F. Chen, and
+W.-F. Sun, “Electroencephalogram-based motor imagery classification
+using deep residual convolutional networks,” Frontiers Neurosci.,
+vol. 15, Nov. 2021, Art. no. 774857.
+[34] A. I. Humayun, A. S. Sushmit, T. Hasan, and M. I. H. Bhuiyan, “End-
+to-end sleep staging with raw single channel EEG using deep residual
+ConvNets,” in Proc. IEEE EMBS Int. Conf. Biomed. Health Informat.
+(BHI), May 2019, pp. 1–5.
+[35] P. Autthasan et al., “MIN2Net: End-to-end multi-task learning for
+subject-independent motor imagery EEG classification,” IEEE Trans.
+Biomed. Eng., vol. 69, no. 6, pp. 2105–2118, Jun. 2022.
+[36] X. Ma, S. Qiu, C. Du, J. Xing, and H. He, “Improving EEG-based
+motor imagery classification via spatial and temporal recurrent neural
+networks,” in Proc. 40th Annu. Int. Conf. IEEE Eng. Med. Biol. Soc.
+(EMBC), Jul. 2018, pp. 1903–1906.
+[37] L.-M. Zhao, X. Yan, and B.-L. Lu, “Plug-and-play domain adaptation
+for cross-subject EEG-based emotion recognition,” in Proc. AAAI Conf.
+Artif. Intell., 2021, vol. 35, no. 1, pp. 863–870.
+[38] L. Xia et al., “MuLHiTA: A novel multiclass classification framework
+with multibranch LSTM and hierarchical temporal attention for early
+detection of mental stress,” IEEE Trans. Neural Netw. Learn. Syst.,
+vol. 34, no. 12, pp. 9657–9670, Dec. 2023.
+[39] T. Brown et al., “Language models are few-shot learners,” in Proc. Adv.
+Neural Inf. Process. Syst., vol. 33, 2020, pp. 1877–1901.
+[40] J. Achiam et al., “GPT-4 technical report,” 2023, arXiv:2303.08774.
+[41] L. Zhang, F. Xiao, and Z. Cao, “Multi-channel EEG signals classification
+via CNN and multi-head self-attention on evidence theory,” Inf. Sci.,
+vol. 642, Sep. 2023, Art. no. 119107.
+[42] X. Wang and Z. Wang, “CNN with self-attention in EEG classification,”
+in Proc. Int. Conf. Human-Comput. Interact. Cham, Switzerland:
+Springer, Jan. 2022, pp. 512–526.
+[43] Y . Wen, W. He, and Y . Zhang, “A new attention-based 3D densely
+connected cross-stage-partial network for motor imagery classification
+in BCI,” J. Neural Eng., vol. 19, no. 5, Oct. 2022, Art. no. 056026.
+[44] J. Luo et al., “A shallow mirror transformer for subject-independent
+motor imagery BCI,” Comput. Biol. Med., vol. 164, Sep. 2023,
+Art. no. 107254.
+[45] Y . Ma, Y . Song, and F. Gao, “A novel hybrid CNN-transformer model
+for EEG motor imagery classification,” in Proc. Int. Joint Conf. Neural
+Netw. (IJCNN), Jul. 2022, pp. 1–8.
+[46] R. Zhang, G. Liu, Y . Wen, and W. Zhou, “Self-attention-based
+convolutional neural network and time-frequency common spatial
+pattern for enhanced motor imagery classification,” J. Neurosci.
+Methods, vol. 398, Oct. 2023, Art. no. 109953.
+[47] T. Wang, J. Mao, R. Xiao, W. Wang, G. Ding, and Z. Zhang, “Residual
+learning attention CNN for motion intention recognition based on EEG
+data,” in Proc. IEEE Biomed. Circuits Syst. Conf. (BioCAS), Oct. 2021,
+pp. 1–6.
+[48] H. Li, H. Chen, Z. Jia, R. Zhang, and F. Yin, “A parallel multi-scale
+time-frequency block convolutional neural network based on channel
+attention module for motor imagery classification,” Biomed. Signal
+Process. Control, vol. 79, Jan. 2023, Art. no. 104066.
+[49] C.-C. Fan, H. Yang, Z.-G. Hou, Z.-L. Ni, S. Chen, and Z. Fang, “Bilinear
+neural network with 3-D attention for brain decoding of motor imagery
+movements from the human EEG,” Cognit. Neurodynamics, vol. 15,
+no. 1, pp. 181–189, Feb. 2021.
+[50] W. Cai et al., “A spatial–channel–temporal-fused attention for spiking
+neural networks,”IEEE Trans. Neural Netw. Learn. Syst., vol. 35, no. 10,
+pp. 14315–14329, Oct. 2024.
+[51] A. Barton, E. V olna, M. Kotyrba, and R. Jarusek, “Proposal of a control
+algorithm for multiagent cooperation using spiking neural networks,”
+IEEE Trans. Neural Netw. Learn. Syst., vol. 34, no. 4, pp. 2016–2027,
+Apr. 2023.
+[52] Q. Liu, G. Pan, H. Ruan, D. Xing, Q. Xu, and H. Tang, “Unsupervised
+AER object recognition based on multiscale spatio-temporal features
+and spiking neurons,” IEEE Trans. Neural Netw. Learn. Syst., vol. 31,
+no. 12, pp. 5300–5311, Dec. 2020.
+[53] D. Liu, N. Bellotto, and S. Yue, “Deep spiking neural network for video-
+based disguise face recognition based on dynamic facial movements,”
+IEEE Trans. Neural Netw. Learn. Syst., vol. 31, no. 6, pp. 1843–1855,
+Jun. 2020.
+[54] A. Safa et al., “Improving the accuracy of spiking neural networks for
+radar gesture recognition through preprocessing,” IEEE Trans. Neural
+Netw. Learn. Syst., vol. 34, no. 6, pp. 2869–2881, Jun. 2023.
+[55] M. Dampfhoffer, T. Mesquida, A. Valentian, and L. Anghel,
+“Backpropagation-based learning techniques for deep spiking neural
+networks: A survey,” IEEE Trans. Neural Netw. Learn. Syst., vol. 35,
+no. 9, pp. 11906–11921, Sep. 2024.
+[56] T. Zhang, S. Jia, X. Cheng, and B. Xu, “Tuning convolutional spiking
+neural network with biologically plausible reward propagation,” IEEE
+Trans. Neural Netw. Learn. Syst., vol. 33, no. 12, pp. 7621–7631,
+Dec. 2022.
+[57] S. Schliebs and N. Kasabov, “Evolving spiking neural network—A
+survey,” Evolving Syst., vol. 4, no. 2, pp. 87–98, Jun. 2013.
+[58] S. R. Kheradpisheh, M. Ganjtabesh, S. J. Thorpe, and T. Masquelier,
+“STDP-based spiking deep convolutional neural networks for object
+recognition,” Neural Netw., vol. 99, pp. 56–67, Mar. 2018.
+[59] B. Rueckauer, I.-A. Lungu, Y . Hu, M. Pfeiffer, and S.-C. Liu,
+“Conversion of continuous-valued deep networks to efficient event-
+driven networks for image classification,” Front. Neurosci., vol. 11,
+p. 682, Dec. 2017.
+[60] Y . Wu, L. Deng, G. Li, J. Zhu, and L. Shi, “Spatio-temporal
+backpropagation for training high-performance spiking neural networks,”
+Front. Neurosci., vol. 12, p. 331, May 2018.
+[61] J. M. Antelis and L. E. Falcón, “Spiking neural networks applied to the
+classification of motor tasks in EEG signals,” Neural Netw., vol. 122,
+pp. 130–143, Feb. 2020.
+[62] Y . Luo et al., “EEG-based emotion classification using spiking neural
+networks,” IEEE Access, vol. 8, pp. 46007–46016, 2020.
+[63] N. Kasabov and E. Capecci, “Spiking neural network methodology
+for modelling, classification and understanding of EEG spatio-temporal
+data measuring cognitive processes,” Inf. Sci., vol. 294, pp. 565–575,
+Feb. 2015.
+[64] X. Wu et al., “Improving NeuCube spiking neural network for EEG-
+based pattern recognition using transfer learning,” Neurocomputing,
+vol. 529, pp. 222–235, Apr. 2023.
+[65] Z. Yan, J. Zhou, and W.-F. Wong, “Energy efficient ECG classification
+with spiking neural network,” Biomed. Signal Process. Control, vol. 63,
+Jan. 2021, Art. no. 102170.
+[66] Z. Yan, J. Zhou, and W.-F. Wong, “EEG classification with spiking
+neural network: Smaller, better, more energy efficient,” Smart Health,
+vol. 24, Jun. 2022, Art. no. 100261.
+[67] S. Ghosh-Dastidar and H. Adeli, “Improved spiking neural networks for
+EEG classification and epilepsy and seizure detection,” Integr. Comput.-
+Aided Eng., vol. 14, no. 3, pp. 187–212, May 2007.
+[68] S. M. Bohte, J. N. Kok, and H. La Poutré, “Error-backpropagation
+in temporally encoded networks of spiking neurons,” Neurocomputing,
+vol. 48, nos. 1–4, pp. 17–37, Oct. 2002.
+[69] W. Fang et al., “Parallel spiking neurons with high efficiency and ability
+to learn long-term dependencies,”Adv. Neural Inf. Process. Syst., vol. 36,
+2024, pp. 53674–53687.
+[70] E. O. Neftci, H. Mostafa, and F. Zenke, “Surrogate gradient learning
+in spiking neural networks: Bringing the power of gradient-based
+optimization to spiking neural networks,” IEEE Signal Process. Mag.,
+vol. 36, no. 6, pp. 51–63, Nov. 2019.
+[71] S. Hochreiter, Y . Bengio, P. Frasconi, and J. Schmidhuber, Gradient
+Flow in Recurrent Nets: The Difficulty of Learning Long-Term
+Dependencies. IEEE Press, 2001. [Online]. Available: https://www.
+researchgate.net/profile/Y-Bengio/publication/2839938_Gradient_Flow_
+in_Recurrent_Nets_the_Difficulty_of_Learning_Long-Term_Dependenc
+ies/links/546cd26e0cf2193b94c577c2/Gradient-Flow-in-Recurrent-Nets-
+the-Difficulty-of-Learning-Long-Term-Dependencies.pdf
+[72] M.-H. Lee et al., “EEG dataset and OpenBMI toolbox for three BCI
+paradigms: An investigation into BCI illiteracy,” GigaScience, vol. 8,
+no. 5, May 2019, Art. no. giz002.
+[73] Y . Guo et al., “Membrane potential batch normalization for spiking
+neural networks,” in Proc. IEEE/CVF Int. Conf. Comput. Vis., Oct. 2023,
+pp. 19420–19430.
+[74] M. Tangermann et al., “Review of the BCI competition IV ,” Front.
+Neurosci., vol. 6, p. 55, Jul. 2012.
+[75] Y . Hu, Y . Wu, L. Deng, and G. Li, “Advancing residual learning towards
+powerful deep spiking neural networks,” 2021, arXiv:2112.08954.
+[76] G. Orchard, A. Jayawant, G. K. Cohen, and N. Thakor, “Converting
+static image datasets to spiking neuromorphic datasets using saccades,”
+Frontiers Neurosci., vol. 9, p. 437, Nov. 2015.
+[77] H. Li, H. Liu, X. Ji, G. Li, and L. Shi, “CIFAR10-DVS: An event-
+stream dataset for object classification,” Frontiers Neurosci., vol. 11,
+p. 309, May 2017.
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 
+
+[PAGE 15]
+14312 IEEE TRANSACTIONS ON NEURAL NETWORKS AND LEARNING SYSTEMS, VOL. 36, NO. 8, AUGUST 2025
+[78] A. Amir et al., “A low power, fully event-based gesture recognition
+system,” in Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR),
+Jul. 2017, pp. 7243–7252.
+[79] J. K. Holland, E. K. Kemsley, and R. H. Wilson, “Use of Fourier
+transform infrared spectroscopy and partial least squares regression for
+the detection of adulteration of strawberry purées,”J. Sci. Food Agricult.,
+vol. 76, no. 2, pp. 263–269, Feb. 1998.
+[80] H. A. Dau et al., “The UCR time series archive,” IEEE/CAA J. Autom.
+Sinica, vol. 6, no. 6, pp. 1293–1305, Nov. 2019.
+Chuhan Zhang (Graduate Student Member, IEEE)
+received the B.Eng. degree in computer science
+from Harbin Institute of Technology, Harbin, China,
+in 2020, and the M.Eng. degree in computer science
+from KU Leuven, Leuven, Belgium, in 2022. She
+is currently pursuing Ph.D. degree with TU Delft,
+Delft, The Netherlands.
+Her research interests include spiking neural
+networks (SNNs) and learning-based robot control.
+Wei Pan (Member, IEEE) received the Ph.D. degree
+in bioengineering from the Imperial College London,
+London, U.K., in 2016.
+He was an Assistant Professor in robot dynamics
+with the Department of Cognitive Robotics and the
+Co-Director of Delft SELF AI Laboratory, TU Delft,
+Delft, The Netherlands. He is currently a Senior
+Lecturer in machine learning with the Department
+of Computer Science and a member of the Centre
+for AI Fundamentals and the Centre for Robotics
+and AI, The University of Manchester, Manchester,
+U.K. His research interests include machine learning and control theory with
+applications in robotics.
+Cosimo Della Santina (Senior Member, IEEE)
+received the Ph.D. degree in robotics from the
+University of Pisa, Pisa, Italy, in 2019.
+He was a Visiting Ph.D. Student and a Post-
+Doctoral Researcher with Massachusetts Institute of
+Technology, Boston, MA, USA, from 2017 to 2019.
+Since 2020, he has been with the German
+Aerospace Centre, WeSSling, Germany, as an
+External Research Scientist. He is currently an Asso-
+ciate Professor with the Department of Cognitive
+Robotics, Delft University of Technology, Delft,
+The Netherlands. His research interests include modeling and control of soft
+robots, and learning dynamical systems.
+Authorized licensed use limited to: BEIJING INSTITUTE OF TECHNOLOGY. Downloaded on September 19,2025 at 07:02:42 UTC from IEEE Xplore.  Restrictions apply. 

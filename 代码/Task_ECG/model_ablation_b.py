@@ -1,4 +1,3 @@
-"""ECG model using Ablation B layer (merged slow/fast, no separate fast state)."""
 
 from typing import List
 
@@ -6,7 +5,6 @@ import torch
 import torch.nn as nn
 
 from core_algorithm.sprif_layer_ablation_b import SPRiFNeuronLayerAblationB
-
 
 class SPRiFECGModelAblationB(nn.Module):
     def __init__(
@@ -41,3 +39,4 @@ class SPRiFECGModelAblationB(nn.Module):
             out = layer(out, batch_first=True)
         logits = self.readout(out)
         return logits.permute(0, 2, 1)
+

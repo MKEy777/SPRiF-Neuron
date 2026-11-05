@@ -1,0 +1,1825 @@
+1
+PMSN: A Parallel Multi-compartment Spiking
+Neuron for Multiscale Temporal Processing
+Xinyi Chen, Jibin Wu,Member, IEEE, Chenxiang Ma, Yinsong Yan, Hanwen Liu, Yujie Wu,
+Kay Chen Tan,Fellow, IEEE
+Abstract—Spiking Neural Networks (SNNs) hold great poten-
+tial to realize brain-inspired, energy-efficient computational sys-
+tems. However, current SNNs still fall short in terms of multiscale
+temporal processing compared to their biological counterparts.
+This limitation has resulted in poor performance in many pattern
+recognition tasks with information that varies across different
+timescales. To address this issue, we put forward a novel spiking
+neuron model called Parallel Multi-compartment Spiking Neuron
+(PMSN). The PMSN emulates biological neurons by incorpo-
+rating multiple interacting substructures and allows for flexible
+adjustment of the substructure counts to effectively represent
+temporal information across diverse timescales. Additionally, to
+address the computational burden associated with the increased
+complexity of the proposed model, we introduce two paral-
+lelization techniques that decouple the temporal dependencies of
+neuronal updates, enabling parallelized training across different
+time steps. Our experiments across a wide range of pattern
+recognition tasks demonstrate that PMSN outperforms state-of-
+the-art spiking neuron models in temporal processing capacity
+and training speed. Specifically, compared with the commonly
+used Leaky Integrate-and-Fire neuron, PMSN offers more than
+10×acceleration and a30%accuracy improvement on Sequential
+CIFAR-10 dataset, while maintaining comparable computational
+cost. Our implementation on neuromorphic hardware further
+demonstrates the deployability of PMSN and highlights its fa-
+vorable trade-off between effectiveness and efficiency. Therefore,
+the proposed PMSN presents a promising solution to harness
+the computational advantages of detailed biological neurons,
+enabling high-performance and efficient temporal processing on
+neuromorphic computing systems. Code is available at https:
+//github.com/xychen-comp/PMSN.
+Index Terms—Spiking Neural Network, Neuromorphic Com-
+puting, Spiking Neuron Model, Multiscale Temporal Processing,
+Temporal Parallelization
+I. INTRODUCTION
+T
+HE human brain, recognized as one of the most so-
+phisticated computational systems on the planet, demon-
+strates unparalleled energy efficiency and cognitive capabili-
+ties. Spiking Neural Networks (SNNs) have been proposed as
+This work is accepted by IEEE Transactions on Neural Networks and
+Learning Systems, DOI:10.1109/TNNLS.2026.3708510
+This work was partially supported by the Research Grants Council of the
+Hong Kong SAR (Grant No. C5052-23G, PolyU15215623, PolyU15229824,
+PolyU25216423, PolyU15217424, and SRFS2526-5S04), the National Natural
+Science Foundation of China (Grant No. 62306259), and The Hong Kong
+Polytechnic University (P0056503, P0058445, P0060651).
+X. Chen, J. Wu, C. Ma, Y . Yan, and K. C. Tan are with the Department
+of Data Science and Artificial Intelligence, The Hong Kong Polytechnic
+University, Hong Kong SAR, China.
+H. Liu is with the School of Computer Science and Engineering, University
+of Electronic Science and Technology of China, Chengdu, China.
+Y . Wu is with the Department of Computing, The Hong Kong Polytechnic
+University, Hong Kong SAR, China.
+Corresponding Author: J. Wu (jibin.wu@polyu.edu.hk)
+one of the most representative brain-inspired computational
+models, aiming to mimic the efficient spatiotemporal infor-
+mation processing in the brain [1]. In contrast to traditional
+artificial neural networks (ANNs) that rely on real-valued
+neural representations and continuous activation functions,
+SNNs utilize discrete spike trains to represent information and
+inherently support efficient event-driven computation. Further-
+more, spiking neurons can incorporate rich neuronal dynamics
+for effective temporal processing [2]. At present, SNNs have
+demonstrated competitive performance and substantial energy
+savings compared to traditional ANNs [3], [4], [5] in a wide
+range of applications, such as image classification [6], [7],
+audio processing [8], [9], and robotic control [10], [11].
+While SNNs have gained increasing attention in recent
+years, their main applications have been primarily confined
+to computer vision tasks that involve limited temporal dy-
+namics, such as classifying static images or data collected
+from dynamic vision sensors (DVS) with artificially added
+saccade motion [12], [13]. However, real-world scenarios
+are often more challenging as they involve sensory signals
+with information that varies across different timescales. For
+instance, speech recognition tasks often necessitate models to
+establish dependencies across various timescales, encompass-
+ing phonemes, words, and sentences. While several algorithms
+have been developed to enhance the temporal processing
+capacity of SNNs [14], [15], [16], most of them still struggle to
+establish diverse scales of temporal representations, resulting
+in poor performance in complex temporal processing tasks.
+Considering the remarkable temporal processing capabili-
+ties observed in biological neurons, it is crucial to carefully
+examine their computational mechanisms. In the context of
+large-scale SNNs, the majority of existing spiking neurons
+are modeled as single-compartment systems, such as the
+Leaky Integrate-and-Fire (LIF) model [17]. In these single-
+compartment models, the neuronal dynamics are simplified to
+first-order dynamics of a single state variable - the membrane
+potential, disregarding any interactions among substructures
+within a single neuron. This simplification reduces computa-
+tional complexity but limits their ability to generate complex
+neuronal dynamics.
+In contrast, real biological neurons can be better modeled
+by multi-compartment neuron models [18], [19], [20], which
+divide a single neuron into several interconnected subunits
+with interactions among them. Extensive neuroscience ex-
+periments have demonstrated the important roles of these
+interactive dynamics in temporal processing. For example,
+the nonlinear interactions among ion channels endow neurons
+arXiv:2408.14917v2  [cs.NE]  20 Jul 2026
+2
+with significant computational power for processing temporal
+signals [21], [22]. Additionally, the interaction among cou-
+pled dendritic components acts as temporal filters for signals
+traveling from dendrites to the soma, thereby facilitating
+the temporal sequence detection [23], [19]. While detailed
+multi-compartment models show great potential in temporal
+processing, they are computationally expensive due to the
+intricate anatomical structures of dendritic trees and high-
+dimensional ionic properties. Consequently, they are not well
+suited for constructing large-scale SNNs to tackle real-world
+pattern recognition tasks. Therefore, there is a pressing need
+to develop an efficient spiking neuron model that strikes a
+balance between computational complexity and the ability to
+capture the valuable interaction among different substructures
+of a biological neuron.
+Recently, several simplified compartmental spiking neuron
+models have been specifically designed for deep SNNs. For
+instance, a two-compartment model was introduced to simu-
+late double-exponential threshold decay [24], and a dendritic
+neuron model was proposed to endow multiple dendritic
+compartments with heterogeneous decaying time constants
+[25]. Furthermore, inspired by the well-known Pinsky-Rinzel
+(P-R) pyramidal neuron located in the CA3 region of the
+hippocampus, a two-compartment LIF model was proposed,
+which divides a single neuron into dendritic and somatic
+compartments [26].
+Nevertheless, there are three significant challenges that
+remain to be tackled. Firstly, these models overlook the
+valuable recurrent interactions among neuronal compartments,
+which play a crucial role in integrating temporal information
+across multiple timescales in biological neurons [27], [28].
+As a result, the expressibility of these models is limited,
+constraining the complexity of temporal dynamics they can
+effectively capture. Secondly, these meticulously handcrafted
+models are inherently constrained by a predetermined number
+of compartments. While increasing this number allows for
+richer structural complexity and a broader range of temporal
+dynamics, reducing it yields a more compact and compu-
+tationally efficient representation. However, the inability to
+adjust this abstraction level limits these models’ adaptability
+to tasks with varying temporal complexity and computational
+demands. Thirdly, compared to single-compartment models,
+the increased temporal dynamics in these models result in
+significantly slower training processes when using the back-
+propagation through time (BPTT) algorithm. Consequently,
+these models demonstrate limited scalability to larger networks
+for tackling challenging real-world temporal processing tasks,
+particularly those involving long sequences.
+To tackle these challenges, we propose a generalized multi-
+compartment spiking neuron model for SNNs that integrates
+essential recurrent interactions among interconnected compart-
+ments. Moreover, the number of compartments can be flexibly
+adjusted in the proposed model, allowing for adaptation to the
+different temporal complexities required in real-world tasks.
+Furthermore, considering the significant constraint on training
+speed caused by increasingly complex neuronal dynamics in
+the proposed model, we introduce two temporal parallelization
+techniques to accelerate the training process. Firstly, for the
+linear recurrence in the neuron charging process, we model it
+as a linear time-invariant (LTI) system, which can be efficiently
+parallelized over time following existing approaches for linear
+recurrent models [29], [30], [31]. Furthermore, for the non-
+linear recurrence associated with the neuron firing and reset
+process, we introduce a novel reset strategy. This mechanism
+effectively decouples the nonlinear temporal dependency, en-
+abling parallel computation that is mathematically equivalent
+to a step-by-step, spike-triggered reset mechanism. Altogether,
+these strategies enable efficient temporal parallelization during
+training, while preserving the event-driven, online inference on
+neuromorphic hardware.
+The proposed design methodologies have led to the de-
+velopment of a novel Parallel Multi-compartment Spiking
+Neuron (PMSN) model as illustrated in Fig. 1. The PMSN
+model effectively captures multiscale temporal information
+through the interaction among neuronal compartments. Both
+theoretical analysis and dynamics visualizations are provided
+to substantiate the efficacy of the PMSN model in establishing
+temporal dependencies across various timescales. Moreover,
+the proposed PMSN model offers a significant improve-
+ment in training speed, particularly when deployed on GPU-
+accelerated machine learning (ML) frameworks. The main
+contributions of this work are summarized as follows:
+•We propose a generalized multi-compartment spiking neu-
+ron model for deep SNNs that incorporates valuable interac-
+tions among different neuronal compartments. The number
+of compartments in this model can be flexibly adjusted to
+represent temporal information across diverse timescales.
+•We develop two temporal parallelization techniques for
+the proposed model, achieving more than a10×training
+speedup on GPU-accelerated ML frameworks.
+•Our comprehensive experiments demonstrate the superior
+temporal processing capacity and substantial training accel-
+eration of PMSN, as well as its potential for energy-efficient
+deployment on neuromorphic platforms.
+II. RELATEDWORKS
+A. Advances in Spiking Neuron Models
+Recent enhancements in spiking neuron models for tem-
+poral processing can be categorized into single- or multi-
+compartment models according to the number of membrane
+potential subunits involved [32]. Several single-compartment
+models have incorporated adaptive variables to enhance the
+efficacy of temporal information representation. For instance,
+[14] and [15] propose to use adaptive firing thresholds, which
+function as long-term memory to enhance temporal process-
+ing; [33] utilizes learnable decay constants to enhance the het-
+erogeneity of neuron populations, enabling them to effectively
+represent multiscale temporal information; [34] introduces a
+gating mechanism into the neuron model to explicitly control
+memory storage and retrieval processes.
+Comparatively, multi-compartment models utilize compart-
+mental heterogeneity or recurrent interaction to represent
+information across different timescales. For example, [24]
+proposes a two-compartment model where the thresholds
+undergo a double-exponential decay, facilitating the storage
+3
+𝑆Spike 𝑣(")
+𝜏"
+𝑣($)
+(b) Leaky Integrate-and-Fire Spiking NeuronModel (d) Parallel Multi-compartment           aa Spiking Neuron Model(c) Generalized Multi-Compartment Spiking Neuron Model
+𝑣(%)
+𝜏%
+𝜏$
+Ionic Current
+𝑆…𝐼(")
+Spike
+𝐼($)
+𝐼(%)Compartment 1
+Compartment 2
+Compartment n
+Charging
+Firing
+Resetting
+𝑉
+𝜏
+𝐼
+(a)Single-Compartment Spiking Neuron Model
+𝐼[1]𝐼[2]𝐼[3]
+𝑉[1]𝑉[2]
+…
+𝑉[3]
+𝑆[1]𝑆[2]𝑆[3]
+…
+Biological Neuron
+OversimplifiedInteractive
+…
+Output Spikes
+Input Current
+Membrane Potential
+Time
+𝐼[1]𝐼[2]𝐼[𝑡]
+𝑣[%](%)𝑣[$](%)
+…𝑣[(](%)
+𝑆[1]𝑆[2]𝑆[𝑡]
+…𝑣["](%&")𝑣[(](%&")𝑣[)](%&")
+𝑣[%](")𝑣[$](")𝑣[(](")……
+……
+……
+Time
+Leaking
+Fig. 1. Comparison of neuronal structure and dynamics between the single-compartment model, biological neurons, and the proposed multi-compartment spiking
+neuron model.(a, b)The widely used LIF model simplifies the biological neurons into a single unit and ignores the interaction among neuronal substructures,
+resulting in deficiencies in multiscale temporal processing and slow training speed.(c)In contrast, the detailed morphologies and electrophysical properties
+of biological neurons improve their computational power in interactive ways, which is crucial for temporal information processing. Drawing inspiration from
+these, we propose a generalized multi-compartment spiking neuron model that divides a single neuron into a variable number of interconnected subunits with
+heterogeneous temporal properties and endows them with interactive dynamics.(d)Our proposed PMSN model further extends the compartmental structure
+in (c). It not only supports rich neuronal dynamics essential for temporal processing, but also facilitates efficient parallel training across time.
+of both short- and long-term information; [25] introduces a
+heterogeneous model consisting of one somatic compartment
+and varied dendrite-branch compartments; [26] proposes a
+two-compartment model that captures the interactive dynamics
+between the soma and dendrites. Although these handcrafted
+models demonstrate enhanced performance, there is a pressing
+need for a principled approach to efficiently scale them and
+incorporate a variable number of compartments. This is crucial
+for enhancing their temporal processing capability, which
+serves as the central focus of this paper.
+B. Training Techniques for SNNs
+Training SNNs poses fundamental challenges for gradient-
+based optimization due to the non-differentiable nature of
+spike generation [35]. Existing training methods for deep
+SNNs can be broadly categorized into conversion-based and
+direct training approaches. Conversion-based methods transfer
+knowledge from pre-trained ANNs to SNNs by matching
+activation or firing-rate statistics [4], [36]. While effective
+for static tasks, such approaches are generally unsuitable
+for temporal processing, as they introduce non-negligible
+approximation errors in temporal dynamics. In contrast, direct
+training methods optimize SNNs end-to-end by approximating
+spike gradients with surrogate functions, enabling effective
+learning on temporal signals [37], [38]. Recent advances
+have further demonstrated their potential in efficient language
+modeling [39], robust visual recognition [40], and event-based
+optical flow estimation [41]. However, due to the recurrent
+nature of spiking neuron dynamics, most direct training ap-
+proaches rely on BPTT, or its online variants [42], resulting in
+training complexity that scales linearly with sequence length.
+This severely limits their scalability to long sequences.
+Several recent works have explored parallelization strategies
+to alleviate this limitation. Differentiation on Spike Repre-
+sentation (DSR) reformulates spiking dynamics using dif-
+ferentiable rate-based representations, enabling constant-time
+gradient computation [6]. However, this approach is restricted
+to simple Integrate-and-Fire (IF) or LIF neurons and relies on
+rate-based representations, making it unsuitable for modeling
+fine-grained temporal dependencies. In parallel, the Parallel
+Spiking Neuron (PSN) family [43] reformulates membrane
+potential charging dynamics using a learnable decay matrix
+and omits the reset mechanism to enable temporal parallelism.
+Despite their efficiency, PSN models require access to fu-
+ture inputs and are limited to single-compartment structures,
+making them biologically implausible, incompatible with neu-
+romorphic hardware, and difficult to extend to richer multi-
+compartment temporal modeling.
+III. REVISIT: SINGLE-COMPARTMENTSPIKINGNEURON
+MODELSSTRUGGLE TOPROCESSTEMPORALSIGNALS
+In this section, we revisit the LIF model as a representative
+of single-compartment spiking neuron models. We first intro-
+duce basic concepts and then discuss the major challenges
+associated with processing temporal signals using this model.
+As illustrated in Fig. 1, the temporal dynamics of the LIF
+model can be formulated as:
+Leak & Charge: dv(t)
+dt =− 1
+τm
+(v(t)−v rest) +I(t),
+Fire & Reset: ifv(t)≥θ, s(t) = 1, v(t)→v(t)−θ.
+(1)
+During the membrane potential leaky and charging phase,
+the information contained in the input currentI(t)is integrated
+into the membrane potentialvand further undergoes decay
+at a rate governed byτ m.v rest is the resting potential.
+Oncev(t)exceeds the firing thresholdθ, an output spike
+will be generated and transmitted to subsequent neurons, after
+which the membrane potential is reset. In practice, the above
+4
+continuous-time formulation is typically discretized using the
+Euler method as V[t] =αV[t−1] +I[t]−θS[t−1],
+S[t] =H(V[t]−θ), (2)
+whereH(·)is the Heaviside function andα= exp(− dt
+τm
+)
+is the discrete-time decay factor. Following this discretization,
+LIF neuron dynamics are simulated via recurrent state updates
+over time, where the membrane potentialV[t]depends on its
+previous stateV[t−1]as well as the current input. More gen-
+erally, such recurrent evolution is a fundamental characteristic
+of SNNs, allowing them to be naturally interpreted as recurrent
+models with intrinsic temporal dependencies.
+Despite its promising results in tasks involving limited tem-
+poral context, LIF neurons encounter the following two chal-
+lenges when dealing with long sequences. Firstly, this model
+faces challenges in retaining information over an extended
+time period, primarily due to its inadequate representation
+of neuronal dynamics. Specifically, the LIF model overlooks
+the computational role played by interactions among different
+neuronal substructures. As a result, the membrane potentialV
+is the only state variable that can integrate and store temporal
+information. Unfortunately, this state variable is subject to
+exponential decay and reset, which hinders the establishment
+of long-term temporal dependencies. Secondly, its training
+time increases proportionally with the sequence length, making
+it inefficient for tasks that involve long sequences. This slow
+training speed arises from the nonlinear recurrent updates
+in the neuronal dynamics, which must be computed step by
+step along the temporal dimension as commonly observed in
+RNNs, leading to underutilization of the full potential of GPU
+acceleration. Specifically, the membrane potential update of
+V[t]depends on the output spikeS[t−1]from the preceding
+timestep, which is generated by applying a nonlinear Heaviside
+activation toV[t−1]. As a result,V[t]is not available
+untilV[t−1]has been fully processed. This time-coupled
+relationship prevents the membrane potential dynamics from
+being unfolded across time, leading to difficulties in temporal
+parallelization.
+IV. A GENERALIZEDMULTI-COMPARTMENTSPIKING
+NEURONMODEL WITHINTERACTIVEDYNAMICS
+In this section, we first briefly introduce the multi-
+compartment models that have been widely used in neuro-
+science studies. Drawing inspiration from them, we propose a
+generalized multi-compartment spiking neuron model that can
+strike a favorable balance between the richness of neuronal
+dynamics and computational cost. Notably, in contrast to
+commonly used multi-compartment neuron models in deep
+SNNs, our model retains the crucial recurrent interactions
+among interconnected compartments. It thereby allows more
+effective representation and processing of temporal signals
+across different timescales.
+Compartmental models divide a single neuron into inter-
+connected subunits or “compartments”, with specific spa-
+tial structures. The interactions among these interconnected
+compartments lead to the rich neuronal dynamics observed
+in biological neurons that play a crucial role in sensory
+processing [44]. For instance, Rall’s cable theory [23] suggests
+each dendrite can be mathematically modeled as a series
+of interconnected compartments resembling a cable struc-
+ture. However, given the complex anatomical morphology of
+dendritic trees, these models pose significant computational
+challenges and are impractical for large-scale simulations.
+To reduce the modeling difficulty, quantitative models with
+reduced compartment numbers and structure complexity have
+been explored. For instance, the neuronal activities of CA3
+pyramidal neurons can be modeled by a 19-compartment
+cable model, wherein dendritic branching is omitted [45]. This
+model has been further abstracted to a more computationally
+efficient two-compartment model [46]. In these quantitative
+models, compartments are restricted to interacting with their
+adjacent compartments solely, and the dynamics of each
+compartment can be described as a differential equation of
+a resistor-capacitance circuit as
+Cm
+dv(i)
+dt =−I Leak(v(i)) +g i−1,i(v(i−1) −v (i))
++g i,i+1(v(i+1) −v (i)) +I.
+(3)
+whereC m is the capacitance of membrane potential,I Leak(·)
+represents the leakage current of membrane potentialv (i),
+gi,j(·)is the coupling conductance between compartmentsi
+andj, andIdenotes the summation of other voltage-gated
+ionic currents.
+In order to simplify the ionic compartmental dynamics
+described in Eq. (3) and ensure compatibility with exist-
+ing GPU-accelerated ML frameworks, we next introduce a
+generalized multi-compartment spiking neuron model with a
+simplified neuronal hyperparameter setup. This model retains
+the essential interactions among different substructures of a
+neuron, which are theoretically evidenced in Section VI as
+playing a crucial role in capturing and integrating temporal
+features across multiple timescales. Another notable feature
+of our model is its flexibility, allowing for a varying number
+of neuronal compartmentsnto suit the complexity of the task
+at hand. The detailed model formulation is given as
+
+
+
+dv(1)(t)
+dt =− 1
+τ1
+v(1)(t) +β 2,1v(2)(t) +γ 1I(t),
+dv(2)(t)
+dt =− 1
+τ2
+v(2)(t) +β 3,2v(3)(t) +β 1,2v(1)(t) +γ 2I(t),
+...
+dv(n)(t)
+dt =− 1
+τn
+v(n)(t) +β n−1,nv(n−1)(t) +γ nI(t),
+ifv (n)(t)≥θ, s(t) = 1, v (n)(t)←v (n)(t)−θ,
+(4)
+wherev (i) represents the membrane potential of the com-
+partmenti,θis the firing threshold.I l(t) =W lSl−1(t)
+denotes the synaptic current induced by the output spikes of
+the preceding layer, whereW l represents the synaptic weight
+between layerl−1andl. Once the membrane potential of
+the final compartmentv (n) exceeds the thresholdθ, it triggers
+an output spike and simultaneously resetsv (n). The compart-
+mental parameters, includingτ i,γ i, andβ i,j, represent the
+membrane time constant, input attenuation of the compartment
+i, and coupling strength between interconnected compartments
+iandj, respectively.
+5
+(a) Serial Computation ofPMSN(b) Parallel Computation of PMSN𝐼[0]𝐼[2]𝐼[𝑡]
+𝑣["](%)𝑣[%](%)𝑣['](%)
+𝑆[0]𝑆[1]𝑆[𝑡]
+𝑣["](()𝑣[(](()𝑣['](()
+	𝑣![0]𝑣![1]
+Time
+		𝐼"[0]		𝐼"[1]	𝐼"[𝑡]………
+……
+𝐼[0]𝐼[1]𝐼[𝑡]
+𝑆[0]𝑆[1]𝑆[𝑡]
+Time
+		𝐼"[0]		𝐼"[1]	𝐼"[𝑡]
+…
+…Parallel Strategy for Hidden Compartments
+Parallel Strategy for Output Compartment
+… …
+𝑉"[0]…𝑉"[1]𝑉"[𝑡]
+𝑣![𝑡] 		𝐼"[0]		𝐼"[1]	𝐼"[𝑡]…	𝜃	𝑣![0]𝑣![1]…𝑣![𝑡]
+Time
+𝐼[0]𝐼[1]𝐼[𝑡]…
+𝑆[0]𝑆[1]𝑆[𝑡]…
+	𝒦
+…
+Fig. 2. Illustration of the proposed PMSN model and its parallel implementation.(a)The PMSN model (n= 3compartments for demonstration) can be
+divided into two parts: two hidden compartments with membrane potentialV h = [v (1), v (2)], and one output compartment with membrane potentialv s.
+I, I h, Srepresent the input current, total input to the output compartment, and output spikes, respectively. Due to the nonlinear temporal dependencies
+among these states, calculating neuronal temporal dynamics typically involves serial computation over time, resulting in significant training costs that scale
+proportionally with sequence length.(b)The proposed parallel solution.Left:To accelerate the training speed, two temporal parallel strategies are introduced
+for the hidden (blue box) and output compartments (green box), respectively.Right:The schematic of each parallel block. For the hidden compartments, we
+decouple the linear recurrence betweenv (1), v (2), enabling membrane potentialsV h to be computed in parallel across time. This is achieved by applying a
+temporal convolution between the input currentI t and a kernelKderived from the underlying neuronal dynamics. For the output compartment, we propose
+a novel reset mechanism TDR that leverages the firing thresholdθand the accumulated inputsI h to compute output spikes at all timesteps simultaneously.
+For the sake of simplicity in representation, these first-order
+differential equations can be equivalently expressed as ann-
+dimensional first-order state-space dynamical system:
+˙V(t) =
+
+
+− 1
+τ1
+β2,1 0· · ·0
+β1,2 − 1
+τ2
+β3,2 · · ·0
+...
+...
+... ... ...
+0 0· · · − 1
+τn−1
+βn,n−1
+0 0· · ·β n−1,n − 1
+τn
+
+
+V(t) +γ nI(t),
+S(t) =H(v (n)(t)−θ), v (n)(t)←v (n)(t)−θS(t),
+(5)
+whereγ n = [γ1,· · ·, γ n]T ,V= [v (1),· · ·, v (n)]T .
+It is important to note that many widely used spiking neuron
+models can be seen as special cases of our proposed model by
+adjusting its hyperparameters. For instance, when the number
+of compartmentsnis set to1andβ= 0, our model is
+simplified to a standard LIF model. Similarly, whenn= 2and
+γ2 = 0, our model reduces to a Two Compartment LIF (TC-
+LIF) model [26]. These examples highlight the generalizability
+of our model. Moreover, by providing flexibility in increasing
+the number of compartments, our model surpasses existing
+spiking neuron models and offers richer neuronal dynamics
+that are essential for complex temporal processing tasks.
+V. PMSN: A PARALLELMULTI-COMPARTMENTSPIKING
+NEURON
+The generalized multi-compartment spiking neuron model
+introduced earlier requires significantly more training time
+compared to existing spiking neuron models used in deep
+SNNs, primarily due to its higher computational complex-
+ity. This limitation restricts its practical deployment in long
+sequence temporal processing scenarios. Thus, it becomes
+crucial to develop strategies to enable parallel training of
+this model in time. However, it is not straightforward to
+employ existing parallel computation techniques [29], due
+to the involvement of the nonlinear functionH(·)for spike
+generation and reset processes.
+In this section, we further propose a PMSN model with two
+parallelization techniques independently designed for hidden
+and output compartments. To better explain our idea, we divide
+the totalncompartments inton−1hidden compartmentsV h
+with linear recurrence and one output compartmentv (n) =v s
+with nonlinear firing and reset dynamics. Meanwhile, the
+feedback from the output to the last hidden compartment
+βn,n−1 is set to0. The resulting neuronal function can be
+represented as
+˙Vh(t) =
+
+
+− 1
+τ1
+β2,1 0· · ·0
+β1,2 − 1
+τ2
+β3,2 · · ·0
+... ... ... ... ...
+0 0 0· · · − 1
+τn−1
+
+ Vh(t) +γ n−1I(t),
+(6)
+˙vs(t) =β n−1,nv(n−1)(t)− 1
+τn
+vs(t) +γ nI(t)−θS(t),(7)
+S(t) =H(v s(t)−θ).(8)
+Below, we will introduce how these two parallelization
+techniques unfold the linear recurrent statesV h, and decouple
+the nonlinear temporal dependency issue associated withv s to
+enable parallel computation.
+6
+A. Parallel Strategy for Hidden Compartments
+By examining the hidden compartment dynamics of PMSN
+in Eq. (6), we observe that the hidden statesV h evolve accord-
+ing to an LTI dynamical system. Specifically, the membrane
+potential of each hidden compartmentv (i) is updated by
+applying a time-invariant state transition matrix to its previous
+state. As a result, the hidden compartment dynamics admit a
+state-space formulation, which shares a common underlying
+mathematical structure with linear recurrent neural networks
+(RNNs) [29], [47] and state-space models (SSMs) [30], [31]
+widely used in modern sequential modeling. This connection
+bridges biologically grounded neuron dynamics with contem-
+porary deep learning architectures and, importantly, allows
+PMSN to leverage parallel computation techniques originally
+developed for parameterized SSMs to efficiently compute the
+temporal evolution of its hidden compartments.
+We first apply the zero-order hold (ZOH) method [48] to
+discretize the nonlinear continuous system detailed in Eqs.
+(6) and (7). Specifically, we utilize a full-rank state transition
+matrixT ∈R (n−1)×(n−1) to represent the first matrix in Eq.
+(6), and diagonalize this matrix via eigenvalue decomposition
+T=PΛP −1, whereΛ, P∈C (n−1)×(n−1) denote the diago-
+nal eigenvalue matrix and eigenvector matrix, respectively. We
+then obtain the following discrete-time formulation:
+Vh[t] = ¯TV h[t−1] + Φ cI[t],(9)
+Ih[t] = ΦsVh[t] +γ nI[t],(10)
+vs[t] =αv s[t−1] +I h[t]−θS[t−1],
+S[t] =H(v s[t]−θ), (11)
+whereV h =P −1Vh, ¯T= exp(Λdt),Φ c = Λ−1(exp(Λdt)−
+I)ϕ c, andϕ c =P −1γn−1.The termI h[t]signifies the total
+input to the output compartment,Φ s = [0, .., βn−1,n]P,α=
+exp(− dt
+τn
+). The parametersΛdt, ϕ c, γ n, andΦ s are learnable.
+It should be noted that these complex number operations are
+well-supported by existing neuromorphic chips, such as Intel
+Loihi [49].
+The model described in Eq. (9) exhibits a linear recurrence
+that can be unfolded over time as
+Vh[t] =
+tX
+i=0
+¯T t−iΦcI[i].(12)
+By substituting Eq. (12) into Eq. (10), we can obtain
+Ih[t] =
+tX
+i=0
+Φs ¯T t−iΦcI[i] +γ nI[t].(13)
+Notably, the first term in Eq. (13) can be simplified to a
+convolution form as
+Ih[t] =
+tX
+i=0
+It[i]K[t−i] +γ nI[t] = (I t ∗ K)[t] +γnI[t],(14)
+whereI t ={I[0], .., I[t]}denotes the input current set,
+K= [Φ s ¯T 0Φc, ...,Φ s ¯T tΦc]is the convolution kernel. Con-
+sequently, the computation of setI h ={I h[0], ..., Ih[t]}can
+be parallelized over time by applying a convolution operation
+onI t andK, resulting in
+Ih =I t ∗ K+γ nIt =F −1(F(I t)· F(K)) +γ nIt,(15)
+whereF,F −1 represent forward and inverse Fourier trans-
+forms, respectively. In this way, we could efficiently compute
+the membrane potential for the firstn−1hidden compartments
+Vh, and the input for the output compartmentI h across all time
+steps in parallel.
+B. Parallel Strategy for Output Compartment with Reset
+In the previous subsection, we demonstrated that the dy-
+namics of PMSN within the hidden compartments can be ef-
+ficiently computed in parallel. The remaining question is how
+to achieve parallel computation in the output compartment.
+However, achieving temporal parallelization for the output
+compartment is non-trivial due to the spike generation and
+reset mechanism, which introduces a nonlinear dependency
+across consecutive timesteps. Specifically, in conventional
+reset formulations in Eq. (11), the membrane potentialv s[t]is
+updated based on the previous spikeS[t−1], whereS[t−1]is
+generated by applying a non-differentiable Heaviside function
+tov s[t−1]. This spike-triggered reset tightly couplesv s
+across time, preventing the membrane dynamics from being
+unfolded into a closed-form expression and fundamentally
+limiting temporal parallelization.
+To address this limitation, we propose a novel reset mecha-
+nism termed temporal-decoupled reset (TDR). TDR reformu-
+lates the reset operation such that it can be evaluated either
+in a serial (step-by-step) manner or in a temporally parallel
+manner, while preserving the same spike-driven reset behavior.
+Concretely, we introduce a reset termv r[t]that represents the
+discharged membrane voltage after spiking. In the serial form,
+vr[t]is expressed as an integer multiple of the firing threshold
+θ, determined by the membrane potentialv s[t]. Its dynamics
+can be formulated as
+vs[t] =v s[t−1] +I h[t]−v r[t−1],
+S[t] =H(v s[t]−θ),
+vr[t] =S[t]· ⌊v s[t]⌋θ,
+(16)
+where⌊x⌋ θ :=θ⌊x/θ⌋signifies the floor division byθ.
+Similar to the commonly used reset mechanisms in con-
+ventional spiking neuron models, TDR can be viewed as
+a biologically inspired reset mechanism that abstracts the
+depolarization–fire–repolarization process into a simplified
+form suitable for efficient computation and neuromorphic
+hardware implementation. Specifically, soft reset removes
+one fixed threshold after spike generation, while hard reset
+clamps the membrane potential to a reset value. Following
+the same abstraction, TDR differs only in the amount of
+membrane voltage discharged after spike generation: it re-
+moves a threshold-quantized voltage determined by the floor
+operation, which helps keep the post-reset membrane potential
+within the subthreshold range. Importantly, the same reset
+dynamics can also be computed in a temporally parallel form.
+Specifically, the accumulated discharged voltage Pt−1
+i=0 vr[i]
+7
+TABLE I
+COMPARISON OF THE PROPOSED RESET MECHANISM INPMSNWITH EXISTING RESET MECHANISMS USED IN OTHER SPIKING NEURON MODELS.
+Reset Mechanism Typical Models Formulation Parallelizable
+Training
+Equivalent
+Online Inference
+Spike
+Sparsity
+Soft Reset (Reset by subtraction) LIF [51], ALIF [15]v[t]←v[t]−θ✗- ++
+Hard Reset (Reset to zero) LIF [52], PLIF [33]v[t]←0✗- +++
+Fused Reset GLIF [34]v[t]←(1−γ)(v[t]−θ)✗- ++
+Reset-free PSN [43], P-SpikeSSM [53]v[t]←v[t]✓ ✓+
+Surrogate Dynamic Network (SDN) SpikingSSMs [54]v[t]←f(I[0 :t], θ)✓ ✗+++
+TDR (Ours) PMSNv[t]←v[t]− ⌊v[t]⌋ θ ✓ ✓+++
+v- membrane potential,θ- threshold,I- input,γ∈(0,1)- gating factor,f(·)- learnable MLP-based function predicting reset values from inputs.
+can be directly derived from the cumulative input currentPt−1
+i=0 Ih[i]across time, thereby bypassing the evolution of
+the membrane potentialv s[t]as
+t−1X
+i=0
+vr[i] =⌊
+t−1X
+i=0
+Ih[i]⌋θ,
+vs[t] =
+tX
+i=0
+Ih[i]− ⌊
+t−1X
+i=0
+Ih[i]⌋θ,
+(17)
+A detailed derivation is provided in theSupplementary Ma-
+terials. To ensure equivalence between Eq. (17) and Eq. (16),
+the input currentI h is passed through a rectified linear unit
+(ReLU) to enforce non-negativity before being injected into
+the output compartment. As a result, the parallel formulation
+of TDR can be expressed by directly deriving the output spike
+trainS t ={S[0], .., S[t]}from the corresponding membrane
+potential sequencev s,t ={v s[0], ..., vs[t]}as
+St =H(v s,t) =H(I h,t − ⌊Ih,t−1⌋θ).(18)
+where the setI h,t ={I h[0], ...,Pt
+i=0 Ih[i]}, representing the
+cumulative input current to the output compartment over time,
+can be efficiently computed using the parallel prefix sum
+(Scan) algorithm [50].
+Compared with existing reset mechanisms summarized in
+Table I, the proposed TDR exhibits several distinctive ad-
+vantages. Unlike soft reset, hard reset, or fused reset strate-
+gies, which inherently rely on spike-dependent, step-by-step
+updates, TDR enables temporally parallel computation during
+training, substantially improving training efficiency. In contrast
+to reset-free or Surrogate Dynamic Network (SDN) approaches
+[54], TDR preserves spike sparsity and maintains equivalent
+online, event-driven inference behavior, ensuring full compati-
+bility with neuromorphic hardware deployment. Moreover, the
+proposed reset mechanism can be generalized to other single-
+compartment neuron models or multi-compartment models
+with multiple spike-generating output compartments, thereby
+enabling parallel training for a broader class of spiking neuron
+architectures.
+VI. EFFECTIVETEMPORALGRADIENTPROPAGATION
+In this section, we provide a theoretical analysis of how
+the proposed PMSN supports effective multiscale temporal
+processing. We first derive the gradient flow of PMSN and
+then discuss how the initialization of compartmental parame-
+ters stabilizes the neuronal dynamics and enables multiscale
+temporal dependency modeling.
+To overcome the gradient discontinuity introduced by the
+Heaviside and floor functions in the proposed reset operation,
+we employ surrogate gradient methods [69], [70] to facilitate
+gradient backpropagation in Eq. (18), yielding a well-defined
+gradient flow for the PMSN model:
+∆W l ∝ ∂L
+∂W l =
+TX
+t=1
+∂L
+∂I l[t] Sl−1[t],∆b l ∝ ∂L
+∂bl =
+TX
+t=1
+∂L
+∂I l[t] ,
+∂L
+∂I l[t] =
+TX
+i=t
+∂L
+∂S l[i]
+∂S l[i]
+∂v ls[i]
+∂v l
+s[i]
+∂I l[t] +
+T−1X
+i=t
+∂L
+∂v ls[i+ 1]
+∂v l
+s[i+ 1]
+∂v ls[i]
+∂v l
+s[i]
+∂I l[t]
+= ∂L
+∂S l[t] g′[t]γn
+| {z }
+Spatial
++
+TX
+i=t
+∂L
+∂S l[i] g′[i]Φs ¯T i−tΦc
+| {z }
+Temporal
+,
+(19)
+whereg ′[t] = ∂S l[t]
+∂v ls[t] is the surrogate gradient function,Lis
+the loss function, andW l,b l refer to weight and bias terms
+of layerl, respectively. The first term represents the spatial
+credit assignment between consecutive network layers, where
+the gradient propagates from deeper to shallower layers to
+facilitate hierarchical learning. The second term corresponds to
+the temporal credit assignment, where gradients flow backward
+from later to earlier timesteps, facilitating the learning of
+temporal dependencies across time.
+The temporal credit assignment in PMSN is governed by
+the diagonal state transition matrix ¯T= diag(λ 1, . . . , λn−1)
+after eigenvalue decomposition. Each complex-valued eigen-
+valueλ i characterizes the intrinsic temporal dynamics of one
+compartment. Specifically, the magnitude ofλ i determines
+the decay rate of temporal information and thus controls the
+effective memory length, while its phase introduces oscillatory
+dynamics that arise from inter-compartmental interactions and
+support temporal integration across different timescales. To-
+gether, these eigenvalues determine how PMSN preserves and
+integrates temporal information across different timescales.
+Therefore, the initialization of compartmental parameters is
+important, as it determines the initial distribution of these
+eigenvalues.
+To provide a stable and expressive starting point, we adopt
+a structured initialization strategy for the compartmental pa-
+rameters. The membrane leakage terms on the main diagonal
+8
+TABLE II
+COMPARISON OF CLASSIFICATION ACCURACIES ON NEUROMORPHIC SEQUENTIAL TASKS.
+Dataset Seq. Length Approach Parallelizable Architecture Parameters Accuracy
+S-MNIST / PS-MNIST 784
+LIF [26]✗Feedforward 85.1k 72.06% / 10.00%
+ALIF [15]✗Recurrent 156.3k 98.70% / 94.30%
+TC-LIF [26]✗Recurrent 155.1k 99.20% / 95.36%
+BHRF [55]✗Recurrent 68.9k 99.10% / 95.20%
+DH-LIF [25]✗Recurrent 80.0k 98.90% / 94.52%
+SPSN [43]*✓Feedforward 52.4k 97.20% / 82.84%
+masked PSN [43]*✓Feedforward 153.7k 97.76% / 97.53%
+PSN [43]*✓Feedforward 2.5M 97.90% / 97.76%
+SpikingTCN [56]✓Convolution 90.0k N.A. / 93.76%
+Spike-driven Transformer [57]✓Transformer 90.0k N.A. / 96.21%
+QKFormer [58]✓Transformer N.A. 94.25% / N.A.
+Binary S4D [59]✓State-Space Model 68.9k 99.10% / N.A.
+GSU [59]✓State-Space Model 85.5k 99.40% / N.A.
+S5-RF [60]✓State-Space Model 36.4k 98.89% / 95.29%
+PMSN (Ours)✓Feedforward 66.3k 99.40%/97.51%
+156.4k 99.53%/97.78%
+SHD 250
+Adaptive axonal delay [61]✗Feedforward 109.1k 92.45%
+AdLIF+ [62]✗Feedforward 38.7k 94.19%
+TSkip [63]✗Feedforward 1.3M 94.71%
+ALIF [15]✗Recurrent 141.3k 84.40%
+RadLIF [64]✗Recurrent 3.9M 94.62%
+TC-LIF [26]✗Recurrent 141.8k 88.91%
+BHRF [55]✗Recurrent 108.8k 92.70%
+DH-LIF [25]✗Recurrent 50.0k 91.34%
+SPSN [43]*✓Feedforward 107.1k 82.51%
+masked PSN [43]*✓Feedforward 122.5k 86.00%
+PSN [43]*✓Feedforward 232.5k 89.75%
+DCLS-Delays [65]✓Convolution 200.0k 95.07%
+Spikformer [66]✓Transformer N.A. 85.10%
+Spikingformer [67]✓Transformer 2.0M 82.68%
+TIM [68]✓Transformer 2.6M 86.30%
+QKFormer [58]✓Transformer N.A. 88.56%
+S5-RF [60]✓State-Space Model 214.5k 91.86%
+PMSN (Ours)✓Feedforward 120.3k 94.25%
+199.3k 95.10%
+* Our reproduced results based on publicly available codebases N.A. These results are not publicly available
+of Eq. (6) keep the compartmental dynamics in a stable
+regime, preventing uncontrolled divergence and supporting
+long-sequence information retention, as theoretically analyzed
+in theSupplementary Materials. Meanwhile, the coupling
+terms on the sub- and super-diagonal entries introduce het-
+erogeneous interactions among neighboring compartments,
+thereby distributing the dynamics across multiple timescales
+and enabling PMSN to capture multiscale temporal dependen-
+cies, as demonstrated in Fig. 4.
+VII. EXPERIMENTALRESULTS
+In this section, we evaluate the proposed PMSN model
+with a focus on its multiscale temporal processing capacity,
+static image classification accuracy, simulation acceleration,
+and computation efficiency. Unless otherwise stated, all tested
+PMSNs haven= 5compartments to ensure a comparable
+computational cost to the state-of-the-art (SOTA) parallel
+spiking neuron model (i.e., 32-receptive-field sliding parallel
+spiking neuron (SPSN) [43]). We also provide ablation studies
+in Section VII-G as well as the detailed experimental settings
+inSupplementary Materials.
+A. Temporal Dependency Modeling across Distinct Timescales
+We first compare our PMSN model against other SOTA
+models on temporal processing tasks involving long-term tem-
+poral dependencies. Our experiments begin with three widely-
+used neuromorphic benchmarks that are commonly adopted to
+evaluate temporal dependency modeling, including Sequential
+MNIST (S-MNIST) and Permuted Sequential MNIST (PS-
+MNIST) datasets with784time steps [71], and Spiking
+Heidelberg Digits (SHD) spoken digit classification dataset
+with250time steps [72]. As summarized in Table II, PMSN
+model achieves the highest accuracy across all spiking neuron
+models with fewer or comparable amounts of parameters,
+demonstrating a superior capacity to capture temporal depen-
+dencies. Moreover, PMSN consistently achieves comparable or
+superior performance to advanced spiking architectures specif-
+ically designed for temporal processing, including temporal
+convolutions [56], [65], spike-based transformers [57], [58],
+[66], [67], [68], and SSMs [59], [60]. For the spike-based
+transformer baselines, we report publicly available results from
+prior works [56], [73], [68], [63]. These findings suggest
+that detailed modeling of neuronal structural complexity is
+an important and complementary dimension to architectural
+innovations in neuromorphic temporal processing.
+We further evaluate our model’s ability to establish spa-
+tiotemporal and extended long-term temporal dependencies
+on the more challenging Sequential CIFAR-10 and CIFAR-
+100 tasks. For Sequential CIFAR-10, we explore two configu-
+rations: column-by-column scanning as per [43] (T= 32),
+9
+TABLE III
+COMPARISON OF DIFFERENT MODELS IN HANDLING LONG-TERM TEMPORAL DEPENDENCIES ONSEQUENTIALCIFAR-10ANDCIFAR-100DATASETS.
+Tasks Timesteps PMSN PMSN (w/o reset) PSN masked PSN SPSN LIF LIF (w/o reset)
+Sequential CIFAR-10
+32
+90.97%89.27% 88.45% 85.81% 86.70% 81.50% 79.50%
+Sequential CIFAR-100 66.08%60.82% 62.21% 60.69% 62.11% 55.45% 53.33%
+No. of Parameters 0.54M 0.54M 0.52M 0.52M 0.51M 0.51M 0.51M
+Sequential CIFAR-10 1024 82.14%79.63% 55.24% 57.83% 70.23% 45.07% 43.30%
+No. of Parameters 0.21M 0.21M 6.47M 0.38M 0.18M 0.18M 0.18M
+(a) SequentialCIFAR-10 (b) SequentialCIFAR-100
+Fig. 3. The learning curves of PMSN models (with and w/o reset), PSN models, and LIF models (with and w/o reset) on (a) Sequential CIFAR-10 and (b)
+Sequential CIFAR-100 tasks. Solid lines and shaded regions denote the mean and standard deviation over three runs with different random seeds.
+TABLE IV
+COMPARISON OF TIME-SERIES CLASSIFICATION ACCURACIES ON THEUEADATASETS. TEST ACCURACY IS AVERAGED OVER FIVE SEEDS. THE BEST
+SCORE IS HIGHLIGHTED INBOLDAND THE SECOND IS UNDERLINED .
+Task SNN Worms SCP1 SCP2 Ethanol Heartbeat Motor Avg.Seq. Length (17,984) (896) (1,152) (1,751) (405) (3,000)
+NRDE [74]✗83.9 80.9 53.7 25.3 72.9 47.0 60.6
+Log-NCDE [75]✗85.6 83.1 53.7 34.4 75.2 53.7 64.3
+LRU [47]✗87.8 82.6 51.2 21.5 78.4 48.4 61.7
+S5 [31]✗81.189.950.5 24.1 77.7 47.7 61.8
+S6 [76]✗85.0 83.2 49.9 26.4 76.5 51.3 62.0
+Mamba [76]✗70.9 80.7 48.2 27.9 76.2 47.7 58.6
+LinOSS-IMEX [77]✗80.0 87.558.929.9 75.5 57.9 65.0
+LinOSS-IM [77]✗95.087.8 58.2 29.9 75.860.067.8
+PMSN (Ours)✓95.088.7 58.9 34.9 78.756.168.7
+which evaluates the model’s capacity in integrating both
+spatial and temporal information, and pixel-by-pixel scanning
+(T= 1024), which poses a greater challenge to learning
+long-term dependency. For Sequential CIFAR-100, we use the
+column-by-column configuration. To ensure a fair comparison,
+we employ the same network architecture for each individual
+task. As shown in Table III, our PMSN surpasses the SOTA
+models by at least 2% accuracy, showcasing its superiority
+in multiscale temporal processing. As shown in Fig. 3, the
+learning curves of the PMSN model exhibit faster and more
+stable training convergence, aligning well with our theoretical
+analysis in Section VI.
+Furthermore, we would like to stress the importance of
+the neuronal reset mechanism that has been neglected by
+many previous works [43]. As presented in Table III, the
+accuracy consistently improves for both PMSN and LIF mod-
+els after incorporating the reset mechanism. This is because
+the reset mechanism prevents the membrane potential from
+becoming excessively high, yielding a smoother distribution
+of membrane potentials across time that can facilitate stable
+information flow.
+Beyond these vision-based and audio processing bench-
+marks, we further assess the scalability and practicality of
+PMSN on the more challenging UEA multivariate time-series
+classification benchmark [75] and the PPG-DaLiA time-series
+regression benchmark [78]. Both benchmarks involve signifi-
+cantly longer sequences, with several tasks containing more
+than 10,000 timesteps, and capture a broad range of real-
+world temporal processing scenarios, ranging from scientific
+time-series analysis to practical applications in healthcare.
+Following prior work, we adopt the same preprocessing and
+evaluation protocols to ensure a fair comparison [75], [77].
+As reported in Tables IV and V, PMSN achieves competitive
+or superior performance compared with advanced non-spiking
+10
+TABLE V
+COMPARISON OF REGRESSION ERRORS ON THEPPG-DALIADATASET
+WITH A SEQUENCE LENGTH OF49,920,AVERAGED OVER FIVE DIFFERENT
+SEEDS. THE BEST SCORE IS HIGHLIGHTED INBOLD.
+Model SNN MSE×10 −2
+NRDE [74]✗9.90±0.97
+Log-NCDE [75]✗9.56±0.59
+LRU [47]✗12.17±0.49
+S5 [31]✗12.63±1.25
+S6 [76]✗12.88±2.05
+Mamba [76]✗10.65±2.20
+LinOSS-IMEX [77]✗7.50±0.46
+LinOSS-IM [77]✗6.40±0.23
+PMSN (Ours)✓5.17±0.53
+architectures that are widely used for temporal processing,
+including linear RNNs and SSMs, while being the only spike-
+based model among the compared methods. These results
+demonstrate that PMSN scales effectively to very long and
+challenging sequential tasks, underscoring its applicability to
+real-world temporal processing scenarios and its competitive-
+ness beyond the spiking domain.
+B. Scalability on Large-scale Image Classification
+While the preceding evaluations primarily focus on tem-
+poral processing benchmarks, it is also important to exam-
+ine whether the proposed spiking neuron model can scale
+to larger network architectures and datasets. To assess this
+scalability, we integrate PMSN into ResNet-18 and ResNet-34
+architectures and evaluate its performance on the ImageNet-
+1K benchmark [79], with the results summarized in Table VI.
+The results show that PMSN achieves SOTA accuracy against
+other spiking models with identical architectures, reaching
+70.98% on ImageNet-1K, a 3% absolute improvement over
+the IF baseline. This consistent improvement across both
+sequential benchmarks and large-scale image recognition tasks
+demonstrates the effectiveness and scalability of the proposed
+neuron model.
+At the same time, it is worth noting that recent transformer-
+based architectures introduce innovations tailored for static im-
+age recognition and can achieve strong ImageNet performance
+[66], [57], [67]. Under comparable experimental settings,
+PMSN attains comparable performance to these approaches,
+despite relying solely on convolutional backbones and being
+primarily designed for temporal processing rather than static
+image feature extraction.
+C. Visualization of Multi-compartment Dynamics
+Having demonstrated the superior performance of PMSN,
+we next analyze how PMSN integrates multiscale temporal
+information through compartmental interactions. We first vi-
+sualize the single-neuron impulse response in Fig. 4. After
+receiving an impulse att= 0, different compartments exhibit
+damped oscillations with distinct frequencies and decay rates,
+characterized byλ i =e a+ib. This reflects the system’s
+multiscale properties: compartments with higher oscillation
+TABLE VI
+COMPARISON ON THEIMAGENET-1KIMAGE CLASSIFICATION DATASET.
+Approach Architecture Param. Timesteps Acc.
+Spikformer [66] Spikformer-8-384
+17M
+4 70.24%
+Spike-driven Transformer [57] S-Transformer-8-384 4 72.28%
+Spikingformer [67] Spikingformer-8-384 472.45%
+MPBN [80] ResNet-18
+12M
+4 63.14%
+InfLoR-SNN [81] ResNet-18 4 64.78%
+IF [82] SEW ResNet-18 4 63.18%
+GLIF [34] MS-ResNet-18 6 68.11%
+Attention SNN [16] MS-ResNet-18 1 63.97%
+PSN+TET [43] SEW ResNet-18 4 67.63%
+IMP+LTS [83] SEW ResNet-18 4 65.38%
+SMA-ResNet [84] SMA-MS-ResNet-18 6 68.46%
+PMSN (Ours) SEW ResNet-18 4 68.77%
+MPBN [80] ResNet-34
+22M
+4 64.71%
+InfLoR-SNN [81] ResNet-34 4 65.54%
+IF [82] SEW ResNet-34 4 67.04%
+GLIF [34] ResNet-34 4 67.52%
+TET [69] SEW ResNet-34 4 68.00%
+Attention SNN [16] MS-ResNet-34 1 69.15%
+PSN+TET [43] SEW ResNet-34 4 70.54%
+IMP+LTS [83] SEW ResNet-34 4 68.90%
+SMA-ResNet [84] SMA-MS-ResNet-34 6 70.19%
+ANN-SNN Distillation [85] SEW ResNet-34 4 68.12%
+ResNet-34 4 70.64%
+PMSN (Ours) SEW ResNet-34 4 70.98%
+frequencies correlate with faster timescales, while lower fre-
+quencies indicate slower scales [86]. This compartmental
+synergy enables the integration of information across various
+frequency domains and time spans, facilitating multiscale
+temporal processing.
+We further examine the distribution of oscillation frequen-
+cies and damping coefficients across neurons in one layer.
+As shown in the middle and right panels of Fig. 4, PMSNs
+within the same population exhibit heterogeneous temporal
+dynamics, allowing the network to cover a broader spectrum
+of timescales.
+D. Simulation Acceleration
+To quantitatively evaluate the proposed acceleration tech-
+niques, we record the wall-clock forward- and backward-
+propagation times of PMSN using the GPU-enabled PyTorch
+library. Besides that, we also compare them against a range
+of serial and parallel models, including a serial MSN with
+neuronal dynamics identical to those of PMSN, LIF, PSN,
+and SPSN. Fig. 5 shows the acceleration ratios across diverse
+sequence lengths under the same single-hidden layer network
+architecture consisting of 256 neurons. Our parallel scheme
+shows a substantial speed-up over serial models, achieving
+training speed-up ratios up to134×and71×compared to
+the serial MSN and LIF models, respectively. When compared
+with SOTA parallel models, our PMSN outperforms SPSN but
+is slower than PSN. This can be attributed to a larger number
+of neuronal compartments used (i.e., five in PMSN vs. one
+in PSN) and less efficient implementation of FFT operations
+compared to PSN’s matrix multiplication in the current GPU
+acceleration framework. Nevertheless, this slight slowdown is
+worthwhile considering the overall effectiveness of our model.
+Additionally, we observe a positive correlation between the
+speed-up ratio and sequence length, indicating greater relative
+acceleration for longer sequences.
+11
+/uni00000013/uni00000018/uni00000013/uni00000014/uni00000013/uni00000013/uni00000014/uni00000018/uni00000013/uni00000015/uni00000013/uni00000013
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000013
+/uni00000014/uni00000030/uni00000048/uni00000050/uni00000045/uni00000055/uni00000044/uni00000051/uni00000048/uni00000003/uni00000053/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni0000000b/uni00000039/uni0000000c
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000018
+/uni00000013/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000015
+/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000052/uni00000056/uni00000046/uni0000004c/uni0000004f/uni0000004f/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000049/uni00000055/uni00000048/uni00000054/uni00000058/uni00000048/uni00000051/uni00000046/uni0000005c/uni00000003/uni0000000b/uni0000002b/uni0000005d/uni0000000c
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni0000002f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000015/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000014
+ /uni00000013
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000047/uni00000044/uni00000050/uni00000053/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000046/uni00000052/uni00000048/uni00000049/uni00000049/uni0000004c/uni00000046/uni0000004c/uni00000048/uni00000051/uni00000057
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000013/uni00000018/uni00000013/uni00000014/uni00000013/uni00000013/uni00000014/uni00000018/uni00000013/uni00000015/uni00000013/uni00000013
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000013
+/uni00000014/uni00000030/uni00000048/uni00000050/uni00000045/uni00000055/uni00000044/uni00000051/uni00000048/uni00000003/uni00000053/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni0000000b/uni00000039/uni0000000c
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000018
+/uni00000013/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000015
+/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000052/uni00000056/uni00000046/uni0000004c/uni0000004f/uni0000004f/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000049/uni00000055/uni00000048/uni00000054/uni00000058/uni00000048/uni00000051/uni00000046/uni0000005c/uni00000003/uni0000000b/uni0000002b/uni0000005d/uni0000000c
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni0000002f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000015/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000014
+ /uni00000013
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000047/uni00000044/uni00000050/uni00000053/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000046/uni00000052/uni00000048/uni00000049/uni00000049/uni0000004c/uni00000046/uni0000004c/uni00000048/uni00000051/uni00000057
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000013/uni00000018/uni00000013/uni00000014/uni00000013/uni00000013/uni00000014/uni00000018/uni00000013/uni00000015/uni00000013/uni00000013
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000013
+/uni00000014/uni00000030/uni00000048/uni00000050/uni00000045/uni00000055/uni00000044/uni00000051/uni00000048/uni00000003/uni00000053/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni0000000b/uni00000039/uni0000000c
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000018
+/uni00000013/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000015
+/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000052/uni00000056/uni00000046/uni0000004c/uni0000004f/uni0000004f/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000049/uni00000055/uni00000048/uni00000054/uni00000058/uni00000048/uni00000051/uni00000046/uni0000005c/uni00000003/uni0000000b/uni0000002b/uni0000005d/uni0000000c
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni0000002f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000015/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000014
+ /uni00000013
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000047/uni00000044/uni00000050/uni00000053/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000046/uni00000052/uni00000048/uni00000049/uni00000049/uni0000004c/uni00000046/uni0000004c/uni00000048/uni00000051/uni00000057
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000013/uni00000018/uni00000013/uni00000014/uni00000013/uni00000013/uni00000014/uni00000018/uni00000013/uni00000015/uni00000013/uni00000013
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000013
+/uni00000014/uni00000030/uni00000048/uni00000050/uni00000045/uni00000055/uni00000044/uni00000051/uni00000048/uni00000003/uni00000053/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni0000000b/uni00000039/uni0000000c
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000018
+/uni00000013/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000015
+/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000052/uni00000056/uni00000046/uni0000004c/uni0000004f/uni0000004f/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000049/uni00000055/uni00000048/uni00000054/uni00000058/uni00000048/uni00000051/uni00000046/uni0000005c/uni00000003/uni0000000b/uni0000002b/uni0000005d/uni0000000c
+/uni00000013
+/uni00000015/uni00000018
+/uni00000018/uni00000013
+/uni0000001a/uni00000018
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000015/uni00000018/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni0000002f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000015/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000014
+ /uni00000013
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000047/uni00000044/uni00000050/uni00000053/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000046/uni00000052/uni00000048/uni00000049/uni00000049/uni0000004c/uni00000046/uni0000004c/uni00000048/uni00000051/uni00000057
+/uni00000013
+/uni00000015/uni00000013
+/uni00000017/uni00000013
+/uni00000019/uni00000013
+/uni0000001b/uni00000013
+/uni00000014/uni00000013/uni00000013/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000013/uni00000018/uni00000013/uni00000014/uni00000013/uni00000013/uni00000014/uni00000018/uni00000013/uni00000015/uni00000013/uni00000013
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000013
+/uni00000014/uni00000030/uni00000048/uni00000050/uni00000045/uni00000055/uni00000044/uni00000051/uni00000048/uni00000003/uni00000053/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni0000000b/uni00000039/uni0000000c
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000018
+/uni00000013/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000015
+/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000052/uni00000056/uni00000046/uni0000004c/uni0000004f/uni0000004f/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000049/uni00000055/uni00000048/uni00000054/uni00000058/uni00000048/uni00000051/uni00000046/uni0000005c/uni00000003/uni0000000b/uni0000002b/uni0000005d/uni0000000c
+/uni00000013
+/uni00000015/uni00000018
+/uni00000018/uni00000013
+/uni0000001a/uni00000018
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000015/uni00000018/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni0000002f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000018
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000015/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000014
+ /uni00000013
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000047/uni00000044/uni00000050/uni00000053/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000046/uni00000052/uni00000048/uni00000049/uni00000049/uni0000004c/uni00000046/uni0000004c/uni00000048/uni00000051/uni00000057
+/uni00000013
+/uni00000015/uni00000018
+/uni00000018/uni00000013
+/uni0000001a/uni00000018
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000015/uni00000018/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000013/uni00000018/uni00000013/uni00000014/uni00000013/uni00000013/uni00000014/uni00000018/uni00000013/uni00000015/uni00000013/uni00000013
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000013
+/uni00000014/uni00000030/uni00000048/uni00000050/uni00000045/uni00000055/uni00000044/uni00000051/uni00000048/uni00000003/uni00000053/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni0000000b/uni00000039/uni0000000c
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000018
+/uni00000013/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000015
+/uni00000017/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000052/uni00000056/uni00000046/uni0000004c/uni0000004f/uni0000004f/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000049/uni00000055/uni00000048/uni00000054/uni00000058/uni00000048/uni00000051/uni00000046/uni0000005c/uni00000003/uni0000000b/uni0000002b/uni0000005d/uni0000000c
+/uni00000013
+/uni00000015/uni00000018
+/uni00000018/uni00000013
+/uni0000001a/uni00000018
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000015/uni00000018/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni0000002f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000019
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+/uni00000015/uni000000ee/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000014
+ /uni00000013
+/uni00000033/uni00000052/uni00000057/uni00000048/uni00000051/uni00000057/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000047/uni00000044/uni00000050/uni00000053/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000046/uni00000052/uni00000048/uni00000049/uni00000049/uni0000004c/uni00000046/uni0000004c/uni00000048/uni00000051/uni00000057
+/uni00000013
+/uni00000015/uni00000018
+/uni00000018/uni00000013
+/uni0000001a/uni00000018
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000015/uni00000018/uni00000027/uni0000004c/uni00000056/uni00000057/uni00000055/uni0000004c/uni00000045/uni00000058/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000003/uni00000046/uni00000052/uni00000058/uni00000051/uni00000057
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000014
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000015
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000016
+/uni00000026/uni00000052/uni00000050/uni00000053/uni00000044/uni00000055/uni00000057/uni00000050/uni00000048/uni00000051/uni00000057/uni00000017
+Fig. 4. Visualization of PMSN model dynamics (n= 5).Left:The impulse response of different compartments within one PMSN neuron, indicating the
+multi-timescale properties of a single PMSN neuron. Each hidden compartment has a dynamic coefficientλ i =e a+ib and exhibits damped oscillations in
+response to inputs, while the compartment5handles spike generation and reset.Middle:The distribution of oscillation frequenciesb/2π, andRight:damping
+coefficientsaacross neurons in the same layer, revealing heterogeneous temporal dynamics across timescales.
+/uni00000015/uni00000018/uni00000019/uni00000018/uni00000014/uni00000015/uni00000014/uni00000013/uni00000015/uni00000017/uni00000015/uni00000013/uni00000017/uni0000001b
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000015
+/uni00000036/uni00000053/uni00000048/uni00000048/uni00000047/uni00000003/uni00000055/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000056
+/uni00000029/uni00000052/uni00000055/uni0000005a/uni00000044/uni00000055/uni00000047/uni00000003/uni00000053/uni00000055/uni00000052/uni00000053/uni00000044/uni0000004a/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051
+/uni00000015/uni00000018/uni00000019/uni00000018/uni00000014/uni00000015/uni00000014/uni00000013/uni00000015/uni00000017/uni00000015/uni00000013/uni00000017/uni0000001b
+/uni00000037/uni0000004c/uni00000050/uni00000048/uni00000056/uni00000057/uni00000048/uni00000053/uni00000056
+/uni00000014/uni00000013/uni00000013
+/uni00000014/uni00000013/uni00000014
+/uni00000014/uni00000013/uni00000015
+/uni00000025/uni00000044/uni00000046/uni0000004e/uni0000005a/uni00000044/uni00000055/uni00000047/uni00000003/uni00000053/uni00000055/uni00000052/uni00000053/uni00000044/uni0000004a/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051
+/uni00000036/uni00000048/uni00000055/uni0000004c/uni00000044/uni0000004f/uni00000003/uni00000030/uni00000036/uni00000031/uni0000002f/uni0000002c/uni00000029/uni00000033/uni00000036/uni00000031/uni00000036/uni00000033/uni00000036/uni00000031/uni00000033/uni00000030/uni00000036/uni00000031/uni00000003/uni0000000b/uni00000032/uni00000058/uni00000055/uni00000056/uni0000000c
+Fig. 5. Comparison of speed ratiost i/tP M SN among evaluated neuron models, wheret i is the wall-clock runtime per propagation for modeli.
+/uni00000014/uni00000015/uni00000016/uni00000017/uni00000018/uni00000019
+/uni00000036/uni00000053/uni0000004c/uni0000004e/uni0000004c/uni00000051/uni0000004a/uni00000003/uni0000004f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000003/uni0000004c/uni00000051/uni00000047/uni00000048/uni0000005b
+/uni00000013/uni00000011/uni00000013
+/uni00000013/uni00000011/uni00000015
+/uni00000013/uni00000011/uni00000017
+/uni00000013/uni00000011/uni00000019
+/uni00000013/uni00000011/uni0000001b/uni00000036/uni00000053/uni0000004c/uni0000004e/uni00000048/uni00000003/uni00000047/uni00000048/uni00000051/uni00000056/uni0000004c/uni00000057/uni0000005c
+/uni0000000b/uni00000044/uni0000000c/uni00000003/uni00000032/uni00000058/uni00000057/uni00000053/uni00000058/uni00000057/uni00000003/uni00000056/uni00000053/uni0000004c/uni0000004e/uni00000048/uni00000003/uni00000047/uni00000048/uni00000051/uni00000056/uni0000004c/uni00000057/uni0000005c/uni00000003/uni00000044/uni00000046/uni00000055/uni00000052/uni00000056/uni00000056/uni00000003/uni00000047/uni0000004c/uni00000049/uni00000049/uni00000048/uni00000055/uni00000048/uni00000051/uni00000057/uni00000003/uni0000004f/uni00000044/uni0000005c/uni00000048/uni00000055/uni00000056
+/uni00000014/uni00000013/uni00000013/uni00000015/uni00000013/uni00000013/uni00000016/uni00000013/uni00000013/uni00000017/uni00000013/uni00000013/uni00000018/uni00000013/uni00000013/uni00000019/uni00000013/uni00000013/uni0000001a/uni00000013/uni00000013
+/uni00000028/uni00000056/uni00000057/uni0000004c/uni00000050/uni00000044/uni00000057/uni00000048/uni00000047/uni00000003/uni00000046/uni00000052/uni00000050/uni00000053/uni00000058/uni00000057/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000044/uni0000004f/uni00000003/uni00000046/uni00000052/uni00000056/uni00000057/uni00000003/uni00000052/uni00000049/uni00000003/uni00000057/uni00000052/uni00000057/uni00000044/uni0000004f/uni00000003/uni00000051/uni00000048/uni00000057/uni0000005a/uni00000052/uni00000055/uni0000004e/uni00000003/uni0000000b/uni00000051/uni0000002d/uni0000000c
+/uni00000017/uni00000013
+/uni00000018/uni00000013
+/uni00000019/uni00000013
+/uni0000001a/uni00000013
+/uni0000001b/uni00000013
+/uni0000001c/uni00000013/uni00000024/uni00000046/uni00000046/uni00000058/uni00000055/uni00000044/uni00000046/uni0000005c/uni00000003/uni0000000b/uni00000008/uni0000000c
+/uni0000000b/uni00000045/uni0000000c/uni00000003/uni00000024/uni00000046/uni00000046/uni00000058/uni00000055/uni00000044/uni00000046/uni0000005c/uni00000003/uni00000059/uni00000048/uni00000055/uni00000056/uni00000058/uni00000056/uni00000003/uni00000046/uni00000052/uni00000050/uni00000053/uni00000058/uni00000057/uni00000044/uni00000057/uni0000004c/uni00000052/uni00000051/uni00000044/uni0000004f/uni00000003/uni00000046/uni00000052/uni00000056/uni00000057/uni00000056
+/uni00000033/uni00000030/uni00000036/uni00000031/uni00000003/uni0000000b/uni00000051/uni00000020/uni00000015/uni0000000f/uni00000003/uni00000016/uni0000000f/uni00000003/uni00000018/uni0000000f/uni00000003/uni0000001c/uni0000000f/uni00000003/uni00000014/uni00000016/uni0000000f/uni00000003/uni00000014/uni0000001a/uni0000000c
+/uni00000050/uni00000044/uni00000056/uni0000004e/uni00000048/uni00000047/uni00000003/uni00000033/uni00000036/uni00000031/uni00000003/uni0000000b/uni0000004e/uni00000020/uni0000001b/uni0000000f/uni00000003/uni00000014/uni00000019/uni0000000f/uni00000003/uni00000016/uni00000015/uni0000000f/uni00000003/uni00000019/uni00000017/uni0000000f/uni00000003/uni0000001c/uni00000019/uni0000000f/uni00000003/uni00000014/uni00000015/uni0000001b/uni0000000c
+/uni00000036/uni00000033/uni00000036/uni00000031/uni00000003/uni0000000b/uni0000004e/uni00000020/uni0000001b/uni0000000f/uni00000003/uni00000014/uni00000019/uni0000000f/uni00000003/uni00000016/uni00000015/uni0000000f/uni00000003/uni00000019/uni00000017/uni0000000f/uni00000003/uni0000001c/uni00000019/uni0000000f/uni00000003/uni00000014/uni00000015/uni0000001b/uni0000000c
+/uni0000002f/uni0000002c/uni00000029/uni00000003/uni0000000b/uni00000036/uni00000046/uni00000044/uni0000004f/uni0000004c/uni00000051/uni0000004a/uni00000003/uni00000058/uni00000053/uni00000003/uni00000051/uni00000048/uni00000057/uni0000005a/uni00000052/uni00000055/uni0000004e/uni00000003/uni0000005a/uni0000004c/uni00000047/uni00000057/uni0000004b/uni0000000c
+Fig. 6. Spike sparsity, accuracy, and estimated computational cost across neuron models and model sizes; darker bars in (a) indicate larger models.
+E. Theoretical Computational Cost Analysis
+The PMSN offers an energy-efficient, hardware-friendly
+solution for practical applications. To systematically charac-
+terize these properties, we first analyze the spike sparsity and
+theoretical computational cost of PMSN in comparison with
+the PSN family [43] and conventional LIF neurons. All exper-
+iments are conducted on the pixel-by-pixel Sequential CIFAR-
+10 task using identical backbone architectures to ensure a
+fair comparison. To compare models across different scales,
+we vary the compartment numbernfor PMSN, the temporal
+receptive field sizekfor masked PSN and SPSN, and the
+network size for LIF neurons. The total cost is computed by
+considering both synaptic operations and neuronal operations.
+As shown in Fig. 6(a), PMSN exhibits the lowest spike density
+among all compared models. This efficiency arises from two
+key mechanisms: firstly, the mutual inhibitory effect result-
+ing from the coupling compartments may contribute to the
+spike frequency adaptation. Moreover, richer compartmental
+dynamics reduce the spike-based computational workload and
+suppress spike redundancy.
+To estimate the theoretical computational cost, we count
+12
+TABLE VII
+ACCURACY–EFFICIENCY COMPARISON OFANNS ONCPU/GPUANDSNNS WITHLIFORPMSNNEURONS ON ANFPGA-BASED NEUROMORPHIC
+HARDWARE.
+Architecture Neuron Model Device Hidden Dimension Batch Size Accuracy Throughput
+(Samples/s)
+Power
+(W)
+Energy Efficiency
+(Samples/J)
+Feedforward ANN ReLU Activation
+CPU 64-256-256 32 - 28.33 83.87 0.34
+64-256-256 64 - 55.28 88.26 0.63
+GPU 64-256-256 32 - 45.48 20.20 2.25
+64-256-256 64 - 94.90 20.32 4.67
+Feedforward SNN LIF Neuromorphic 64-256-256 1 41.47% 25.58 0.138 185.36
+Feedforward SNN PMSN (Ours) Neuromorphic 64-256-256 197.67%25.59 0.31381.76
+64-64-64 196.02%268.97 0.313859.33
+Global ControllerData Storage Unit
+Weight Buffers
+IFmapBuffers
+PEPEPEPE
+PEPEPEPE
+PEPEPEPE
+PEPEPEPE
+PE Computation ArrayPMSN Processing UnitPMSN Buffers
+Parameter Buffers
+Output Spike Buffers
+…
+Fig. 7.Overall framework of the FPGA-based hardware accelerator
+tailored for PMSN.The accelerator comprises:a global controller, coor-
+dinating the overall execution flow;PMSN processing units, computing the
+internal dynamics of PMSN neurons, including parallel matrix operations,
+adder-tree accumulation, membrane potential update, and spike generation;
+a PE computation array, accelerating linear-layer computations; anda
+data storage unit, storing synaptic weights and intermediate results. The
+accelerator adopts a layer-wise execution paradigm, in which the PMSN units
+and the PE array are shared across layers and reconfigurable, enabling efficient
+adaptation to diverse network architectures.
+the number of Multiply–Accumulate (MAC) and Accumulate
+(AC) operations per inference. The analytical cost of each
+neuron model is provided inSupplementary Materials. Using
+CMOS energy estimates at 45 nm [87] (E AC = 0.9pJ,
+EM AC = 4.6pJ), Fig. 6(b) shows that PMSN consistently
+achieves higher accuracy than other spiking neuron models at
+comparable computational costs.
+F . Hardware Implementation and Energy Efficiency
+To evaluate the practical deployability and efficiency of
+PMSN, we conduct an FPGA-based neuromorphic hardware
+implementation and compare its energy efficiency against
+conventional ANN implementations as well as a baseline SNN
+with LIF neurons. Details of the hardware platforms, software
+environments and the measurement pipeline are provided in
+Supplementary Materials.
+Specifically, we develop a dedicated FPGA-based neu-
+romorphic accelerator tailored for PMSN, as illustrated in
+Fig. 7. This hardware implementation preserves event-driven
+inter-neuron communication while retaining the rich internal
+neuronal dynamics of PMSN. Building upon this hardware
+deployment, we conduct an energy efficiency evaluation of
+TABLE VIII
+ABLATION STUDY OF COMPARTMENT NUMBERnONSEQUENTIAL
+CIFAR-10ANDCIFAR-100WITHT= 32.
+Dataset Compartment numbern
+2 3 459 17
+Sequential
+CIFAR-10 88.79% 90.49% 90.75% 90.97% 91.05% 91.43%
+Sequential
+CIFAR-100 61.84% 65.16% 65.83% 66.08% 66.51% 66.81%
+PMSN on the PS-MNIST task and compare it against con-
+ventional ANN implementations executed on CPU and GPU
+platforms, and a baseline feedforward SNN with LIF neurons
+implemented on the same FPGA platform. The results are
+summarized in Table VII, where energy efficiency is defined
+as the ratio between throughput and power consumption.
+Compared to ANN implementations on CPU and GPU, PMSN
+achieves two orders of magnitude improvement in energy
+efficiency, demonstrating its suitability for real-time temporal
+signal processing in edge scenarios. Moreover, PMSN exhibits
+a more favorable accuracy-efficiency trade-off than baseline
+LIF neurons. In particular, a PMSN configuration with network
+size comparable to the LIF baseline achieves substantially
+higher accuracy at the cost of moderately reduced energy
+efficiency, while a more compact variant achieves markedly
+higher energy efficiency than the LIF baseline while still
+delivering significantly higher accuracy.
+G. Ablation Study of Compartment Number
+PMSN provides the flexibility to adjust the number of
+neuronal compartments according to task complexity and com-
+putational resources. To examine this property, we evaluate
+the effect of compartment number on Sequential CIFAR-10
+and CIFAR-100 (T= 32). As summarized in Table VIII,
+increasing the number of compartments consistently improves
+accuracy on both datasets, indicating that larger compartment
+numbers provide additional temporal modeling capacity.
+However, this performance gain comes at the cost of in-
+creased neuronal computation. As shown in Fig. 6(b), in-
+creasingnfrom2to17substantially improves classification
+accuracy while incurring a more than 10-fold increase in
+theoretical computational cost, revealing a trade-off between
+model expressiveness and computational efficiency.
+13
+VIII. DISCUSSION ANDCONCLUSION
+In this work, we proposed a generalized multi-compartment
+neuron model with superior capacity in multiscale temporal
+processing. Furthermore, we introduced a parallel implemen-
+tation for this model, enabling accelerated training on GPU-
+accelerated ML frameworks. Experimental results demon-
+strated its strong ability to establish temporal dependencies
+across multiple timescales, substantially accelerate training,
+scale to challenging tasks, and achieve a favorable trade-off
+between accuracy and energy efficiency.
+While PMSN has demonstrated accurate and efficient neu-
+romorphic temporal processing, how this neuron-level ad-
+vance interacts with contemporary Transformer-based archi-
+tectures remains an interesting question. Transformers pro-
+vide architecture-level global representation learning, whereas
+PMSN enhances multiscale temporal integration within indi-
+vidual spiking units. Recent hybrid Transformer–SSM mod-
+els suggest the benefit of combining global attention with
+structured temporal dynamics [88], [89]. Therefore, integrating
+PMSN with attention-based architectures remains a promising
+direction for future work.
+Moreover, our FPGA-based neuromorphic accelerator eval-
+uation provided hardware-oriented evidence for the potential
+deployability of PMSN on neuromorphic platforms, position-
+ing it as a promising solution for accurate and energy-efficient
+real-time temporal processing in edge applications. Its com-
+partmental dynamics can also be formulated as programmable
+state-space neuronal dynamics, suggesting potential compat-
+ibility with neuromorphic chips that support programmable
+neurons [90] and efficient state-space inference [91].
+REFERENCES
+[1] W. Maass, “Networks of spiking neurons: the third generation of neural
+network models,”Neural Networks, vol. 10, no. 9, pp. 1659–1671, 1997.
+[2] K. Roy, A. Jaiswal, and P. Panda, “Towards spike-based machine
+intelligence with neuromorphic computing,”Nature, vol. 575, no. 7784,
+pp. 607–617, 2019.
+[3] A. Jeffares, Q. Guo, P. Stenetorp, and T. Moraitis, “Spike-inspired rank
+coding for fast and accurate recurrent neural networks,” inInternational
+Conference on Learning Representations, 2022, pp. 1–12.
+[4] T. Bu, W. Fang, J. Ding, P. DAI, Z. Yu, and T. Huang, “Optimal ANN-
+SNN conversion for high-accuracy and ultra-low-latency spiking neural
+networks,” inInternational Conference on Learning Representations,
+2022, pp. 1–13.
+[5] C. Ma, X. Chen, K. C. Tan, and J. Wu, “Spatiotemporal decoupled
+learning for spiking neural networks,”IEEE Transactions on Neural
+Networks and Learning Systems, 2026.
+[6] Q. Meng, M. Xiao, S. Yan, Y . Wang, Z. Lin, and Z.-Q. Luo, “Training
+high-performance low-latency spiking neural networks by differentiation
+on spike representation,” inProceedings of the IEEE/CVF conference on
+computer vision and pattern recognition, 2022, pp. 12 444–12 453.
+[7] Z. Wang, R. Jiang, S. Lian, R. Yan, and H. Tang, “Adaptive smoothing
+gradient learning for spiking neural networks,” inProceedings of the
+40th International Conference on Machine Learning, vol. 202. PMLR,
+23–29 Jul 2023, pp. 35 798–35 816.
+[8] X. Chen, Q. Yang, J. Wu, H. Li, and K. C. Tan, “A hybrid neural coding
+approach for pattern recognition with spiking neural networks,”IEEE
+Transactions on Pattern Analysis and Machine Intelligence, vol. 46,
+no. 05, pp. 3064–3078, 2024.
+[9] Y . Yan, Q. Yang, Y . Wu, H. Liu, M. Zhang, H. Li, K. C. Tan, and
+J. Wu, “Efficient and robust temporal processing with neural oscillations
+modulated spiking neural networks,”Nature Communications, vol. 16,
+no. 1, p. 8651, 2025.
+[10] J. Ding, B. Dong, F. Heide, Y . Ding, Y . Zhou, B. Yin, and X. Yang,
+“Biologically inspired dynamic thresholds for spiking neural networks,”
+Advances in Neural Information Processing Systems, vol. 35, pp. 6090–
+6103, 2022.
+[11] X. Chen, C. Ma, Y . Wu, K. C. Tan, and J. Wu, “Neuromorphic
+sequential arena: A benchmark for neuromorphic temporal processing,”
+inProceedings of the Thirty-Fourth International Joint Conference on
+Artificial Intelligence, IJCAI-25, 2025, pp. 4887–4895.
+[12] H. Li, H. Liu, X. Ji, G. Li, and L. Shi, “Cifar10-dvs: an event-stream
+dataset for object classification,”Frontiers in Neuroscience, vol. 11, p.
+244131, 2017.
+[13] G. Orchard, A. Jayawant, G. K. Cohen, and N. Thakor, “Converting
+static image datasets to spiking neuromorphic datasets using saccades,”
+Frontiers in neuroscience, vol. 9, p. 159859, 2015.
+[14] G. Bellec, D. Salaj, A. Subramoney, R. Legenstein, and W. Maass,
+“Long short-term memory and learning-to-learn in networks of spiking
+neurons,” inProceedings of the 32nd International Conference on Neural
+Information Processing Systems, 2018, p. 795–805.
+[15] B. Yin, F. Corradi, and S. M. Boht ´e, “Accurate and efficient time-domain
+classification with adaptive spiking recurrent neural networks,”Nature
+Machine Intelligence, vol. 3, no. 10, pp. 905–913, 2021.
+[16] M. Yao, G. Zhao, H. Zhang, Y . Hu, L. Deng, Y . Tian, B. Xu, and G. Li,
+“Attention spiking neural networks,”IEEE Transactions on Pattern
+Analysis and Machine Intelligence, vol. 45, no. 8, pp. 9393–9410, 2023.
+[17] A. N. Burkitt, “A review of the integrate-and-fire neuron model: I.
+homogeneous synaptic input,”Biological cybernetics, vol. 95, pp. 1–
+19, 2006.
+[18] M. Hines, “Efficient computation of branched nerve equations,”Inter-
+national Journal of Bio-medical Computing, vol. 15, no. 1, pp. 69–76,
+1984.
+[19] N. Spruston, “Pyramidal neurons: dendritic structure and synaptic in-
+tegration,”Nature Reviews Neuroscience, vol. 9, no. 3, pp. 206–221,
+2008.
+[20] A. Gidon, T. A. Zolnik, P. Fidzinski, F. Bolduan, A. Papoutsi, P. Poirazi,
+M. Holtkamp, I. Vida, and M. E. Larkum, “Dendritic action potentials
+and computation in human layer 2/3 cortical neurons,”Science, vol. 367,
+no. 6473, pp. 83–87, 2020.
+[21] P. Poirazi, T. Brannon, and B. W. Mel, “Pyramidal neuron as two-layer
+neural network,”Neuron, vol. 37, no. 6, pp. 989–999, 2003.
+[22] G. Major, M. E. Larkum, and J. Schiller, “Active properties of neocorti-
+cal pyramidal neuron dendrites,”Annual review of neuroscience, vol. 36,
+pp. 1–24, 2013.
+[23] W. Rall, “Theoretical significance of dendritic trees for neuronal input-
+output relations,”Neural theory and modeling, pp. 63–97, 1964.
+[24] A. Shaban, S. S. Bezugam, and M. Suri, “An adaptive threshold
+neuron for recurrent spiking neural networks with nanodevice hardware
+implementation,”Nature Communications, vol. 12, no. 1, p. 4234, 2021.
+[25] H. Zheng, Z. Zheng, R. Hu, B. Xiao, Y . Wu, F. Yu, X. Liu, G. Li,
+and L. Deng, “Temporal dendritic heterogeneity incorporated with
+spiking neural networks for learning multi-timescale dynamics,”Nature
+Communications, vol. 15, no. 1, p. 277, 2024.
+[26] S. Zhang, Q. Yang, C. Ma, J. Wu, H. Li, and K. C. Tan, “Tc-lif: A two-
+compartment spiking neuron model for long-term sequential modelling,”
+inProceedings of the AAAI Conference on Artificial Intelligence, vol. 38,
+no. 15, 2024, pp. 16 838–16 847.
+[27] P. Poirazi and A. Papoutsi, “Illuminating dendritic function with com-
+putational models,”Nature Reviews Neuroscience, vol. 21, no. 6, pp.
+303–321, 2020.
+[28] J. Acharya, A. Basu, R. Legenstein, T. Limbacher, P. Poirazi, and
+X. Wu, “Dendritic computing: branching deeper into machine learning,”
+Neuroscience, vol. 489, pp. 275–289, 2022.
+[29] E. Martin and C. Cundy, “Parallelizing linear recurrent neural nets over
+sequence length,” inInternational Conference on Learning Representa-
+tions, 2018, pp. 1–9.
+[30] A. Gu, K. Goel, and C. Re, “Efficiently modeling long sequences
+with structured state spaces,” inInternational Conference on Learning
+Representations, 2022, pp. 1–15.
+[31] J. T. Smith, A. Warrington, and S. Linderman, “Simplified state space
+layers for sequence modeling,” inThe Eleventh International Conference
+on Learning Representations, 2023, pp. 1–13.
+[32] H. Markram, “The blue brain project,”Nature Reviews Neuroscience,
+vol. 7, no. 2, pp. 153–160, 2006.
+[33] W. Fang, Z. Yu, Y . Chen, T. Masquelier, T. Huang, and Y . Tian,
+“Incorporating learnable membrane time constant to enhance learning of
+spiking neural networks,” inProceedings of the IEEE/CVF International
+Conference on Computer Vision, 2021, pp. 2661–2671.
+14
+[34] X. Yao, F. Li, Z. Mo, and J. Cheng, “Glif: A unified gated leaky
+integrate-and-fire neuron for spiking neural networks,”Advances in
+Neural Information Processing Systems, vol. 35, pp. 32 160–32 171,
+2022.
+[35] J. K. Eshraghian, M. Ward, E. O. Neftci, X. Wang, G. Lenz, G. Dwivedi,
+M. Bennamoun, D. S. Jeong, and W. D. Lu, “Training spiking neural
+networks using lessons from deep learning,”Proceedings of the IEEE,
+vol. 111, no. 9, pp. 1016–1054, 2023.
+[36] Q. Yang, J. Wu, M. Zhang, Y . Chua, X. Wang, and H. Li, “Training
+spiking neural networks with local tandem learning,”Advances in Neural
+Information Processing Systems, vol. 35, pp. 12 662–12 676, 2022.
+[37] Y . Li, Y . Guo, S. Zhang, S. Deng, Y . Hai, and S. Gu, “Differen-
+tiable spike: Rethinking gradient-descent for training spiking neural
+networks,”Advances in Neural Information Processing Systems, vol. 34,
+pp. 23 426–23 439, 2021.
+[38] S. Yang and B. Chen, “Effective surrogate gradient learning with high-
+order information bottleneck for spike-based machine intelligence,”
+IEEE Transactions on Neural Networks and Learning Systems, 2023.
+[39] Q. Su, S. Mei, X. Xing, M. Yao, J. Zhang, B. Xu, and G. Li, “Snn-
+bert: Training-efficient spiking neural networks for energy-efficient bert,”
+Neural Networks, vol. 180, p. 106630, 2024.
+[40] J. Ding, T. Bu, Z. Yu, T. Huang, and J. Liu, “Snn-rat: Robustness-
+enhanced spiking neural network through regularized adversarial train-
+ing,”Advances in Neural Information Processing Systems, vol. 35, pp.
+24 780–24 793, 2022.
+[41] S. Yang, B. Linares-Barranco, Y . Wu, and B. Chen, “Self-supervised
+high-order information bottleneck learning of spiking neural network
+for robust event-based optical flow estimation,”IEEE Transactions on
+Pattern Analysis and Machine Intelligence, vol. 47, no. 4, pp. 2280–
+2297, 2024.
+[42] M. Xiao, Q. Meng, Z. Zhang, D. He, and Z. Lin, “Online training
+through time for spiking neural networks,”Advances in Neural Infor-
+mation Processing Systems, vol. 35, pp. 20 717–20 730, 2022.
+[43] W. Fang, Z. Yu, Z. Zhou, D. Chen, Y . Chen, Z. Ma, T. Masquelier,
+and Y . Tian, “Parallel spiking neurons with high efficiency and ability
+to learn long-term dependencies,” inAdvances in Neural Information
+Processing Systems, vol. 36, 2023, pp. 53 674–53 687.
+[44] G. Buzs ´aki and X.-J. Wang, “Mechanisms of gamma oscillations,”
+Annual Review of Neuroscience, vol. 35, pp. 203–225, 2012.
+[45] R. D. Traub, R. K. Wong, R. Miles, and H. Michelson, “A model of a
+ca3 hippocampal pyramidal neuron incorporating voltage-clamp data on
+intrinsic conductances,”Journal of neurophysiology, vol. 66, no. 2, pp.
+635–650, 1991.
+[46] P. F. Pinsky and J. Rinzel, “Intrinsic and network rhythmogenesis in
+a reduced traub model for ca3 neurons,”Journal of computational
+neuroscience, vol. 1, pp. 39–60, 1994.
+[47] A. Orvieto, S. L. Smith, A. Gu, A. Fernando, C. Gulcehre, R. Pascanu,
+and S. De, “Resurrecting recurrent neural networks for long sequences,”
+inInternational Conference on Machine Learning. PMLR, 2023, pp.
+26 670–26 698.
+[48] R. A. DeCarlo,Linear systems: A state variable approach with numer-
+ical implementation. Prentice-Hall, Inc., 1989.
+[49] M. Davieset al., “Taking neuromorphic computing to the next level
+with loihi2,”Intel Labs’ Loihi, vol. 2, pp. 1–7, 2021.
+[50] M. Harris, S. Sengupta, and J. D. Owens, “Parallel prefix sum (scan)
+with cuda,”GPU gems, vol. 3, no. 39, pp. 851–876, 2007.
+[51] P. U. Diehl, B. U. Pedroni, A. Cassidy, P. Merolla, E. Neftci, and
+G. Zarrella, “Truehappiness: Neuromorphic emotion recognition on
+truenorth,” in2016 international joint conference on neural networks
+(ijcnn). IEEE, 2016, pp. 4278–4285.
+[52] P. U. Diehl, D. Neil, J. Binas, M. Cook, S.-C. Liu, and M. Pfeiffer, “Fast-
+classifying, high-accuracy spiking deep networks through weight and
+threshold balancing,” in2015 International joint conference on neural
+networks (IJCNN). IEEE, 2015, pp. 1–8.
+[53] M. Bal and A. Sengupta, “P-SPIKESSM: Harnessing probabilistic
+spiking state space models for long-range dependency tasks,” inThe
+Thirteenth International Conference on Learning Representations, 2025.
+[54] S. Shen, C. Wang, R. Huang, Y . Zhong, Q. Guo, Z. Lu, J. Zhang, and
+L. Leng, “Spikingssms: Learning long sequences with sparse and parallel
+spiking state space models,” inProceedings of the AAAI Conference on
+Artificial Intelligence, vol. 39, no. 19, 2025, pp. 20 380–20 388.
+[55] S. Higuchi, S. Kairat, S. Bohte, and S. Otte, “Balanced resonate-and-fire
+neurons,” inForty-first International Conference on Machine Learning,
+2024.
+[56] C. Ma, X. Chen, Y . Li, Q. Yang, Y . Wu, G. Li, G. Pan, H. Tang, K. C.
+Tan, and J. Wu, “Spiking neural networks for temporal processing: Status
+quo and future prospects,”arXiv preprint arXiv:2502.09449, 2025.
+[57] M. Yao, J. Hu, Z. Zhou, L. Yuan, Y . Tian, B. Xu, and G. Li,
+“Spike-driven transformer,”Advances in Neural Information Processing
+Systems, vol. 36, pp. 64 043–64 058, 2023.
+[58] C. Zhou, H. Zhang, Z. Zhou, L. Yu, L. Huang, X. Fan, L. Yuan, Z. Ma,
+H. Zhou, and Y . Tian, “QKFormer: Hierarchical spiking transformer
+using q-k attention,” inThe Thirty-eighth Annual Conference on Neural
+Information Processing Systems, 2024.
+[59] M.-I. Stan and O. Rhodes, “Learning long sequences in spiking neural
+networks,”Scientific Reports, vol. 14, no. 1, p. 21957, 2024.
+[60] T. E. Huber, J. Lecomte, B. Polovnikov, and A. von Arnim, “Scaling
+up resonate-and-fire networks for fast deep learning,” inEuropean
+Conference on Computer Vision. Springer, 2024, pp. 241–258.
+[61] P. Sun, E. Eqlimi, Y . Chua, P. Devos, and D. Botteldooren, “Adaptive
+axonal delays in feedforward spiking neural networks for accurate
+spoken word recognition,” in2023 IEEE International Conference on
+Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2023, pp.
+1–5.
+[62] L. Deckers, L. Van Damme, W. Van Leekwijck, I. J. Tsang, and S. Latr ´e,
+“Co-learning synaptic delays, weights and adaptation in spiking neural
+networks,”Frontiers in Neuroscience, vol. 18, p. 1360300, 2024.
+[63] P. G. Malettira, S. Negi, W. Ponghiran, and K. Roy, “TSkips: Efficiency
+through explicit temporal delay connections in spiking neural networks,”
+Transactions on Machine Learning Research, 2025.
+[64] A. Bittar and P. N. Garner, “A surrogate gradient spiking baseline for
+speech command recognition,”Frontiers in Neuroscience, vol. 16, p.
+865897, 2022.
+[65] I. Hammouamri, I. Khalfaoui-Hassani, and T. Masquelier, “Learning de-
+lays in spiking neural networks using dilated convolutions with learnable
+spacings,” inInternational Conference on Learning Representations,
+2024.
+[66] Z. Zhou, Y . Zhu, C. He, Y . Wang, S. Y AN, Y . Tian, and L. Yuan,
+“Spikformer: When spiking neural network meets transformer,” in
+International Conference on Learning Representations, 2023.
+[67] C. Zhou, L. Yu, Z. Zhou, H. Zhang, Z. Ma, H. Zhou, and Y . Tian,
+“Spikingformer: Spike-driven residual learning for transformer-based
+spiking neural network,”arXiv preprint arXiv:2304.11954, 2023.
+[68] S. Shen, D. Zhao, G. Shen, and Y . Zeng, “Tim: an efficient temporal
+interaction module for spiking transformer,” inProceedings of the
+Thirty-Third International Joint Conference on Artificial Intelligence,
+2024, pp. 3133–3141.
+[69] S. Deng, Y . Li, S. Zhang, and S. Gu, “Temporal efficient training
+of spiking neural network via gradient re-weighting,” inInternational
+Conference on Learning Representations, 2022, pp. 1–14.
+[70] Y . Bengio, N. L ´eonard, and A. Courville, “Estimating or propagating
+gradients through stochastic neurons for conditional computation,”arXiv
+preprint arXiv:1308.3432, 2013.
+[71] Q. V . Le, N. Jaitly, and G. E. Hinton, “A simple way to initialize recur-
+rent networks of rectified linear units,”arXiv preprint arXiv:1504.00941,
+2015.
+[72] B. Cramer, Y . Stradmann, J. Schemmel, and F. Zenke, “The heidelberg
+spiking data sets for the systematic evaluation of spiking neural net-
+works,”IEEE Transactions on Neural Networks and Learning Systems,
+vol. 33, no. 7, pp. 2744–2757, 2020.
+[73] S. Shen, M. Lv, B. Han, D. Zhao, G. Shen, F. Zhao, and Y . Zeng,
+“Teformer: Structured bidirectional temporal enhancement modeling in
+spiking transformers,”arXiv preprint arXiv:2601.18274, 2026.
+[74] J. Morrill, C. Salvi, P. Kidger, and J. Foster, “Neural rough differential
+equations for long time series,” inInternational Conference on Machine
+Learning. PMLR, 2021, pp. 7829–7838.
+[75] B. Walker, A. D. McLeod, T. Qin, Y . Cheng, H. Li, and T. Lyons,
+“Log neural controlled differential equations: the lie brackets make a
+difference,” inProceedings of the 41st International Conference on
+Machine Learning, 2024, pp. 49 822–49 844.
+[76] A. Gu and T. Dao, “Mamba: Linear-time sequence modeling with
+selective state spaces,” inFirst conference on language modeling, 2024.
+[77] T. K. Rusch and D. Rus, “Oscillatory state-space models,” inInterna-
+tional Conference on Learning Representations, 2025.
+[78] A. Reiss, I. Indlekofer, P. Schmidt, and K. Van Laerhoven, “Deep ppg:
+Large-scale heart rate estimation with convolutional neural networks,”
+Sensors, vol. 19, no. 14, p. 3079, 2019.
+[79] J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei, “ImageNet:
+A large-scale hierarchical image database,” in2009 IEEE conference on
+computer vision and pattern recognition. IEEE, 2009, pp. 248–255.
+[80] Y . Guo, Y . Zhang, Y . Chen, W. Peng, X. Liu, L. Zhang, X. Huang,
+and Z. Ma, “Membrane potential batch normalization for spiking neural
+networks,” inProceedings of the IEEE/CVF International Conference
+on Computer Vision (ICCV), 2023, pp. 19 420–19 430.
+15
+[81] Y . Guo, Y . Chen, L. Zhang, X. Liu, X. Tong, Y . Ou, X. Huang,
+and Z. Ma, “Inflor-snn: Reducing information loss for spiking neural
+networks,”arXiv preprint arXiv:2307.04356, 2023.
+[82] W. Fang, Z. Yu, Y . Chen, T. Huang, T. Masquelier, and Y . Tian, “Deep
+residual learning in spiking neural networks,” inAdvances in Neural
+Information Processing Systems, vol. 34, 2021, pp. 21 056–21 069.
+[83] H. Shen, Q. Zheng, H. Wang, and G. Pan, “Rethinking the membrane
+dynamics and optimization objectives of spiking neural networks,”Ad-
+vances in Neural Information Processing Systems, vol. 37, pp. 92 697–
+92 720, 2024.
+[84] Y . Shan, M. Zhang, R.-j. Zhu, X. Qiu, J. K. Eshraghian, and H. Qu,
+“Advancing spiking neural networks towards multiscale spatiotemporal
+interaction learning,” inProceedings of the AAAI Conference on Artifi-
+cial Intelligence, vol. 39, no. 2, 2025, pp. 1501–1509.
+[85] S. Yang, C. Yu, L. Liu, H. Ma, A. Wang, and E. Li, “Efficient ann-guided
+distillation: Aligning rate-based features of spiking neural networks
+through hybrid block-wise replacement,” inProceedings of the Computer
+Vision and Pattern Recognition Conference, 2025, pp. 10 025–10 035.
+[86] H. Jaeger, D. Doorakkers, C. Lawrence, and G. Indiveri, “Dimensions
+of timescales in neuromorphic computing systems,”arXiv preprint
+arXiv:2102.10648, 2021.
+[87] M. Horowitz, “1.1 computing’s energy problem (and what we can do
+about it),” in2014 IEEE International Solid-State Circuits Conference
+Digest of Technical Papers (ISSCC). IEEE, 2014, pp. 10–14.
+[88] L. Ren, Y . Liu, Y . Lu, C. Liang, W. Chenet al., “Samba: Simple hybrid
+state space models for efficient unlimited context language modeling,” in
+The Thirteenth International Conference on Learning Representations,
+2024.
+[89] B. Lenz, O. Lieber, A. Arazi, A. Bergman, A. Manevich, B. Peleg,
+B. Aviram, C. Almagor, C. Fridman, D. Padnoset al., “Jamba: Hybrid
+transformer-mamba language models,” inThe Thirteenth International
+Conference on Learning Representations, 2025.
+[90] H. A. Gonzalez, J. Huang, F. Kelber, K. K. Nazeer, T. Langer, C. Liu,
+M. Lohrmann, A. Rostami, M. Sch¨one, B. V oggingeret al., “Spinnaker2:
+A large-scale neuromorphic system for event-based and asynchronous
+machine learning,”arXiv preprint arXiv:2401.04491, 2024.
+[91] S. M. Meyer, P. Weidel, P. Plank, L. Campos-Macias, S. B. Shreshta,
+P. Stratmann, J. Timcheck, and M. Richter, “A diagonal structured state
+space model on loihi 2 for efficient streaming sequence processing,” in
+2025 Neuro Inspired Computational Elements (NICE). IEEE, 2025,
+pp. 1–9.

@@ -1,0 +1,397 @@
+[
+  {
+    "doi": "10.1109/TNNLS.2026.3671461",
+    "title": [
+      "Spatiotemporal Decoupled Learning for Spiking Neural Networks"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          9
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          9
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          9
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11676227/11434552.pdf?arnumber=11434552",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2026.3671461"
+  },
+  {
+    "doi": "10.1109/TNNLS.2026.3715568",
+    "title": [
+      "Spike-EIFNet: Lightweight Spike-Driven Event–Image Fusion Network for Accurate and Efficient Semantic Segmentation"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/6104215/11627674.pdf?arnumber=11627674",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2026.3715568"
+  },
+  {
+    "doi": "10.1109/TNNLS.2026.3708510",
+    "title": [
+      "PMSN: A Parallel Multi-Compartment Spiking Neuron for Multiscale Temporal Processing"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/6104215/11604167.pdf?arnumber=11604167",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2026.3708510"
+  },
+  {
+    "doi": "10.1109/TNNLS.2025.3650157",
+    "title": [
+      "HSA\n                    <sup>2</sup>\n                    M: Hierarchical Spike Aggregation Activation Map for Visual Explanations From Spiking Neural Networks"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          7
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          7
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          7
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11600559/11345286.pdf?arnumber=11345286",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2025.3650157"
+  },
+  {
+    "doi": "10.1109/TNNLS.2025.3639578",
+    "title": [
+      "SFedCA: Credit Assignment-Based Active Client Selection Strategy for Spiking Federated Learning"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          6
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          6
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          6
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11549955/11286228.pdf?arnumber=11286228",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2025.3639578"
+  },
+  {
+    "doi": "10.1109/TNNLS.2026.3687785",
+    "error": "HTTP Error 429: Too Many Requests"
+  },
+  {
+    "doi": "10.1109/TNNLS.2026.3680142",
+    "title": [
+      "EMM-Det: Energy-Efficient Multidrone Tiny Object Detection by Memory-Enhanced Spiking Neural Networks"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/6104215/11475885.pdf?arnumber=11475885",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2026.3680142"
+  },
+  {
+    "doi": "10.1109/TNNLS.2025.3623703",
+    "title": [
+      "An Intrinsically Knowledge-Transferring Developmental Spiking Neural Network for Tactile Classification"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          4
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          4
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          4
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11475606/11222074.pdf?arnumber=11222074",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2025.3623703"
+  },
+  {
+    "doi": "10.1109/TNNLS.2025.3622893",
+    "title": [
+      "SNN-FT: Temporal-Coded Spiking Neural Networks for Fourier Transform"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          4
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          4
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          4
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11475606/11218011.pdf?arnumber=11218011",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2025.3622893"
+  },
+  {
+    "doi": "10.1109/TNNLS.2025.3615971",
+    "title": [
+      "IML-Spikeformer: Input-Aware Multilevel Spiking Transformer for Speech Processing"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          3
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          3
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          3
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11418705/11197047.pdf?arnumber=11197047",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2025.3615971"
+  },
+  {
+    "doi": "10.1109/TNNLS.2025.3606849",
+    "title": [
+      "Channelwise Regional Integrate and Multiple Firing Neuron: Improving the Spatiotemporal Learning of Spiking Neural Networks"
+    ],
+    "published": {
+      "date-parts": [
+        [
+          2026,
+          1
+        ]
+      ]
+    },
+    "published-online": null,
+    "published-print": {
+      "date-parts": [
+        [
+          2026,
+          1
+        ]
+      ]
+    },
+    "issued": {
+      "date-parts": [
+        [
+          2026,
+          1
+        ]
+      ]
+    },
+    "link": [
+      {
+        "URL": "http://xplorestaging.ieee.org/ielx8/5962385/11339259/11159293.pdf?arnumber=11159293",
+        "content-type": "unspecified",
+        "content-version": "vor",
+        "intended-application": "similarity-checking"
+      }
+    ],
+    "URL": "https://doi.org/10.1109/tnnls.2025.3606849"
+  }
+]
