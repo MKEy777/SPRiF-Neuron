@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "applicable": true,
+  "auditable": true,
+  "verdict": "PASS",
+  "backend": "python-matplotlib",
+  "summary": {
+    "fail": 0,
+    "warn": 0,
+    "comparisons": 4,
+    "exemptions": 0
+  },
+  "tolerances": {
+    "alignment_pt": 1.5,
+    "gutter_pt": 1.5
+  },
+  "layout": {
+    "schema_version": 1,
+    "backend": "python-matplotlib",
+    "figure": {
+      "width_pt": 507.59999999999997,
+      "height_pt": 342.0
+    },
+    "panels": [
+      {
+        "id": "clean0",
+        "bbox_pt": [
+          53.297999999999995,
+          227.6144117647059,
+          246.4066956521739,
+          300.96
+        ],
+        "grid_id": "matplotlib-grid-1",
+        "row_start": 0,
+        "row_stop": 1,
+        "col_start": 0,
+        "col_stop": 1
+      },
+      {
+        "id": "clean8",
+        "bbox_pt": [
+          53.297999999999995,
+          122.34882352941175,
+          246.4066956521739,
+          195.69441176470588
+        ],
+        "grid_id": "matplotlib-grid-1",
+        "row_start": 1,
+        "row_stop": 2,
+        "col_start": 0,
+        "col_stop": 1
+      },
+      {
+        "id": "intervention0",
+        "bbox_pt": [
+          304.3393043478261,
+          227.6144117647059,
+          497.448,
+          300.96
+        ],
+        "grid_id": "matplotlib-grid-2",
+        "row_start": 0,
+        "row_stop": 1,
+        "col_start": 0,
+        "col_stop": 1
+      },
+      {
+        "id": "intervention8",
+        "bbox_pt": [
+          304.3393043478261,
+          122.34882352941175,
+          497.448,
+          195.69441176470588
+        ],
+        "grid_id": "matplotlib-grid-2",
+        "row_start": 1,
+        "row_stop": 2,
+        "col_start": 0,
+        "col_stop": 1
+      }
+    ],
+    "row_groups": [
+      {
+        "id": "row-1",
+        "panels": [
+          "clean0",
+          "intervention0"
+        ]
+      },
+      {
+        "id": "row-2",
+        "panels": [
+          "clean8",
+          "intervention8"
+        ]
+      }
+    ],
+    "column_groups": [
+      {
+        "id": "column-1",
+        "panels": [
+          "clean0",
+          "clean8"
+        ]
+      },
+      {
+        "id": "column-2",
+        "panels": [
+          "intervention0",
+          "intervention8"
+        ]
+      }
+    ],
+    "boundary_groups": [],
+    "exemptions": []
+  },
+  "findings": []
+}

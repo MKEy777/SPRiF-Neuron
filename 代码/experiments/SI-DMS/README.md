@@ -11,10 +11,12 @@ The membrane uses the previous filter state; spikes do not directly reset the
 spectral or filter state.
 
 `sprif_full`, `sprif_merged`, and `sprif_lambda0` are preserved as historical
-models. They cannot serve as the planned TNNLS capacity controls. MEMORY_RESET5,
-the two training conditions, and paired clean/stress evaluation still require
-their planned implementation before formal results. `lif`, `asrnn`, and `brf`
-remain available through `--models`; the default queue contains `sprif_scalar`.
+models. They cannot serve as the planned TNNLS capacity controls. The new
+`memory_reset5` and `real_modes3` cells are registered; the dedicated
+`run_tnnls.py` entry point supports two training conditions, five seeds and
+paired clean/stress inputs. These changes require runtime validation in the
+training environment before being used for formal results. The legacy
+`run_all.py` entry point retains its previous defaults.
 
 ## Intervention Definition and Evidence Boundaries
 
@@ -58,3 +60,22 @@ seeds specified in the revision protocol. No training has been run for the new
 model here. Summary files identify their reference model explicitly: new-model
 files use `sprif_scalar`, while legacy-only files retain `sprif_full`.
 `forced_hit_rate` should be 1 before interpreting intervention results.
+
+
+## TNNLS controls and training entry point
+
+`real_modes3` implements three independently driven real decays with scalar membrane reset, five states and eleven local learned coefficients. It retains the primary SI-DMS alpha initialization (raw alpha=3) for the first mode and samples the other two independently with time constants uniform in [2,40] steps. This explicit initialization choice must be recorded with the run; it differs from the primary model's fixed rho initialization. `memory_reset5` applies the fixed normalized-input-direction reset to the spectral state after both readouts, preserving h and scalar membrane reset.
+
+In a prepared training environment, first run `python -m pytest -q`. For a small development-only check, use a separate output path:
+
+```powershell
+python run_tnnls.py --models real_modes3 --training Clean Intervention --seeds 0 --steps 2 --eval-batches 1 --smoke --output results_tnnls_smoke
+```
+
+The smoke flag labels every checkpoint and evaluation row. The default configuration still has the full evaluation grid, so this is a functionality check, not an accuracy result. Formal run, in a fresh output directory:
+
+```powershell
+python run_tnnls.py --models real_modes3 --training Clean Intervention --output results_tnnls_real_modes3
+```
+
+Formal mode fixes seeds 0,1,2,42,1111, 3000 optimizer steps and 20 evaluation batches. Clean training sets K=0 throughout; Intervention training uses K=0/1/2/4/8. Evaluation uses shared input and separate intervention-mask random streams across K/f, model, and training condition for each seed, delay and batch. Each run saves checkpoint, history and per-condition JSON; root evaluations.json uses plotting model names and carries training, model_id and smoke fields. One-model outputs must be combined with genuine outputs for the other five models before using the composite plotter; no numbers are filled or inferred here. This implementation has only been statically checked and must be validated on the intended PyTorch version before formal training.

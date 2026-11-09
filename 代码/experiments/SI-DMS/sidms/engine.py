@@ -18,7 +18,7 @@ def resolve_device(value: str):
     return "cuda" if value == "auto" and torch.cuda.is_available() else ("cpu" if value == "auto" else value)
 
 def train_model(name: str, cfg: ExperimentConfig, seed: int, device: str | None = None,
-                progress=None):
+                progress=None, tnnls_protocol=False):
     seed_everything(seed)
     device = resolve_device(device or cfg.train.device)
     model = SIDMSNetwork(name, cfg).to(device)
@@ -29,7 +29,7 @@ def train_model(name: str, cfg: ExperimentConfig, seed: int, device: str | None 
 
     clean_delay = cfg.task.train_delays_ms[len(cfg.task.train_delays_ms) // 2]
     clean_batch = make_batch(cfg, cfg.train.batch_size, clean_delay, 0,
-                             cfg.model.hidden_size, seed=seed * 7_777_777, device=device,
+                             cfg.model.hidden_size, seed=(2_000_000_000_000 + seed*1_000_000 if tnnls_protocol else seed * 7_777_777), device=device,
                              fraction=0.0)
 
     @torch.no_grad()
@@ -45,7 +45,7 @@ def train_model(name: str, cfg: ExperimentConfig, seed: int, device: str | None 
         delay = rng.choice(cfg.task.train_delays_ms)
         count = rng.choice(cfg.task.train_intervention_counts)
         batch = make_batch(cfg, cfg.train.batch_size, delay, count,
-                           cfg.model.hidden_size, seed=seed * 1_000_003 + step, device=device,
+                           cfg.model.hidden_size, seed=(1_000_000_000_000 + seed*1_000_000 + step if tnnls_protocol else seed * 1_000_003 + step), device=device,
                            fraction=cfg.task.train_intervention_fraction)
         out = model(batch.x, batch.intervention)
         ce = F.cross_entropy(out.logits, batch.y)
@@ -68,7 +68,7 @@ def train_model(name: str, cfg: ExperimentConfig, seed: int, device: str | None 
 
 @torch.no_grad()
 def evaluate_grid(model: SIDMSNetwork, cfg: ExperimentConfig, seed: int, batches: int = 20,
-                  batch_size: int | None = None, device: str | None = None, progress=None):
+                  batch_size: int | None = None, device: str | None = None, progress=None, paired=False):
     device = resolve_device(device or cfg.train.device)
     model.to(device).eval(); batch_size = batch_size or cfg.train.batch_size
     rows = []
@@ -80,9 +80,11 @@ def evaluate_grid(model: SIDMSNetwork, cfg: ExperimentConfig, seed: int, batches
             for f_i, frac in frac_list:
                 correct = total = 0; rates = []; hits = []
                 for b in range(batches):
-                    batch_seed = seed * 10_000_019 + d_i * 100_003 + k_i * 1009 + f_i * 131 + b
+                    batch_seed = (3_000_000_000_000 + seed*1_000_000 + d_i*10_000 + b if paired
+                                  else seed * 10_000_019 + d_i * 100_003 + k_i * 1009 + f_i * 131 + b)
+                    mask_seed = (4_000_000_000_000 + seed*1_000_000 + d_i*10_000 + b if paired else None)
                     batch = make_batch(cfg, batch_size, delay, count, cfg.model.hidden_size,
-                                       seed=batch_seed, device=device, fraction=frac)
+                                       seed=batch_seed, device=device, fraction=frac, mask_seed=mask_seed)
                     out = model(batch.x, batch.intervention)
                     correct += int((out.logits.argmax(-1) == batch.y).sum()); total += batch_size
                     rates.append(out.natural_rate); hits.append(out.forced_hit_rate)

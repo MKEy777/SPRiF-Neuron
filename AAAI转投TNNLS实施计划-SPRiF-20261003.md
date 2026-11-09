@@ -27,7 +27,7 @@
 | 成本与动态诊断 | 复用上述模型和 checkpoint | 0 | 实际时间、存储和状态行为的代价 |
 | **合计** | **110 次正式训练；不含必要的配置调试或有条件补测** | **110** | |
 
-正式种子统一为 **0、1、2、42、1111**。5 次是本计划的基本重复范围，不是期刊规定，也不保证足以检出小效应。训练台账见 [07-新实验台账.csv](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/07-新实验台账.csv)；所有任务均为“未启动”。
+正式种子统一为 **0、1、2、42、1111**。5 次是本计划的基本重复范围，不是期刊规定，也不保证足以检出小效应。**2026-10-31 按作者要求删除旧台账，仅保留三张论文最终结果表：主实验、消融、SI-DMS；新实验结果仍均待测。** 不再建立逐次训练台账。
 
 **为什么选 PS-MNIST 和 SHD：**前者覆盖长序列记忆，后者覆盖真实事件序列，且 SHD 是现稿优势较弱、需要直面的问题。主模型仍重测五任务，控制和基线集中在这两个代表任务，不扩成全任务全变体矩阵。
 
@@ -208,7 +208,7 @@ TC-LIF 和 BRF 在 PS-MNIST/SHD 各跑 5 种子。数据划分、输入、读出
 | 记忆复位控制受输入/读出尺度明显影响 | 补固定复位强度的小范围诊断，或修订机制解释 | 自动启动大网格 |
 | 希望保留更强因果或广泛效率结论 | 补路径诊断或资源曲线，先写清对应主张 | 保留强表述但省掉证据 |
 
-上述补测不计入 110 次基本预算，必须另记；若结论本身可以诚实收窄，则不为增加实验数量而扩项。
+上述补测不计入 110 次基本预算；若发生配置或实验范围变更，在本计划或实验协议的相关说明中更新，不另建数据台账。若结论本身可以诚实收窄，则不为增加实验数量而扩项。
 
 ## 5. 工作表与立即执行的下一步
 
@@ -216,12 +216,13 @@ TC-LIF 和 BRF 在 PS-MNIST/SHD 各跑 5 种子。数据划分、输入、读出
 - [02 文献差异表](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/02-文献差异表.md)：核对增量，D-RF 不做专门实验。
 - [03 核心变体定义](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/03-核心变体定义.md)：新主模型及两个等容量控制。
 - [05 阶段决策记录](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/05-阶段决策记录.md)：根据结果决定继续、补证或改定位。
-- [06 论文修改台账](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/06-论文修改台账.csv)：M01 已完成，其余事项未启动。
-- [07 新实验台账](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/07-新实验台账.csv)：110 次正式训练任务，当前全部未启动。
+- [表1 主实验](TNNLS-Revision/表1-主实验.md)：保留原稿文献基线，区分文献报告与本轮复现，填写新版五任务结果。
+- [表2 消融实验](TNNLS-Revision/表2-消融实验.md)：两个等容量结构控制及初始化敏感性；标准初始化主模型复用表1结果。
+- [表3 SI-DMS](TNNLS-Revision/表3-SI-DMS.md)：三个模型、两种训练条件的正常/受扰准确率与配对损失，另列2500 ms。
 
-**下一步从步骤 02 开始：冻结新实验协议及初始化/正则规则，再实现新模型并启动 6 次检查。** 步骤 01 只完成论文工作稿，没有修改实现或启动训练。
+**下一步从步骤 02 开始：核实现有数据和运行环境，冻结新实验协议及初始化/正则规则，再启动 6 次检查。** 新主模型实现及合成输入检查已完成，正式训练尚未启动。
 
-旧 [125 次实验台账](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/04-实验台账.csv) 继续保留为已取消历史；[零新增实验计划](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/参考-零新增实验计划（已停用）.md) 已停用。它们不与新台账合并，不构成本轮执行要求。
+原125次实验台账、110次新实验台账及论文修改台账已于2026-10-31删除。实验范围仍按本计划分阶段执行，结果只填写上述三张论文表；成本、动态轨迹和干预曲线用图展示，不另建结果表。论文表目前是待填模板，不代表已有新版实验结果。
 
 判断依据：[原论文](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/AuthorKit27/SPRiF_AAAI2027.tex)、[补充材料](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/AuthorKit27/SPRiF_AAAI2027_supp.tex)、[AAAI 意见](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/AAAI_27_Paper_Decision_Bilingual.md)、[同门 TNNLS 审稿意见](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/审稿意见-STFSFormer-TNNLS-2026-P-47915-中文翻译.md)。这些意见用于识别风险，不等于 TNNLS 的统一接收标准。
 

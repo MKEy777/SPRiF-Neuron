@@ -1,12 +1,16 @@
 # SPRiF TNNLS 正文工作稿
 
+**2026-11-06 当前版。** 已恢复时间尺度、共振与状态空间、复位机制方向的必要讨论，正文共引用 35 篇文献。表 I 跨双栏，Method 保留作者名，Network 标明 Rec/DMP，参数量以 K（千）计。主稿通过 `sprif2027.bib` 和本目录 `IEEEtran.bst` 自动生成参考文献。最新 PDF 为 [build/SPRiF_TNNLS.pdf](build/SPRiF_TNNLS.pdf)，共 10 页。运行 `./build-manuscript.ps1`，或在 VS Code 选择 `PDFLaTeX + BibTeX` 配方编译。下方旧记录保留供追溯。
+
+**2026-11-01 历史记录。** [正文源文件](SPRiF_TNNLS.tex)和 [7 页 PDF](SPRiF_TNNLS.pdf) 已更新。第 4 页式（23）–（24）给出记忆复位对膜驱动的贡献。第 6 页是表 I 主实验、表 II 结构消融，第 7 页是表 III SI-DMS。下文为 10 月 5 日的步骤 01 记录，页数、表数和待测状态仅描述当时版本。
+
 **更新：2026-10-05。** 本目录现为采用 IEEEtran 期刊版式的单一正文。模型定义、必要推导、实验协议、结果表和局限性均在正文中；最终论文提交使用主文稿 PDF。AuthorKit27 原稿保持原状。
 
 | 文件 | 用途 |
 |---|---|
-| [SPRiF_TNNLS.tex](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Manuscript/SPRiF_TNNLS.tex) | 当前主文稿；参考文献和模型示意图均写在此源文件内 |
+| [SPRiF_TNNLS.tex](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Manuscript/SPRiF_TNNLS.tex) | 当前主文稿；引用文献库及 figure/ 中的模型示意图 |
 | [SPRiF_TNNLS.pdf](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Manuscript/SPRiF_TNNLS.pdf) | 当前主文稿编译结果，共 10 页 |
-| [sprif2027.bib](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Manuscript/sprif2027.bib) | 作者维护的文献库；新增四篇 TNNLS 文献，正文内嵌参考文献需同步维护 |
+| [sprif2027.bib](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Manuscript/sprif2027.bib) | 作者维护的文献库；正文通过 BibTeX 自动加载 |
 | [IEEEtran.cls](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Manuscript/IEEEtran.cls) | 已下载官方模板中的期刊文档类，用于编译 |
 | [正文重构与核对记录](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/10-正文重构与核对记录-20261005.md) | 章节调整、文献对应关系、占位符及检查结果 |
 | [步骤 01 修改记录](/C:/Users/VECTOR/Desktop/SPRiF-Neuron/TNNLS-Revision/08-步骤01修改记录.md) | 此前模型修改的历史记录 |
@@ -50,13 +54,8 @@ u_t^0&=\widetilde u_t^0-z_t\theta.
 
 本次完成正文结构、模型与分析、协议说明及结果讨论框架。未修改实现、未启动训练。实际 bar_G 初始化、数据划分、读出细节和部分运行设置仍待冻结；原稿给出的训练配置被标为候选起点。旧经验图片没有移入新模型结果，正文模型示意图已按新定义重绘。补齐新实验和协议字段后，才能形成可正式提交的实证稿件。
 
-## 编译
+## VS Code 本地编译
 
-在本目录执行：
+仓库根目录的 `.vscode` 配置使用 LaTeX Workshop 和 MiKTeX。打开仓库文件夹后，安装推荐的 LaTeX Workshop 扩展；打开 `SPRiF_TNNLS.tex`，按 `Ctrl+Alt+B` 编译。主稿使用 pdfLaTeX → BibTeX → pdfLaTeX → pdfLaTeX，PDF 和辅助文件输出到本目录的 `build/`。
 
-```powershell
-latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=build SPRiF_TNNLS.tex
-Copy-Item -LiteralPath 'build/SPRiF_TNNLS.pdf' -Destination 'SPRiF_TNNLS.pdf' -Force
-```
-
-本次使用现有本地 TeX Live 编译成功。正文有 32 个编号公式、10 个表、1 幅图和 17 条参考文献；无未解析引用、重复标签或溢出版面。内置 LaTeX 编译器报运行环境错误，具体信息见核对记录。旧 AAAI 样式文件留作历史资源，当前正文不加载它们。
+自 2026-11-06 起，主稿通过 `\bibliography{sprif2027}` 加载文献库，默认配方运行 BibTeX；此前的内嵌参考文献方式已停用。若打开先前的补充材料 `SPRiF_TNNLS_supp.tex`，文件顶部的 LaTeX Workshop 指令会选择 `PDFLaTeX + BibTeX` 配方。

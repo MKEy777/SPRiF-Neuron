@@ -65,8 +65,7 @@ class SPRiFScalarCell(BaseCell):
                 "h": self.bar_G.new_zeros(batch, self.hidden_size, device=device),
                 "u": self.bar_G.new_zeros(batch, self.hidden_size, device=device)}
 
-    def step(self, x, state, intervention, prev_spike=None):
-        drive = self.drive(x, prev_spike)
+    def spectral_step(self, state, drive):
         alpha, rho = torch.sigmoid(self.alpha_raw), torch.sigmoid(self.rho_raw)
         omega = math.pi * torch.sigmoid(self.omega_raw)
         x0, x1, x2 = state["x"].unbind(-1)
@@ -74,6 +73,10 @@ class SPRiFScalarCell(BaseCell):
                                 rho * (torch.cos(omega) * x1 - torch.sin(omega) * x2)
                                 + (1 - rho) * drive,
                                 rho * (torch.sin(omega) * x1 + torch.cos(omega) * x2)), -1)
+        return spectral
+
+    def step(self, x, state, intervention, prev_spike=None):
+        spectral = self.spectral_step(state, self.drive(x, prev_spike))
         eta = torch.sigmoid(self.eta_raw)
         projection = torch.einsum("bhk,hpk->bhp", spectral, self.bar_G)
         h = eta[:, 1] * state["h"] + projection[..., 1]
@@ -83,6 +86,37 @@ class SPRiFScalarCell(BaseCell):
         return z, {"x": spectral, "h": h, "u": membrane - z * self.threshold}, {
             "forced_hit": hit, "slow_pre_reset": spectral,
             "h_pre_reset": h, "mem_pre_reset": membrane}
+
+
+class SPRiFRealModes3Cell(SPRiFScalarCell):
+    """Three independently driven real decays, five states and 11 local coefficients."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # alpha/rho/omega slots are repurposed as three real decay logits.
+        # The first matches the SI-DMS primary alpha initialization; the other
+        # two sample distinct rho-range time constants uniformly in steps.
+        with torch.no_grad():
+            tau = torch.empty(self.hidden_size, 2, device=self.rho_raw.device).uniform_(2.0, 40.0)
+            decays = torch.exp(-1.0 / tau).clamp(1e-4, 1-1e-4)
+            self.rho_raw.copy_(torch.logit(decays[:, 0]))
+            self.omega_raw.copy_(torch.logit(decays[:, 1]))
+
+    def spectral_step(self, state, drive):
+        decays = torch.sigmoid(torch.stack((self.alpha_raw, self.rho_raw, self.omega_raw), dim=-1))
+        return decays * state["x"] + (1.0-decays) * drive.unsqueeze(-1)
+
+
+class SPRiFMemoryReset5Cell(SPRiFScalarCell):
+    """Matched SPRiF with fixed normalized input-direction memory reset."""
+    def step(self, x, state, intervention, prev_spike=None):
+        z, new, diag = super().step(x, state, intervention, prev_spike)
+        alpha, rho = torch.sigmoid(self.alpha_raw), torch.sigmoid(self.rho_raw)
+        b = torch.stack((1-alpha, 1-rho, torch.zeros_like(alpha)), dim=-1)
+        norm = torch.linalg.vector_norm(b, dim=-1, keepdim=True)
+        if torch.any(norm == 0):
+            raise FloatingPointError('MEMORY_RESET5 input direction has zero norm')
+        new['x'] = new['x'] - z.unsqueeze(-1) * self.threshold * (b / norm)
+        return z, new, diag
 
 
 class SPRiFFullCell(BaseCell):
@@ -231,6 +265,8 @@ def build_cell(name: str, input_size: int, hidden_size: int, dt_ms: int, thresho
     args = (input_size, hidden_size, dt_ms, threshold)
     kw = {"recurrent": recurrent}
     table = {"sprif_scalar": lambda: SPRiFScalarCell(*args, **kw),
+             "real_modes3": lambda: SPRiFRealModes3Cell(*args, **kw),
+             "memory_reset5": lambda: SPRiFMemoryReset5Cell(*args, **kw),
              "sprif_full": lambda: SPRiFFullCell(*args, learned_reset=True, **kw),
              "sprif_lambda0": lambda: SPRiFFullCell(*args, learned_reset=False, **kw),
              "sprif_merged": lambda: SPRiFMergedCell(*args, **kw), "lif": lambda: LIFCell(*args, **kw),
