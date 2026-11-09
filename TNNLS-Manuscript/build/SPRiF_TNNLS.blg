@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99e
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: C:\Users\ADMINI~1\AppData\Local\Temp\sprif_tnnls_build\SPRiF_TNNLS.aux
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+The style file: IEEEtran.bst
+Reallocating 'name_of_file' (item size: 1) to 10 items.
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Reallocating 'wiz_functions' (item size: 4) to 6000 items.
+Reallocating 'singl_function' (item size: 4) to 100 items.
+Database file #1: sprif2027.bib
+-- IEEEtran.bst version 1.14 (2015/08/26) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+
+Done.
+You've used 33 entries,
+            4087 wiz_defined-function locations,
+            998 strings with 14544 characters,
+and the built_in function-call counts, 27306 in all, are:
+= -- 2118
+> -- 808
+< -- 186
++ -- 452
+- -- 196
+* -- 1347
+:= -- 3908
+add.period$ -- 71
+call.type$ -- 33
+change.case$ -- 36
+chr.to.int$ -- 414
+cite$ -- 33
+duplicate$ -- 1974
+empty$ -- 2209
+format.name$ -- 190
+if$ -- 6380
+int.to.chr$ -- 0
+int.to.str$ -- 33
+missing$ -- 385
+newline$ -- 130
+num.names$ -- 33
+pop$ -- 946
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 2093
+stack$ -- 0
+substring$ -- 1165
+swap$ -- 1594
+text.length$ -- 48
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 33
+warning$ -- 0
+while$ -- 100
+width$ -- 35
+write$ -- 348

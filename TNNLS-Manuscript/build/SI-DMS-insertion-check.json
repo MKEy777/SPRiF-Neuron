@@ -1,0 +1,26 @@
+{
+  "pages": 11,
+  "references_resolve": true,
+  "duplicate_labels": false,
+  "figures": {
+    "sidms_intervention_curves.pdf": {
+      "number": 4,
+      "page": 9,
+      "page_min_text_pt": 6.077,
+      "sha256": "87eeade716254b7ede796d5a4b7cd4bd6c90ea4011665db935a4a985a0c30372"
+    },
+    "sidms_heatmaps.pdf": {
+      "number": 5,
+      "page": 9,
+      "page_min_text_pt": 6.077,
+      "sha256": "e52145123bbe7a90d02b8069110126787bdcb08e50f3b6573aaad9394ad17da8"
+    },
+    "sidms_spike_replay.pdf": {
+      "number": 6,
+      "page": 10,
+      "page_min_text_pt": 5.368,
+      "sha256": "68e7187b441d2e31547fc366906eb2332ae31d81ac6f227c2705ed571556d386"
+    }
+  },
+  "layout_notes": "Page 9 intentionally contains the two full-width SI-DMS figures and their captions; underfull vertical-box and float-only-page notices visually reviewed. No overfull boxes or undefined references."
+}

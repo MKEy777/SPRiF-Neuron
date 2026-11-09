@@ -1,0 +1,156 @@
+pdflatex: security risk: running with elevated privileges
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex.fmt)
+ restricted \write18 enabled.
+entering extended mode
+(SPRiF_TNNLS_supp.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2025-12-24>
+
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cl
+s
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/base\size10.clo
+)) (aaai2027.sty
+Conference Style for AAAI for LaTeX 2e
+
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.s
+ty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/base\fontenc.st
+y)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/newtx\newtxtext
+.sty
+`newtxtext' v1.744, 2024/04/01 Text macros taking advantage of TeXGyre Termes a
+nd its extensions (msharpe)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/xpatch\xpatch.s
+ty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/l3kernel\expl3.
+sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3bac
+kend-pdftex.def))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/l3packages/xpar
+se\xparse.sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etoolb
+ox.sty))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.s
+ty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\co
+lor.cfg)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pd
+ftex.def)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathco
+lor.ltx))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/xkeyval\xkeyval
+.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkeyv
+al.tex
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\xkvut
+ils.tex
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\keyva
+l.tex))))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/base\textcomp.s
+ty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/xstring\xstring
+.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/generic/xstring\xstri
+ng.tex))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/base\ifthen.sty
+)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/carlisle\scalef
+nt.sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/generic/binhex\binhex
+.tex)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/fontaxes\fontax
+es.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/fontaxes\fontax
+es-v1.sty)))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\helvet.s
+ty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\courier.
+sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/placeins\placei
+ns.sty))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphi
+cx.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphi
+cs.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.s
+ty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\gr
+aphics.cfg)))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/natbib\natbib.s
+ty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption
+.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption
+3.sty))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\bookta
+bs.sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmath
+.sty
+For additional information on amsmath, use the `?' option.
+
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstext
+.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen.
+sty))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy.
+sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn.
+sty))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amsfon
+ts.sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amssym
+b.sty)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/newtx\t1ntxtlf.
+fd)
+(C:\Users\Administrator\Desktop\SPRiF-Neuron\TNNLS-Manuscript\build\SPRiF_TNNLS
+_supp.aux)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\sup
+p-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\ep
+stopdf-base.sty
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstop
+df-sys.cfg))
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.f
+d)
+(C:\Users\Administrator\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.f
+d) [1{C:/Users/Administrator/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{
+C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/newtx/ntx-
+ec-tlf.enc}] [2]
+Underfull \hbox (badness 10000) in paragraph at lines 251--251
+[]\T1/ntxtlf/m/n/9 Readout ini-tial-iza-tion
+
+Underfull \hbox (badness 1221) in paragraph at lines 275--276
+\T1/ntxtlf/m/n/10 The orig-i-nal manuscript re-ports a five-state, thirteen-
+
+(C:\Users\Administrator\Desktop\SPRiF-Neuron\TNNLS-Manuscript\build\SPRiF_TNNLS
+_supp.bbl [3]) [4]
+(C:\Users\Administrator\Desktop\SPRiF-Neuron\TNNLS-Manuscript\build\SPRiF_TNNLS
+_supp.aux) )
+(see the transcript file for additional information)<C:/Users/Administrator/App
+Data/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/
+Administrator/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex
+10.pfb><C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fonts/type1/public
+/amsfonts/cm/cmmi10.pfb><C:/Users/Administrator/AppData/Local/Programs/MiKTeX/f
+onts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/Administrator/AppData/Local/P
+rograms/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi9.pfb><C:/Users/Administrator
+/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Use
+rs/Administrator/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/c
+mr7.pfb><C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fonts/type1/publi
+c/amsfonts/cm/cmr9.pfb><C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fo
+nts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Administrator/AppData/Local/P
+rograms/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Users/Administrator
+/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb><
+C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fonts/type1/public/newtx/z
+tmb.pfb><C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fonts/type1/publi
+c/newtx/ztmr.pfb><C:/Users/Administrator/AppData/Local/Programs/MiKTeX/fonts/ty
+pe1/public/newtx/ztmri.pfb>
+pdflatex: major issue: So far, you have not checked for MiKTeX updates.
+Output written on C:\Users\Administrator\Desktop\SPRiF-Neuron\TNNLS-Manuscript\
+build\SPRiF_TNNLS_supp.pdf (4 pages, 251253 bytes).
+Transcript written on C:\Users\Administrator\Desktop\SPRiF-Neuron\TNNLS-Manuscr
+ipt\build\SPRiF_TNNLS_supp.log.

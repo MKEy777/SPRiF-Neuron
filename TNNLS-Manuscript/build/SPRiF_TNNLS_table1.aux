@@ -1,0 +1,177 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{asrnn,adlif}
+\citation{izhikevich_rf,brf,drf}
+\citation{tclif,dhsnn}
+\citation{pmsn2026}
+\citation{sun2026dmp}
+\citation{asrnn,adlif}
+\citation{izhikevich_rf,brf}
+\citation{tclif}
+\citation{dhsnn}
+\citation{drf}
+\citation{pmsn2026}
+\citation{sun2026dmp}
+\citation{spikingssms}
+\citation{nisnna2025}
+\citation{imlspikeformer2026}
+\citation{stdl2026}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:introduction}{{I}{1}{Introduction}{section.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{1}{section.2}\protected@file@percent }
+\newlabel{sec:related}{{II}{1}{Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}States That Carry Temporal Information}{1}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Spectral Memory and Output Reset}{1}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Spike History in Computation and Training}{1}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}SPRiF Neuron: Model and Analysis}{2}{section.3}\protected@file@percent }
+\newlabel{sec:model}{{III}{2}{SPRiF Neuron: Model and Analysis}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}From a Reset-Coupled Trace to Separate State Roles}{2}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:motivation}{{\mbox  {III-A}}{2}{From a Reset-Coupled Trace to Separate State Roles}{subsection.3.1}{}}
+\newlabel{eq:lif}{{1}{2}{From a Reset-Coupled Trace to Separate State Roles}{equation.1}{}}
+\newlabel{eq:lif_unrolled}{{2}{2}{From a Reset-Coupled Trace to Separate State Roles}{equation.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Spectral Memory and Membrane Update}{2}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:forward}{{\mbox  {III-B}}{2}{Spectral Memory and Membrane Update}{subsection.3.2}{}}
+\newlabel{eq:current}{{3}{2}{Spectral Memory and Membrane Update}{equation.3}{}}
+\newlabel{eq:sprif}{{4}{2}{Spectral Memory and Membrane Update}{equation.4}{}}
+\newlabel{eq:AB}{{5}{2}{Spectral Memory and Membrane Update}{equation.5}{}}
+\newlabel{eq:G}{{6}{2}{Spectral Memory and Membrane Update}{equation.6}{}}
+\newlabel{eq:constraints}{{7}{2}{Spectral Memory and Membrane Update}{equation.7}{}}
+\newlabel{eq:absorption}{{8}{2}{Spectral Memory and Membrane Update}{equation.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}How an Input Pulse Reaches the Membrane}{2}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:kernels}{{\mbox  {III-C}}{2}{How an Input Pulse Reaches the Membrane}{subsection.3.3}{}}
+\newlabel{eq:poles}{{9}{2}{How an Input Pulse Reaches the Membrane}{equation.9}{}}
+\newlabel{eq:impulse}{{10}{2}{How an Input Pulse Reaches the Membrane}{equation.10}{}}
+\newlabel{eq:h_kernel}{{11}{2}{How an Input Pulse Reaches the Membrane}{equation.11}{}}
+\newlabel{eq:drive}{{12}{2}{How an Input Pulse Reaches the Membrane}{equation.12}{}}
+\newlabel{eq:drive_kernel}{{13}{2}{How an Input Pulse Reaches the Membrane}{equation.13}{}}
+\newlabel{eq:transfer}{{14}{2}{How an Input Pulse Reaches the Membrane}{equation.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces State organization of LIF (left) and SPRiF (right). LIF integrates input and reset in the same membrane variable. SPRiF separates spectral memory, governed by $A(\alpha ,\rho ,\omega )$ and $B$, from the auxiliary filter and membrane dynamics. The spectral state supplies the drive for firing, while the spike-triggered reset acts on the membrane.}}{3}{figure.1}\protected@file@percent }
+\newlabel{fig:organization}{{1}{3}{State organization of LIF (left) and SPRiF (right). LIF integrates input and reset in the same membrane variable. SPRiF separates spectral memory, governed by $A(\alpha ,\rho ,\omega )$ and $B$, from the auxiliary filter and membrane dynamics. The spectral state supplies the drive for firing, while the spike-triggered reset acts on the membrane}{figure.1}{}}
+\newlabel{eq:membrane_unrolled}{{15}{3}{How an Input Pulse Reaches the Membrane}{equation.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Reachability and Bounds on the Local States}{3}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:stability}{{\mbox  {III-D}}{3}{Reachability and Bounds on the Local States}{subsection.3.4}{}}
+\newlabel{prop:controllability}{{1}{3}{Driven spectral coordinates}{subsection.3.4}{}}
+\newlabel{eq:controllability}{{16}{3}{Reachability and Bounds on the Local States}{equation.16}{}}
+\newlabel{eq:memory_system}{{17}{3}{Reachability and Bounds on the Local States}{equation.17}{}}
+\newlabel{eq:memory_matrices}{{18}{3}{Reachability and Bounds on the Local States}{equation.18}{}}
+\newlabel{eq:F_poles}{{19}{3}{Reachability and Bounds on the Local States}{equation.19}{}}
+\citation{asrnn}
+\citation{lecun1998gradient}
+\citation{laguna1997database}
+\newlabel{prop:boundedness}{{2}{4}{Bounded local states}{equation.19}{}}
+\newlabel{eq:local_bounds}{{20}{4}{Reachability and Bounds on the Local States}{equation.20}{}}
+\newlabel{eq:u_bound}{{21}{4}{Reachability and Bounds on the Local States}{equation.21}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}Where a Spike Enters the Memory Dynamics}{4}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:reset}{{\mbox  {III-E}}{4}{Where a Spike Enters the Memory Dynamics}{subsection.3.5}{}}
+\newlabel{eq:reset_identity}{{22}{4}{Where a Spike Enters the Memory Dynamics}{equation.22}{}}
+\newlabel{eq:reset_kernel}{{23}{4}{Where a Spike Enters the Memory Dynamics}{equation.23}{}}
+\newlabel{eq:drive_histories}{{24}{4}{Where a Spike Enters the Memory Dynamics}{equation.24}{}}
+\newlabel{eq:recurrent_feedback}{{25}{4}{Where a Spike Enters the Memory Dynamics}{equation.25}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-F}}Learning and Parameter Count}{4}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:learning}{{\mbox  {III-F}}{4}{Learning and Parameter Count}{subsection.3.6}{}}
+\newlabel{eq:surrogate}{{26}{4}{Learning and Parameter Count}{equation.26}{}}
+\newlabel{eq:parameters}{{27}{4}{Learning and Parameter Count}{equation.27}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Setup}{4}{section.4}\protected@file@percent }
+\newlabel{sec:setup}{{IV}{4}{Experimental Setup}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Tasks, Encodings, and Data Partitions}{4}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:data}{{\mbox  {IV-A}}{4}{Tasks, Encodings, and Data Partitions}{subsection.4.1}{}}
+\citation{warden2018speech}
+\citation{cramer2022heidelberg}
+\citation{glif}
+\citation{asrnn}
+\citation{dhsnn}
+\citation{brf}
+\citation{tclif}
+\citation{sun2026dmp}
+\citation{glif}
+\citation{asrnn}
+\citation{dhsnn}
+\citation{brf}
+\citation{tclif}
+\citation{sun2026dmp}
+\citation{tclif}
+\citation{brf}
+\citation{sun2026dmp}
+\citation{asrnn}
+\citation{dhsnn}
+\citation{brf}
+\citation{adlif}
+\citation{snnsfa}
+\citation{asrnn}
+\citation{radlif}
+\citation{dhsnn}
+\citation{tclif}
+\citation{heterogeneity}
+\citation{asrnn}
+\citation{dhsnn}
+\citation{brf}
+\citation{tclif}
+\citation{mpssnn}
+\citation{dgn}
+\citation{tclif}
+\citation{brf}
+\citation{tclif}
+\citation{brf}
+\citation{sun2026dmp}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Training and Checkpoint Selection}{5}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:training}{{\mbox  {IV-B}}{5}{Training and Checkpoint Selection}{subsection.4.2}{}}
+\newlabel{eq:decay_init}{{28}{5}{Training and Checkpoint Selection}{equation.28}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Controls with Matched Local Capacity}{5}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:controls}{{\mbox  {IV-C}}{5}{Controls with Matched Local Capacity}{subsection.4.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-C}1}\textnormal  {\textsc  {MemoryReset5}}}{5}{subsubsection.4.3.1}\protected@file@percent }
+\newlabel{eq:memory_reset_control}{{29}{5}{\mr }{equation.29}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-C}2}\textnormal  {\textsc  {RealModes3}}}{5}{subsubsection.4.3.2}\protected@file@percent }
+\newlabel{eq:real_control}{{30}{5}{\rmodes }{equation.30}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-D}}Benchmark Comparators}{5}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:baselines}{{\mbox  {IV-D}}{5}{Benchmark Comparators}{subsection.4.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-E}}SI-DMS: Task and Spike Intervention}{5}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:sidms}{{\mbox  {IV-E}}{5}{SI-DMS: Task and Spike Intervention}{subsection.4.5}{}}
+\newlabel{eq:paired_loss}{{31}{5}{SI-DMS: Task and Spike Intervention}{equation.31}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Classification accuracy and network size on five temporal benchmarks.}}{6}{table.1}\protected@file@percent }
+\newlabel{tab:main_results}{{I}{6}{Classification accuracy and network size on five temporal benchmarks}{table.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Structural ablations. The three variants use the same layer widths, five states and eleven learned local coefficients per neuron. Accuracy is mean $\pm $ sample SD (\%) over five seeds. The SPRiF reference reuses Table~\ref {tab:main_results}.}}{6}{table.2}\protected@file@percent }
+\newlabel{tab:ablation}{{II}{6}{Structural ablations. The three variants use the same layer widths, five states and eleven learned local coefficients per neuron. Accuracy is mean $\pm $ sample SD (\%) over five seeds. The SPRiF reference reuses Table~\ref {tab:main_results}}{table.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-F}}Statistical Reporting}{6}{subsection.4.6}\protected@file@percent }
+\newlabel{sec:statistics}{{\mbox  {IV-F}}{6}{Statistical Reporting}{subsection.4.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Results and Discussion}{6}{section.5}\protected@file@percent }
+\newlabel{sec:results}{{V}{6}{Results and Discussion}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Temporal Classification at the Reported Network Sizes}{6}{subsection.5.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces SI-DMS under clean and intervention training. Stress uses $K=40$ and a nominal intervention fraction of 15\%. Accuracy is mean $\pm $ sample SD (\%) across five training seeds. $\Delta _{40}$ is the mean clean-minus-stress difference in percentage points. The five-delay summary includes the unseen 2500-ms delay, also shown separately.}}{7}{table.3}\protected@file@percent }
+\newlabel{tab:sidms_results}{{III}{7}{SI-DMS under clean and intervention training. Stress uses $K=40$ and a nominal intervention fraction of 15\%. Accuracy is mean $\pm $ sample SD (\%) across five training seeds. $\Delta _{40}$ is the mean clean-minus-stress difference in percentage points. The five-delay summary includes the unseen 2500-ms delay, also shown separately}{table.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Temporal Responses of the Spectral Memory}{7}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:temporal_responses}{{\mbox  {V-B}}{7}{Temporal Responses of the Spectral Memory}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Reset Placement and the Choice of Modes}{7}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Forced Spikes During a Memory Delay}{7}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Conclusion}{7}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{VI}{7}{Conclusion}{section.6}{}}
+\bibcite{asrnn}{1}
+\bibcite{adlif}{2}
+\bibcite{izhikevich_rf}{3}
+\bibcite{brf}{4}
+\bibcite{drf}{5}
+\bibcite{tclif}{6}
+\bibcite{dhsnn}{7}
+\bibcite{pmsn2026}{8}
+\bibcite{sun2026dmp}{9}
+\bibcite{spikingssms}{10}
+\bibcite{nisnna2025}{11}
+\bibcite{imlspikeformer2026}{12}
+\bibcite{stdl2026}{13}
+\bibcite{lecun1998gradient}{14}
+\bibcite{laguna1997database}{15}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Temporal responses of SPRiF across tasks, arranged in three parts with seven subplots. (a) The three upper subplots show SPRiF impulse responses on PS-MNIST, GSC and QTDB, from left to right. (b) The three lower-left subplots show normalized frequency-response magnitudes of the memory states for the same tasks. Shading indicates the distribution range across neurons, not uncertainty across random seeds. Frequency is expressed in cycles per step. (c) The lower-right subplot compares normalized slow-decay responses of SPRiF and ASRNN on GSC and QTDB. Solid curves with open markers denote SPRiF; dashed curves with filled markers denote ASRNN.}}{8}{figure.2}\protected@file@percent }
+\newlabel{fig:temporal_kernels}{{2}{8}{Temporal responses of SPRiF across tasks, arranged in three parts with seven subplots. (a) The three upper subplots show SPRiF impulse responses on PS-MNIST, GSC and QTDB, from left to right. (b) The three lower-left subplots show normalized frequency-response magnitudes of the memory states for the same tasks. Shading indicates the distribution range across neurons, not uncertainty across random seeds. Frequency is expressed in cycles per step. (c) The lower-right subplot compares normalized slow-decay responses of SPRiF and ASRNN on GSC and QTDB. Solid curves with open markers denote SPRiF; dashed curves with filled markers denote ASRNN}{figure.2}{}}
+\@writefile{toc}{\contentsline {section}{References}{8}{section*.1}\protected@file@percent }
+\bibcite{warden2018speech}{16}
+\bibcite{cramer2022heidelberg}{17}
+\bibcite{glif}{18}
+\bibcite{snnsfa}{19}
+\bibcite{radlif}{20}
+\bibcite{heterogeneity}{21}
+\bibcite{mpssnn}{22}
+\bibcite{dgn}{23}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces SPRiF states before and after a recorded spike on PS-MNIST. The upper panel shows the real and two oscillatory memory coordinates, vertically offset for visibility. The middle panel shows relative membrane voltage, and the lower panel shows the spike train. The vertical dashed line marks the reference spike at relative step zero. The aligned traces show how firing and membrane reset relate to the continuing evolution of the internal memory states.}}{9}{figure.3}\protected@file@percent }
+\newlabel{fig:mechanism}{{3}{9}{SPRiF states before and after a recorded spike on PS-MNIST. The upper panel shows the real and two oscillatory memory coordinates, vertically offset for visibility. The middle panel shows relative membrane voltage, and the lower panel shows the spike train. The vertical dashed line marks the reference spike at relative step zero. The aligned traces show how firing and membrane reset relate to the continuing evolution of the internal memory states}{figure.3}{}}
+\gdef \@abspage@last{9}
