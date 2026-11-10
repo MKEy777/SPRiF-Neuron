@@ -25,15 +25,28 @@
 \begin{document}
 
 \title{SPRiF: Spectral Memory and Scalar Reset for Spiking Neurons}
-\author{\textit{Author information to be completed}}
+\author{Jingxin Liu\textsuperscript{1,\textdagger},
+Yiming Zhang\textsuperscript{2,\textdagger},
+Xinyi Wen\textsuperscript{1},
+Xiangnan Zhang\textsuperscript{3},
+Zikai Song\textsuperscript{1},
+Lixian Zhu\textsuperscript{1,*},
+and Bin Hu\textsuperscript{1,*}
+\thanks{\textsuperscript{1}Key Laboratory of Brain Health Intelligent Evaluation and Intervention (Ministry of Education), School of Medical Technology, Beijing Institute of Technology, Beijing 100081, China.}
+\thanks{\textsuperscript{2}Key Laboratory of Brain Health Intelligent Evaluation and Intervention (Ministry of Education), Beijing Institute of Technology, Zhuhai 519088, China.}
+\thanks{\textsuperscript{3}School of Future Technologies, Beijing Institute of Technology.}
+\thanks{\textsuperscript{\textdagger}These authors contributed equally to this work.}
+\thanks{\textsuperscript{*}Corresponding authors. Bin Hu: bh@bit.edu.cn.}}
 \maketitle
 
+\markboth{IEEE Transactions on Neural Networks and Learning Systems}{}
+
 \begin{abstract}
-A network may need an early cue long after the neurons that received it have fired. In a leaky integrate-and-fire neuron, the cue and each subsequent reset contribute to the same voltage trace. We introduce SPRiF, a five-state neuron that stores input current in a spectral memory and resets the membrane that reads it. One real decay and a damped rotation provide the temporal basis. Two learned projections drive the membrane, one immediately and one through an auxiliary filter delayed by one step. We derive the membrane drive in terms of the input history and identify the additional spike-history term produced by a reset along the memory input direction. We evaluate SPRiF on five temporal benchmarks and test reset placement and mode organization with matched controls on two of them. Preserving memory at reset gave mean accuracy gains of 3.37 percentage points on permuted sequential MNIST and 4.56 on Spiking Heidelberg Digits over the memory-reset control. On delayed match-to-sample, SPRiF retained 99.42\% mean accuracy under 40 forced-spike timesteps after clean training. Training with up to eight intervention timesteps yielded 99.33\% under the same stress, averaged over five delays including an unseen 2500-ms delay.
+Temporal tasks with long delays require spiking neural networks (SNNs) to retain information while continuing to communicate through spikes. A standard spiking neuron uses one membrane state to integrate context, generate spikes, and receive the reset that follows a spike, so each spike can disturb the temporal trace carried by that state. We introduce SPRiF, a five-state neuron that separates a spectral memory from the membrane that reads it. The memory combines a real decay with a damped rotation, and two learned projections drive the membrane, one immediately and one through an auxiliary filter delayed by one step. Because the reset acts only on the membrane, the spectral coordinates continue their evolution at discharge. We derive the input-to-drive kernel and show that a reset applied to spectral memory adds a separate spike-history term. Across five temporal classification benchmarks, SPRiF attains the highest reported mean accuracy among the compared methods on three tasks and remains competitive on the other two. Matched controls on permuted sequential MNIST and Spiking Heidelberg Digits isolate reset placement and mode organization: preserving memory at reset adds 3.37 and 4.56 percentage points over the memory-reset control, and retaining the rotational pair adds 2.34 and 2.47 over three driven real modes. On Spike-Intervention Delayed Match-to-Sample, SPRiF retains 99.42\% under 40 forced-spike timesteps after clean training and 99.33\% after training with up to eight intervention timesteps, averaged over five delays including an unseen 2500-ms delay. Impulse responses show heterogeneous learned temporal kernels.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Spiking neural networks, temporal processing, spectral memory, neuron dynamics, scalar reset.
+Spiking neural networks, temporal processing, long-term memory, neuron dynamics.
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -392,11 +405,6 @@ Each benchmark decay is initialized from a positive time constant in discrete st
 q=\exp(-1/\tau_q),\qquad q_{\rm raw}=\log\frac{q}{1-q}.
 \label{eq:decay_init}
 \end{equation}
-Frequency is parameterized analogously through $\omega/\pi$. All intrinsic states start at zero. The two rows of $\bar G$ are optimized directly. The second row uses the product initialization in Eq.~\eqref{eq:absorption} on the benchmarks and starts at zero on SI-DMS. On the MNIST tasks the real-mode and filter time constants are sampled uniformly in steps, with the upper bound of the oscillatory time constant decreasing with frequency. QTDB, GSC and SHD use log-uniform time constants. The nominal $(\tau_\alpha,\tau_\rho,\tau_\eta)$ intervals are $([2,60],[2,40],[0.8,10])$ for both MNIST tasks, $([20,120],[4,30],[0.8,8])$ for QTDB, and $([10,80],[4,30],[0.8,8])$ for GSC and SHD. Here $\tau_\eta$ denotes the range for each filter or membrane decay. The respective frequency ranges for $\omega/\pi$ are $[0.04,0.50]$, $[0.02,0.20]$ and $[0.04,0.40]$.
-
-One training run is one replicate. We report mean accuracy and sample standard deviation across seeds $\{0,1,2,42,1111\}$. Published entries retain their original reporting conventions. In SI-DMS, each delay has equal weight within a seed. We report the mean $\Delta_{40}$, equal to mean clean accuracy minus mean stressed accuracy.
-
-% Queue wide result displays early to keep them near the discussion.
 \begin{table*}[!t]
 \caption{Performance on S-MNIST, PS-MNIST, QTDB, GSC, and SHD. Rec: recurrent; $^{*}$: our baseline reruns.}
 \label{tab:main_results}
@@ -459,8 +467,14 @@ One training run is one replicate. We report mean accuracy and sample standard d
 \end{minipage}
 \end{table*}
 
+Frequency is parameterized analogously through $\omega/\pi$. All intrinsic states start at zero. The two rows of $\bar G$ are optimized directly. The second row uses the product initialization in Eq.~\eqref{eq:absorption} on the benchmarks and starts at zero on SI-DMS. On the MNIST tasks the real-mode and filter time constants are sampled uniformly in steps, with the upper bound of the oscillatory time constant decreasing with frequency. QTDB, GSC and SHD use log-uniform time constants. The nominal $(\tau_\alpha,\tau_\rho,\tau_\eta)$ intervals are $([2,60],[2,40],[0.8,10])$ for both MNIST tasks, $([20,120],[4,30],[0.8,8])$ for QTDB, and $([10,80],[4,30],[0.8,8])$ for GSC and SHD. Here $\tau_\eta$ denotes the range for each filter or membrane decay. The respective frequency ranges for $\omega/\pi$ are $[0.04,0.50]$, $[0.02,0.20]$ and $[0.04,0.40]$.
+
+One training run is one replicate. We report mean accuracy and sample standard deviation across seeds $\{0,1,2,42,1111\}$. Published entries retain their original reporting conventions. In SI-DMS, each delay has equal weight within a seed. We report the mean $\Delta_{40}$, equal to mean clean accuracy minus mean stressed accuracy.
+
+
+
 \begin{table}[t]
-\caption{Structural ablations. The three variants use the same layer widths, five states and eleven learned local coefficients per neuron. Accuracy is mean $\pm$ sample SD (\%) over five seeds. The SPRiF reference reuses Table~\ref{tab:main_results}.}
+\caption{Structural ablations at matched local capacity (same layer widths, five states and eleven coefficients per neuron). Accuracy: mean $\pm$ sample SD (\%) over five seeds.}
 \label{tab:ablation}
 \centering\footnotesize
 \begin{tabular}{@{}lrr@{}}
@@ -474,33 +488,35 @@ SPRiF & $95.86\pm0.14$ & $91.66\pm0.42$\\
 \end{tabular}
 \end{table}
 
-\begin{table*}[t]
-\caption{SI-DMS accuracy (\%, five-seed mean $\pm$ sample SD). Stress: $K=40$, ten of 64 neurons per event. $\Delta_{40}$: mean $K=0$ minus $K=40$ accuracy (percentage points). Delays are equally weighted; 2500~ms is unseen during training.}
+\begin{table}[t]
+\caption{SI-DMS accuracy (\%, five-seed mean). $K=40$: ten of 64 neurons forced per event. $\Delta_{40}$: mean $K=0$ minus $K=40$ accuracy (percentage points).}
 \label{tab:sidms_results}
-\centering\footnotesize\setlength{\tabcolsep}{4pt}
+\centering\footnotesize\setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{0.90}
-\begin{tabular}{@{}llrrrrrr@{}}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-& & \multicolumn{3}{c}{Five-delay average} & \multicolumn{3}{c}{2500 ms}\\
-\cmidrule(lr){3-5}\cmidrule(l){6-8}
-Training & Model & $K=0$ & $K=40$ & $\Delta_{40}$ & $K=0$ & $K=40$ & $\Delta_{40}$\\
+& \multicolumn{3}{c}{Five-delay average} & \multicolumn{3}{c}{2500 ms}\\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Model & $K=0$ & $K=40$ & $\Delta_{40}$ & $K=0$ & $K=40$ & $\Delta_{40}$\\
 \midrule
-Clean & SPRiF & $99.99\pm0.01$ & $99.42\pm0.69$ & $0.57$ & $99.99\pm0.01$ & $99.99\pm0.01$ & $0.00$\\
- & \mr & $99.93\pm0.07$ & $94.74\pm2.48$ & $5.19$ & $99.93\pm0.10$ & $99.84\pm0.13$ & $0.09$\\
- & \rmodes & $99.90\pm0.20$ & $95.37\pm5.96$ & $4.53$ & $99.91\pm0.16$ & $99.87\pm0.16$ & $0.04$\\
- & ASRNN & $99.94\pm0.03$ & $48.56\pm1.99$ & $51.39$ & $99.89\pm0.13$ & $47.50\pm4.48$ & $52.39$\\
- & BRF & $82.00\pm0.76$ & $54.80\pm1.65$ & $27.19$ & $61.87\pm4.95$ & $50.62\pm0.97$ & $11.25$\\
- & LIF & $88.46\pm18.87$ & $51.01\pm1.56$ & $37.44$ & $83.35\pm20.95$ & $53.36\pm7.55$ & $30.00$\\
+\multicolumn{7}{@{}l}{\textit{Clean}}\\
+SPRiF & $99.99$ & $99.42$ & $0.57$ & $99.99$ & $99.99$ & $0.00$\\
+\mr & $99.93$ & $94.74$ & $5.19$ & $99.93$ & $99.84$ & $0.09$\\
+\rmodes & $99.90$ & $95.37$ & $4.53$ & $99.91$ & $99.87$ & $0.04$\\
+ASRNN & $99.94$ & $48.56$ & $51.39$ & $99.89$ & $47.50$ & $52.39$\\
+BRF & $82.00$ & $54.80$ & $27.19$ & $61.87$ & $50.62$ & $11.25$\\
+LIF & $88.46$ & $51.01$ & $37.44$ & $83.35$ & $53.36$ & $30.00$\\
 \midrule
-Intervention & SPRiF & $99.69\pm0.67$ & $99.33\pm0.78$ & $0.36$ & $99.65\pm0.71$ & $99.65\pm0.72$ & $0.00$\\
- & \mr & $94.46\pm12.23$ & $88.54\pm20.25$ & $5.92$ & $93.81\pm13.75$ & $91.23\pm19.32$ & $2.57$\\
- & \rmodes & $89.94\pm22.47$ & $89.91\pm22.45$ & $0.03$ & $90.08\pm22.16$ & $90.04\pm22.13$ & $0.04$\\
- & ASRNN & $53.22\pm3.17$ & $49.85\pm0.13$ & $3.37$ & $49.94\pm0.26$ & $49.80\pm0.77$ & $0.13$\\
- & BRF & $73.28\pm3.42$ & $51.34\pm0.48$ & $21.94$ & $57.15\pm7.99$ & $50.11\pm0.40$ & $7.04$\\
- & LIF & $56.53\pm1.42$ & $49.98\pm0.24$ & $6.55$ & $50.09\pm0.61$ & $50.07\pm0.83$ & $0.02$\\
+\multicolumn{7}{@{}l}{\textit{Intervention}}\\
+SPRiF & $99.69$ & $99.33$ & $0.36$ & $99.65$ & $99.65$ & $0.00$\\
+\mr & $94.46$ & $88.54$ & $5.92$ & $93.81$ & $91.23$ & $2.57$\\
+\rmodes & $89.94$ & $89.91$ & $0.03$ & $90.08$ & $90.04$ & $0.04$\\
+ASRNN & $53.22$ & $49.85$ & $3.37$ & $49.94$ & $49.80$ & $0.13$\\
+BRF & $73.28$ & $51.34$ & $21.94$ & $57.15$ & $50.11$ & $7.04$\\
+LIF & $56.53$ & $49.98$ & $6.55$ & $50.09$ & $50.07$ & $0.02$\\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
 \begin{figure*}[!t]
 \centering
@@ -598,7 +614,7 @@ The mode comparison keeps the reset on the membrane. In \rmodes{}, the readout c
 
 After clean training, SPRiF accuracy decreased from $99.99\%$ at $K=0$ to $99.42\%$ at $K=40$ (Fig.~\ref{fig:sidms_curves}). At $K=40$, \mr{} and \rmodes{} reached $94.74\%$ and $95.37\%$, while ASRNN, BRF and LIF ranged from $48.56\%$ to $54.80\%$ (Table~\ref{tab:sidms_results}).
 
-After intervention training, SPRiF retained $99.33\pm0.78\%$ at $K=40$, a decrease of 0.36 percentage points from $K=0$. The matched controls had lower stressed accuracy. In particular, \rmodes{} showed a near-flat mean curve alongside a sample SD of 22.45 percentage points, underscoring variation across seeds.
+After intervention training, SPRiF retained $99.33\%$ at $K=40$, a decrease of 0.36 percentage points from $K=0$. The matched controls had lower stressed accuracy.
 
 The heatmaps show that SPRiF's mean accuracy exceeded $97.7\%$ at every displayed delay and intervention count. At the unseen 2500-ms delay and $K=40$, SPRiF reached $99.99\%$ after clean and $99.65\%$ after intervention training (Fig.~\ref{fig:sidms_heatmaps}). Clean-trained controls lost more accuracy at shorter delays.
 

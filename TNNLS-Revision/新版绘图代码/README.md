@@ -4,7 +4,7 @@
 
 ```text
 01-机制分析/   export_trajectories.py、export_benchmark_trajectories.py、plot_mechanism.py、原始数据/、输出图片/
-02-SI-DMS/     plot_sidms.py、legacy_layout.py、原始数据/、输出图片/
+02-SI-DMS/     plot_sidms.py、plot_intervention_curves.py、plot_heatmaps.py、legacy_layout.py、原始数据/、输出图片/
 03-时间核/     export_asrnn_parameters.py、plot_kernels.py、原始数据/、输出图片/
 export_parameters.py     导出新版 SPRiF 参数
 checkpoint_io.py         检查点读取和来源记录
@@ -19,6 +19,27 @@ python "01-机制分析/plot_mechanism.py"
 python "02-SI-DMS/plot_sidms.py"
 python "03-时间核/plot_kernels.py"
 ```
+
+## 正文分图脚本
+
+正文每张图都有独立入口脚本，可单独运行；`02-SI-DMS/plot_sidms.py` 生成的是三联组合图，不属于正文图件。
+
+| 正文图 | 图件文件 | 脚本 | 数据/输入 | 输出 |
+|---|---|---|---|---|
+| Fig. 1 | `figure/lif_sprif_overview.png` | 仓库内无完整生成代码；SPRiF 侧历史片段见 `历史绘图代码/01-structure/current_tnnls_diagram.tikz` | — | — |
+| Fig. 2 | `figure/temporal_kernels_composite.png` | `03-时间核/plot_kernels.py` | `03-时间核/原始数据/` 与训练 checkpoints | `03-时间核/输出图片/temporal_kernels_composite.*` |
+| Fig. 3 | `figure/mechanism_composite.pdf` | `01-机制分析/plot_mechanism.py` | `01-机制分析/原始数据/` 与训练 checkpoints | `01-机制分析/输出图片/mechanism_composite.*` |
+| Fig. 4 | `figure/sidms_intervention_curves.pdf` | `02-SI-DMS/plot_intervention_curves.py` | `02-SI-DMS/01和02重画_20261108_第二次/绘图数据/干预曲线_均值及标准差.csv` | `02-SI-DMS/输出图片/sidms_intervention_curves.*` |
+| Fig. 5 | `figure/sidms_heatmaps.pdf` | `02-SI-DMS/plot_heatmaps.py` | `02-SI-DMS/01和02重画_20261108_第二次/绘图数据/热图_五种子均值.csv` | `02-SI-DMS/输出图片/sidms_heatmaps.*` |
+
+```bash
+python "03-时间核/plot_kernels.py"
+python "01-机制分析/plot_mechanism.py"
+python "02-SI-DMS/plot_intervention_curves.py"
+python "02-SI-DMS/plot_heatmaps.py"
+```
+
+Fig. 4 与 Fig. 5 只依赖汇总 CSV，可在没有训练环境时单独重绘；统计口径分别为五种子均值 ± 样本 SD（Fig. 4）和五种子均值（Fig. 5）。
 
 默认直接读取 `04-训练代码/checkpoints/` 下对应模型的正式 checkpoint，自动生成绘图所需输入；也支持 `--input` 或 `--manifest` 读取事先导出的数据。绘图依赖 numpy、matplotlib；从模型 checkpoint 导出数据还需训练环境已有的 torch 及其项目依赖。绘图不会自动训练模型。
 
