@@ -1,0 +1,34 @@
+{
+  "Clean": {
+    "displayed_neurons": [
+      2,
+      21,
+      49,
+      38,
+      7,
+      53,
+      12,
+      57,
+      46,
+      63
+    ],
+    "checkpoint_sha256": "5e6a5b586d7d4dea6649e3d290d83d947fe699b4f7feba8a2a2f739b86ffc24b",
+    "sample_id": "eval_seed0_delay1600_batch0_first_AA_sample4"
+  },
+  "Intervention": {
+    "displayed_neurons": [
+      61,
+      7,
+      1,
+      5,
+      26,
+      20,
+      63,
+      60,
+      59,
+      58
+    ],
+    "checkpoint_sha256": "b514de2f329fa183af05a2c4034a6d2577e62578796db333f783b7466c62458f",
+    "sample_id": "eval_seed0_delay1600_batch0_first_AA_sample4"
+  }
+}

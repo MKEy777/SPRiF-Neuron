@@ -1,0 +1,26 @@
+\begin{tikzpicture}[
+  >=Stealth, font=\small,
+  block/.style={draw,rounded corners=2pt,align=center,minimum height=12mm},
+  mem/.style={block,fill=blue!5},
+  arr/.style={->,thick}
+]
+\node[align=center] (in) at (0,0) {Current\\$I_t$};
+\node[mem,minimum width=26mm] (x) at (3,0) {Spectral state\\$\mathbf x_t\in\R^3$};
+\node[mem,minimum width=28mm] (h) at (6.3,1.55) {Auxiliary filter\\$h_t\in\R$};
+\node[block,font=\scriptsize,minimum height=8mm,minimum width=13mm] (delay) at (8.6,1.55) {One-step\\delay};
+\node[block,fill=orange!7,minimum width=31mm] (u) at (10.3,0)
+  {Membrane\\$\widetilde u_t^0,\ u_t^0$};
+\node[block,minimum width=21mm] (z) at (14.3,0) {Threshold\\$z_t\in\{0,1\}$};
+\node[align=center] (prev) at (10.3,2.25) {Stored membrane\\$\eta_0u_{t-1}^0$};
+\draw[arr] (in) -- node[above,pos=0.65] {$B$} (x);
+\draw[arr] (x) -- node[above,sloped] {$\bar{\mathbf g}_1^\top$} (h);
+\draw[arr] (x) -- node[above] {$\mathbf g_0^\top$} (u);
+\draw[arr] (h.east) -- (delay.west);
+\draw[arr] (delay.south) -- node[left,font=\scriptsize] {$h_{t-1}$} (u.north west);
+\draw[arr] (prev.south) -- (u.north);
+\draw[arr] (u) -- node[above] {$H(\cdot-\theta)$} (z);
+\draw[arr,red!65!black] (z.south) -- (14.3,-1.25) -- node[below]
+  {Scalar reset: $-\theta z_t$} (10.3,-1.25) -- (u.south);
+\draw[arr] (x.south west) to[out=-140,in=-40] node[below] {$A\mathbf x_{t-1}$} (x.south east);
+\draw[arr] (h.north west) to[out=140,in=40] node[above] {$\eta_1h_{t-1}$} (h.north east);
+\end{tikzpicture}

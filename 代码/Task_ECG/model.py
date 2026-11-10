@@ -1,4 +1,3 @@
-"""ECG-specific network definition using SPRiF neuron layers."""
 
 from typing import Dict, List, Optional
 
@@ -6,7 +5,6 @@ import torch
 import torch.nn as nn
 
 from core_algorithm.sprif_layer import SPRiFNeuronLayer
-
 
 class SPRiFECGModel(nn.Module):
     def __init__(
@@ -44,19 +42,17 @@ class SPRiFECGModel(nn.Module):
         self.readout = nn.Linear(hidden_sizes[-1], output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: [batch, time, features]
+
         out = x
 
         for layer in self.layers:
-            out = layer(out, batch_first=True)   # [batch, time, hidden]
+            out = layer(out, batch_first=True)
 
-        logits = self.readout(out)               # [batch, time, classes]
+        logits = self.readout(out)
 
-        return logits.permute(0, 2, 1)           # [batch, classes, time]
-
+        return logits.permute(0, 2, 1)
 
 def build_neuron_kwargs(config: dict) -> dict:
-    """Build neuron keyword arguments from a flat config dict."""
     kwargs: dict = {
         "threshold": config["neuron_threshold"],
         "init_std": config["neuron_init_std"],
@@ -76,9 +72,7 @@ def build_neuron_kwargs(config: dict) -> dict:
 
     return kwargs
 
-
 def _tensor_stats(t: torch.Tensor) -> Dict[str, float]:
-    """Compute summary statistics for a 1D or n-D tensor."""
     flat = t.detach().float().reshape(-1)
 
     return {
@@ -88,20 +82,18 @@ def _tensor_stats(t: torch.Tensor) -> Dict[str, float]:
         "max": float(flat.max().item()),
     }
 
-
 def _collect_internal_stats(model: nn.Module) -> dict:
-    """Collect per-layer and global spectral parameter statistics."""
     per_layer: list = []
 
     alpha_all: list = []
     rho_all: list = []
     omega_all: list = []
     eta_all: list = []
-    lambda_all: list = []
+    readout_all: list = []
 
     for layer_idx, layer in enumerate(model.layers):
         spectral = layer.get_spectral_parameters()
-        lambda_reset = layer.lambda_reset.detach()
+        readout = spectral["bar_G"].detach()
 
         layer_stats = {
             "layer_idx": layer_idx,
@@ -109,7 +101,7 @@ def _collect_internal_stats(model: nn.Module) -> dict:
             "rho": _tensor_stats(spectral["rho"]),
             "omega": _tensor_stats(spectral["omega"]),
             "eta": _tensor_stats(spectral["eta"]),
-            "lambda_reset": _tensor_stats(lambda_reset),
+            "bar_G": _tensor_stats(readout),
         }
 
         per_layer.append(layer_stats)
@@ -118,14 +110,14 @@ def _collect_internal_stats(model: nn.Module) -> dict:
         rho_all.append(spectral["rho"].reshape(-1))
         omega_all.append(spectral["omega"].reshape(-1))
         eta_all.append(spectral["eta"].reshape(-1))
-        lambda_all.append(lambda_reset.reshape(-1))
+        readout_all.append(readout.reshape(-1))
 
     global_stats = {
         "alpha": _tensor_stats(torch.cat(alpha_all)),
         "rho": _tensor_stats(torch.cat(rho_all)),
         "omega": _tensor_stats(torch.cat(omega_all)),
         "eta": _tensor_stats(torch.cat(eta_all)),
-        "lambda_reset": _tensor_stats(torch.cat(lambda_all)),
+        "bar_G": _tensor_stats(torch.cat(readout_all)),
     }
 
     return {
@@ -133,9 +125,9 @@ def _collect_internal_stats(model: nn.Module) -> dict:
         "per_layer": per_layer,
     }
 
-
 __all__ = [
     "SPRiFECGModel",
     "build_neuron_kwargs",
     "_collect_internal_stats",
 ]
+

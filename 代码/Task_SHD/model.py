@@ -1,4 +1,3 @@
-"""SHD-specific network definition using SPRiF neuron layers."""
 
 from typing import List
 
@@ -7,9 +6,7 @@ import torch.nn as nn
 
 from core_algorithm.sprif_layer import SPRiFNeuronLayer
 
-
 class SPRiFSHDNet(nn.Module):
-    """SHD-specific network with SPRiF hidden layers and SPRiF readout."""
 
     def __init__(
         self,
@@ -38,8 +35,7 @@ class SPRiFSHDNet(nn.Module):
                     input_size=in_dim,
                     hidden_size=h,
                     recurrent=recurrent,
-                    threshold=neuron_kwargs.get("threshold", 1.0),
-                    init_std=neuron_kwargs.get("init_std", 0.2),
+                    **neuron_kwargs,
                 )
             )
             in_dim = h
@@ -50,8 +46,7 @@ class SPRiFSHDNet(nn.Module):
             input_size=hidden_sizes[-1],
             hidden_size=num_classes,
             recurrent=False,
-            threshold=neuron_kwargs.get("threshold", 1.0),
-            init_std=neuron_kwargs.get("init_std", 0.2),
+            **neuron_kwargs,
         )
 
     def forward(self, x):
@@ -78,7 +73,6 @@ class SPRiFSHDNet(nn.Module):
 
         use_all_steps = time_steps <= self.warmup_steps
 
-        # Pre-compute input projection for readout layer
         readout_projected = self.readout.input_linear(
             out.contiguous().view(batch_size * time_steps, out.size(-1))
         ).view(batch_size, time_steps, self.readout.hidden_size)
@@ -98,3 +92,4 @@ class SPRiFSHDNet(nn.Module):
 
         aux = {"spike_rate": torch.stack(spike_rates).mean()}
         return logits, aux
+

@@ -2,8 +2,6 @@ import math
 import torch
 from torch.optim.optimizer import Optimizer, required
 
-# PyTorch implementation of Rectified Adam from https://github.com/LiyuanLucasLiu/RAdam
-
 class RAdam(Optimizer):
 
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, degenerated_to_sgd=True):
@@ -15,7 +13,7 @@ class RAdam(Optimizer):
             raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
         if not 0.0 <= betas[1] < 1.0:
             raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
-        
+
         self.degenerated_to_sgd = degenerated_to_sgd
         if isinstance(params, (list, tuple)) and len(params) > 0 and isinstance(params[0], dict):
             for param in params:
@@ -71,7 +69,6 @@ class RAdam(Optimizer):
                     N_sma = N_sma_max - 2 * state['step'] * beta2_t / (1 - beta2_t)
                     buffered[1] = N_sma
 
-                    # more conservative since it's an approximated value
                     if N_sma >= 5:
                         step_size = math.sqrt((1 - beta2_t) * (N_sma - 4) / (N_sma_max - 4) * (N_sma - 2) / N_sma * N_sma_max / (N_sma_max - 2)) / (1 - beta1 ** state['step'])
                     elif self.degenerated_to_sgd:
@@ -80,7 +77,6 @@ class RAdam(Optimizer):
                         step_size = -1
                     buffered[2] = step_size
 
-                # more conservative since it's an approximated value
                 if N_sma >= 5:
                     if group['weight_decay'] != 0:
                         p_data_fp32.add_(-group['weight_decay'] * group['lr'], p_data_fp32)
@@ -94,3 +90,4 @@ class RAdam(Optimizer):
                     p.data.copy_(p_data_fp32)
 
         return loss
+

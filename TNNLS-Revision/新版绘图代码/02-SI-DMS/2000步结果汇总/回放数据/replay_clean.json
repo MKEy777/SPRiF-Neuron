@@ -1,0 +1,20 @@
+{
+  "training": "Clean",
+  "seed": 0,
+  "checkpoint_sha256": "5e6a5b586d7d4dea6649e3d290d83d947fe699b4f7feba8a2a2f739b86ffc24b",
+  "metrics_sha256": "78b7a9a017bc2d7c40fdfdb220ba7c1875e6e1f39ae449b9ef5af8469e8fbd7d",
+  "protocol_version": "tnnls-independent-streams-v2-steps2000",
+  "sample_id": "eval_seed0_delay1600_batch0_first_AA_sample4",
+  "sample_selection": "first A-A item in reconstructed evaluation batch, selected without using model output",
+  "input_seed": 3000000030000,
+  "intervention_seed": 4000000030000,
+  "delay_ms": 1600,
+  "intervention_count": 8,
+  "nominal_fraction": 0.15,
+  "intervened_neurons_per_event": 10,
+  "effective_fraction": 0.15625,
+  "torch_version": "2.15.0+cpu",
+  "device": "cpu",
+  "validation": "manually recorded trajectory exactly matches model forward spikes/hits; final logits agree to 1e-7",
+  "source_note": "evaluation input recreated from task code and fixed seeds; exact equality to server-side input depends on runtime RNG compatibility"
+}

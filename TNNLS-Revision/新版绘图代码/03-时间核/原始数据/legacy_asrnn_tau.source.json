@@ -1,0 +1,19 @@
+{
+  "source": "experiment-design-20260606\\results\\figures\\impulse_analysis\\raw_impulse_responses.npz",
+  "source_sha256": "035473ba20d34a3f97088ac0ad19a06870da655d2bb58ec7ef34c0c53ecc4817",
+  "contents": {
+    "GSC_asrnn_tau_m": {
+      "shape": [
+        256
+      ],
+      "dtype": "float32"
+    },
+    "ECG_asrnn_tau_m": {
+      "shape": [
+        36
+      ],
+      "dtype": "float32"
+    }
+  },
+  "provenance_status": "historical ASRNN tau values; underlying checkpoint and task correspondence require verification"
+}
