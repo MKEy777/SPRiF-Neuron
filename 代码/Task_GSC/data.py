@@ -8,7 +8,6 @@ from torch.utils.data import Dataset
 
 from utils import get_random_noise, txt2list
 
-
 class SpeechCommandsDataset(Dataset):
     def __init__(self, data_root, label_dct, mode, transform=None, cache_root=None, max_nb_per_class=None):
         assert mode in ["train", "valid", "test"], 'mode should be "train", "valid" or "test"'
@@ -96,7 +95,6 @@ class SpeechCommandsDataset(Dataset):
         label = self.labels[idx]
         return item, label
 
-
 class Pad:
     def __init__(self, size):
         self.size = size
@@ -107,7 +105,6 @@ class Pad:
             return wav_arr[: self.size]
         pad_size = (self.size - wav_size) // 2
         return np.pad(wav_arr, ((pad_size, self.size - wav_size - pad_size),), "constant", constant_values=(0, 0))
-
 
 class RandomNoise:
     def __init__(self, noise_files, size, coef):
@@ -123,7 +120,6 @@ class RandomNoise:
             return wav_arr + self.coef * noise_wav * np.sqrt(sig_power / noise_power)
         return wav_arr
 
-
 class RandomShift:
     def __init__(self, min_shift, max_shift):
         self.min_shift = min_shift
@@ -137,7 +133,6 @@ class RandomShift:
         elif shift < 0:
             shifted_wav[shift:] = 0
         return shifted_wav
-
 
 class MelSpectrogram:
     def __init__(self, sr, n_fft, hop_length, n_mels, fmin, fmax, delta_order=None, stack=True):
@@ -166,13 +161,11 @@ class MelSpectrogram:
             return np.stack(feat_list)
         return np.expand_dims(feat.T, 0)
 
-
 class Rescale:
     def __call__(self, x):
         std = np.std(x, axis=1, keepdims=True)
         std[std == 0] = 1
         return x / std
-
 
 class Normalize:
     def __call__(self, x):
@@ -180,3 +173,4 @@ class Normalize:
         std = np.std(x_, axis=1, keepdims=True)
         std[std == 0] = 1
         return x / std
+

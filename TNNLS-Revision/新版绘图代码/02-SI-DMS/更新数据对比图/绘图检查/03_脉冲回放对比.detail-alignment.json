@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "applicable": true,
+  "auditable": true,
+  "verdict": "PASS",
+  "backend": "python-matplotlib",
+  "summary": {
+    "fail": 0,
+    "warn": 0,
+    "comparisons": 4,
+    "exemptions": 0
+  },
+  "tolerances": {
+    "alignment_pt": 1.5,
+    "gutter_pt": 1.5
+  },
+  "layout": {
+    "schema_version": 1,
+    "backend": "python-matplotlib",
+    "figure": {
+      "width_pt": 507.59999999999997,
+      "height_pt": 342.0
+    },
+    "panels": [
+      {
+        "id": "clean_act",
+        "bbox_pt": [
+          53.297999999999995,
+          37.619999999999955,
+          130.54147826086955,
+          90.42882352941173
+        ],
+        "grid_id": "matplotlib-grid-1",
+        "row_start": 0,
+        "row_stop": 1,
+        "col_start": 0,
+        "col_stop": 1
+      },
+      {
+        "id": "clean_read",
+        "bbox_pt": [
+          169.16321739130433,
+          37.619999999999955,
+          246.4066956521739,
+          90.42882352941173
+        ],
+        "grid_id": "matplotlib-grid-1",
+        "row_start": 0,
+        "row_stop": 1,
+        "col_start": 1,
+        "col_stop": 2
+      },
+      {
+        "id": "inter_act",
+        "bbox_pt": [
+          304.3393043478261,
+          37.619999999999955,
+          381.58278260869565,
+          90.42882352941173
+        ],
+        "grid_id": "matplotlib-grid-2",
+        "row_start": 0,
+        "row_stop": 1,
+        "col_start": 0,
+        "col_stop": 1
+      },
+      {
+        "id": "inter_read",
+        "bbox_pt": [
+          420.20452173913037,
+          37.619999999999955,
+          497.448,
+          90.42882352941173
+        ],
+        "grid_id": "matplotlib-grid-2",
+        "row_start": 0,
+        "row_stop": 1,
+        "col_start": 1,
+        "col_stop": 2
+      }
+    ],
+    "row_groups": [
+      {
+        "id": "row-1",
+        "panels": [
+          "clean_act",
+          "clean_read"
+        ]
+      },
+      {
+        "id": "row-2",
+        "panels": [
+          "inter_act",
+          "inter_read"
+        ]
+      },
+      {
+        "id": "row-3",
+        "panels": [
+          "clean_act",
+          "inter_act"
+        ]
+      },
+      {
+        "id": "row-4",
+        "panels": [
+          "clean_read",
+          "inter_read"
+        ]
+      }
+    ],
+    "column_groups": [],
+    "boundary_groups": [],
+    "exemptions": []
+  },
+  "findings": []
+}

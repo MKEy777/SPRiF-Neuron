@@ -1,4 +1,3 @@
-"""ECG model using Ablation A layer (ω=0, no rotation coupling)."""
 
 from typing import List
 
@@ -6,7 +5,6 @@ import torch
 import torch.nn as nn
 
 from core_algorithm.sprif_layer_ablation_a import SPRiFNeuronLayerAblationA
-
 
 class SPRiFECGModelAblationA(nn.Module):
     def __init__(
@@ -41,3 +39,4 @@ class SPRiFECGModelAblationA(nn.Module):
             out = layer(out, batch_first=True)
         logits = self.readout(out)
         return logits.permute(0, 2, 1)
+

@@ -1,0 +1,96 @@
+{
+  "pdf": "TNNLS-Revision\\新版绘图代码\\02-SI-DMS\\2000步结果汇总\\最终组合图\\SI-DMS_Intervention_2000.pdf",
+  "auditable": true,
+  "verdict": "REVIEW REQUIRED",
+  "page_count": 1,
+  "visible_text_box_count": 110,
+  "text_trace_count": 119,
+  "stroke_path_count": 1334,
+  "filled_region_count": 217,
+  "image_region_count": 7,
+  "summary": {
+    "fail": 0,
+    "warn": 3,
+    "contained_fill_overlays": 8,
+    "contained_image_overlays": 0
+  },
+  "thresholds": {
+    "text_inset_pt": 0.6,
+    "min_overlap_ratio": 0.05,
+    "clipping_tolerance_pt": 0.5
+  },
+  "findings": [
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "A",
+      "text_bbox": [
+        36.434513092041016,
+        22.003808975219727,
+        41.05638885498047,
+        28.403810501098633
+      ],
+      "other_text": null,
+      "other_bbox": [
+        33.81119918823242,
+        23.612884521484375,
+        43.667198181152344,
+        27.32220458984375
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        4000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "delay",
+      "text_bbox": [
+        114.88238525390625,
+        22.003808975219727,
+        130.15858459472656,
+        28.403810501098633
+      ],
+      "other_text": null,
+      "other_bbox": [
+        43.667198181152344,
+        23.612884521484375,
+        201.3632049560547,
+        27.32220458984375
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        5000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "A",
+      "text_bbox": [
+        203.98651123046875,
+        22.003808975219727,
+        208.60838317871094,
+        28.403810501098633
+      ],
+      "other_text": null,
+      "other_bbox": [
+        201.3632049560547,
+        23.612884521484375,
+        211.2191925048828,
+        27.32220458984375
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        6000
+      ]
+    }
+  ]
+}

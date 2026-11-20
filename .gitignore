@@ -16,6 +16,10 @@ env/
 
 # IDE
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
@@ -40,6 +44,9 @@ datasets/
 # Logs
 *.log
 logs/
+
+# Temporary files
+tmp/
 
 # Environment
 .env

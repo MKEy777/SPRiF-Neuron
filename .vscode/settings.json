@@ -1,0 +1,60 @@
+{
+  "latex-workshop.latex.outDir": "%DIR%/build",
+  "latex-workshop.latex.auxDir": "%OUTDIR%",
+  "latex-workshop.latex.autoBuild.run": "never",
+  "latex-workshop.latex.recipe.default": "first",
+  "latex-workshop.latex.tools": [
+    {
+      "name": "pdflatex",
+      "command": "pdflatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-halt-on-error",
+        "-output-directory=%OUTDIR%",
+        "%DOC_EXT%"
+      ],
+      "cwd": "%DIR%"
+    },
+    {
+      "name": "bibtex",
+      "command": "bibtex",
+      "args": [
+        "%OUTDIR%/%DOCFILE%"
+      ],
+      "cwd": "%DIR%"
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "PDFLaTeX + BibTeX",
+      "tools": [
+        "pdflatex",
+        "bibtex",
+        "pdflatex",
+        "pdflatex"
+      ]
+    },
+    {
+      "name": "PDFLaTeX (inline references)",
+      "tools": [
+        "pdflatex",
+        "pdflatex",
+        "pdflatex"
+      ]
+    }
+  ],
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.latex.clean.fileTypes": [
+    "*.aux",
+    "*.bbl",
+    "*.blg",
+    "*.fdb_latexmk",
+    "*.fls",
+    "*.log",
+    "*.out",
+    "*.synctex.gz",
+    "*.toc"
+  ]
+}

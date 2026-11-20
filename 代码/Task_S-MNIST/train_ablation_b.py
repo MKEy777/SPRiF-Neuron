@@ -1,4 +1,3 @@
-"""SPRiF Ablation B — S-MNIST with merged slow/fast (no separate fast state)."""
 
 import argparse
 
@@ -12,14 +11,13 @@ from torch.utils.data import DataLoader
 from core_algorithm.utils import set_seed
 from model_ablation_b import SequentialMNIST, SPRiFSMNISTNetAblationB
 
-
 def get_args():
     parser = argparse.ArgumentParser(description="SPRiF Ablation B: S-MNIST merged slow/fast")
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 256])
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 210])
     parser.add_argument("--mode", type=str, default="srnn")
     parser.add_argument("--num-classes", type=int, default=10)
     parser.add_argument("--warmup-steps", type=int, default=0)
@@ -27,7 +25,6 @@ def get_args():
     parser.add_argument("--scheduler-step", type=int, default=50)
     parser.add_argument("--scheduler-gamma", type=float, default=0.1)
     return parser.parse_args()
-
 
 def main():
     args = get_args()
@@ -40,7 +37,6 @@ def main():
     train_mnist = torchvision.datasets.MNIST(root="./data", train=True, download=True, transform=transform)
     test_mnist  = torchvision.datasets.MNIST(root="./data", train=False, download=True, transform=transform)
 
-    # No permutation — pixels in natural row-by-row order
     train_dataset = SequentialMNIST(train_mnist)
     test_dataset  = SequentialMNIST(test_mnist)
 
@@ -94,7 +90,7 @@ def main():
                 valid_logits = logits_chunk[:, local_warmup:, :]
                 chunk_logits = valid_logits.mean(dim=1)
 
-                optimizer.zero_grad(set_to_none=True)
+                optimizer.zero_grad()
                 loss = criterion(chunk_logits, y)
                 loss.backward(); optimizer.step()
 
@@ -116,7 +112,7 @@ def main():
         with torch.no_grad():
             for x, y in test_loader:
                 x, y = x.to(device, non_blocking=pin_memory), y.to(device, non_blocking=pin_memory)
-                logits = model(x)  # Full BPTT for eval
+                logits = model(x)
                 loss = criterion(logits, y)
                 test_loss += loss.item() * x.size(0)
                 test_correct += (logits.argmax(dim=-1) == y).sum().item()
@@ -135,3 +131,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

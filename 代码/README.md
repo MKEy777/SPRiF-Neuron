@@ -1,33 +1,68 @@
-# SPRiF: Slow-Path Resonance with Intrinsic Fast-flow Spiking Neuron Networks
+# SPRiF Neuron Networks (TNNLS Scalar-Reset Model)
 
-This repository contains the official implementation of SPRiF neuron networks for multiple benchmark tasks.
+Official implementation of SPRiF neuron networks across multiple benchmark tasks.
+
+## TNNLS branch (2026-10-05)
+
+The five primary `train.py` entries now use the scalar-reset SPRiF model:
+three spectral coordinates, one auxiliary filter, and one membrane. The neuron
+learns eleven local coefficients; the second row of `bar_G` absorbs the former
+coupling scale. Only the membrane is reset, and its drive uses the previous filter
+state. New checkpoints have the `TNNLS11_` prefix.
+
+Dataset membership, preprocessing, readout, training budget, and checkpoint
+selection are retained. S-MNIST, PS-MNIST, ECG, and SHD use train/test;
+the supplied GSC entry uses train/valid and selects on valid. No third split is
+introduced. SHD reads NPY files from the supplied train/test directories.
+
+Independent sequences start at zero, as defined by the current manuscript.
+The threshold convention is `H(0)=1`; surrogate/reset gradients are retained.
+Historical ablation files remain historical models. The reset-direction analysis
+requires the original implementation and its checkpoints. New benchmark results
+must come from new runs.
+
+SI-DMS registers the new model as `sprif_scalar`, and its default queue contains
+that model. Historical IDs retain their original meaning. The planned capacity
+controls and paired SI-DMS evaluation protocol remain separate implementation work.
+
+Run synthetic behavior checks from this directory:
+
+```powershell
+python -m pytest tests/test_sprif_scalar.py experiments/SI-DMS/tests -q
+```
 
 ## Architecture
 
-SPRiF (Slow-Path Resonance with Intrinsic Fast-flow) is a bio-inspired spiking neuron model that combines:
+The current SPRiF spiking neuron model combines:
 
-- **Slow dynamics** (3-state): One leaky integrator + one damped oscillatory pair
-- **Fast dynamics** (2-state): Driven by slow-to-fast coupling with per-neuron leakage
-- **Surrogate gradient**: Multi-Gaussian surrogate for differentiable spike training
+- **Slow dynamics (3-state)**: one leaky integrator + one damped oscillatory pair
+- **Auxiliary filter (1-state)**: unreset linear filter with a delayed membrane drive
+- **Membrane (1-state)**: scalar voltage with subtractive spike reset
+- **Surrogate gradient**: multi-Gaussian surrogate for differentiable spike training
 
 ## Directory Structure
 
 ```
-SPRiF_Paper/
-├── core_algorithm/          # Shared algorithm library (copied into each task)
-│   ├── sprif_layer.py       # SPRiFNeuronLayer + surrogate gradient
-│   └── utils.py             # set_seed, dump_json, load_json, convert_dataset_wtime
-│
 ├── Task_GSC/                # Google Speech Commands (12-class keyword spotting)
 ├── Task_ECG/                # QTDB ECG classification (6-class heartbeat)
-├── Task_S-MNIST/            # Sequential MNIST (10-digit classification, row-by-row order)
-├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit classification, random pixel order)
-└── Task_SHD/                # Spiking Heidelberg Digits (20-class digit recognition)
+├── Task_S-MNIST/            # Sequential MNIST (784 scalar pixel inputs)
+├── Task_pSMNIST/            # Permuted Sequential MNIST (10-digit, random pixel order)
+├── Task_SHD/                # Spiking Heidelberg Digits (20-class digit recognition)
+├── experiments/             # Analysis scripts for paper figures
+│   ├── impulse_analysis/    # Impulse response kernel analysis
+│   ├── reset_analysis/      # Learned reset direction analysis
+│   ├── robustness/          # Noise robustness benchmarking
+│   ├── trajectory_analysis/ # Slow-state trajectory visualization
+│   ├── loss_landscape/      # Loss landscape visualization
+│   └── SI-DMS/              # Spike-intervention delayed match-to-sample
+├── requirements.txt
+├── LICENSE
+└── README.md
 ```
 
-Each task directory is **fully self-contained** and can be run independently.
+Each task directory is **self-contained** and includes its own `core_algorithm/` with the shared SPRiF layer implementation.
 
-## Requirements
+## Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -38,67 +73,97 @@ pip install -r requirements.txt
 - numpy >= 1.19.0
 - scipy >= 1.5.0
 - librosa >= 0.8.0
+- torchaudio >= 0.10.0
+- tables >= 3.6.0
+- pandas >= 1.3.0
+- matplotlib >= 3.3.0
+- seaborn >= 0.11.0
+- PyYAML >= 5.4
+- wfdb >= 4.1.0 (for QTDB preprocessing)
+- soundfile >= 0.12.0
 
 ## Running Experiments
 
-### Task GSC (Google Speech Commands)
+### Google Speech Commands (GSC)
 
 ```bash
 cd Task_GSC
-python train.py --data-root /path/to/speech_commands_v0.02
+python download_GSC.py
+python train.py
 ```
 
-Optional: `--cache-root /path/to/cache` to specify a cache directory.
-
-### Task ECG (QTDB ECG)
+### ECG Classification (QTDB)
 
 ```bash
 cd Task_ECG
+python generate_qtdb_dataset.py --download
 python train.py --train-mat ./data/QTDB_train.mat --test-mat ./data/QTDB_test.mat
 ```
 
-### Task pSMNIST (Permuted Sequential MNIST)
+### Permuted Sequential MNIST (pSMNIST)
 
 ```bash
 cd Task_pSMNIST
 python train.py
 ```
 
-MNIST dataset will be downloaded automatically on first run.
-
-### Task S-MNIST (Sequential MNIST)
+### Sequential MNIST (S-MNIST)
 
 ```bash
 cd Task_S-MNIST
 python train.py
 ```
 
-Pixels are read in natural row-by-row order (no permutation). Same hyperparameters as pSMNIST.
-Ablation variants: `python train_ablation_{a,b,c}.py`.
+### Spiking Heidelberg Digits (SHD)
 
-### Task SHD (Spiking Heidelberg Digits)
+Download the SHD dataset (shd_train.h5, shd_test.h5) from https://zenodo.org/records/7969702 and place them under `data/SHD/`:
 
-**Step 1**: Preprocess the SHD dataset (HDF5 → NPY):
 ```bash
+mkdir -p data/SHD
+# Place shd_train.h5 and shd_test.h5 in data/SHD/
+
 cd Task_SHD
 python generate_data.py
+python train.py --train-dir ../data/SHD/train_1ms --test-dir ../data/SHD/test_1ms
 ```
 
-**Step 2**: Train the model:
+### Analysis Experiments
+
 ```bash
-python train.py --train-dir /path/to/train_1ms --test-dir /path/to/test_1ms
+# Impulse response kernel analysis
+cd experiments/impulse_analysis
+python impulse_analyze.py
+
+# Learned reset direction analysis
+cd experiments/reset_analysis
+python reset_analyze.py
+
+# Noise robustness benchmarking
+cd experiments/robustness
+python noise_benchmark.py
+
+# Slow-state trajectory visualization
+cd experiments/trajectory_analysis
+python trajectory_analyze.py
+
+# Loss landscape visualization
+cd experiments/loss_landscape
+python run_all.py
+
+# SI-DMS: spike-intervention delayed match-to-sample
+cd experiments/SI-DMS
+python train.py --model sprif_full
+python run_all.py           # train all models with all seeds
+python evaluate.py          # evaluate trained models
+python aggregate.py         # aggregate results into table/figure data
 ```
 
 ## Model Checkpoints
 
-Models are automatically saved with the naming convention:
+Saved model naming format: `[NetworkPrefix]_[KeyHParams]_seed[N]_acc[XX.XX].pth`
 
-```
-[NetworkPrefix]_[KeyHParams]_seed[N]_acc[XX.XX].pth
-```
-
-Example: `SPRiFGSCNet_hs300_bs200_lr0.003_seed42_acc92.50.pth`
+Checkpoints are saved in the task root directory during training.
 
 ## Citation
 
-If you use this code in your research, please cite the paper.
+If you find this work useful for your research, please cite our paper.

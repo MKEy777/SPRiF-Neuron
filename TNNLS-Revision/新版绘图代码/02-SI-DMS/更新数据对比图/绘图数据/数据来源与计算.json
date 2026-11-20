@@ -1,0 +1,36 @@
+{
+  "evaluation_sha256": {
+    "Clean": "243a0b50b60b7e1be1546a1a582c6b11f4c06b6bcac41c88a548e91f8b9fe42d",
+    "Intervention": "d63604456b1327a6cc5bf6c1270efde104d7de3074dc17474ef4e0c8f8440cee"
+  },
+  "evaluation_rows_total_per_training": 6450,
+  "plotted_rows_per_training": 1200,
+  "selection": "K=0 plus nominal intervention fraction 0.15 for K>0",
+  "seeds": [
+    0,
+    1,
+    2,
+    42,
+    1111
+  ],
+  "delays_ms": [
+    200,
+    400,
+    800,
+    1600,
+    2500
+  ],
+  "intervention_counts": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    40
+  ],
+  "heatmap": "accuracy averaged over five seeds per delay and intervention count; original scale 0.5-1.0",
+  "curves": "accuracy averaged equally over five delays within seed; mean and sample SD across five seeds",
+  "replay": "existing seed 0 checkpoint replay and existing reconstructed trial; checkpoint SHA matches replay record; no checksum linkage to updated evaluations"
+}

@@ -1,0 +1,51 @@
+{
+  "evaluation_sha256": {
+    "Clean": "78b7a9a017bc2d7c40fdfdb220ba7c1875e6e1f39ae449b9ef5af8469e8fbd7d",
+    "Intervention": "9cad2b6c93fd1dc3ce1311962a7ba7d944111deb6e1fdac2a7292e177e6ff4b2"
+  },
+  "selected_rows_per_training": 1200,
+  "selection": "K=0 plus nominal intervention fraction 0.15 for K>0",
+  "models": [
+    "SPRiF",
+    "MEMORY_RESET5",
+    "REAL_MODES3",
+    "ASRNN",
+    "BRF",
+    "LIF"
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    42,
+    1111
+  ],
+  "delays_ms": [
+    200,
+    400,
+    800,
+    1600,
+    2500
+  ],
+  "intervention_counts": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    40
+  ],
+  "selected_accuracy_range": [
+    0.36484375,
+    1.0
+  ],
+  "cross_seed_sd_range_of_five_delay_average": [
+    7.307924583542019e-05,
+    0.22471174060009724
+  ],
+  "heatmap": "YlGnBu, 0.4-1.0, average over five seeds",
+  "curves": "average over five delays within each seed; mean and sample SD over five seeds",
+  "legend_and_line_style": "match existing legacy plot layout"
+}

@@ -1,0 +1,21 @@
+{
+  "training": "Intervention",
+  "seed": 0,
+  "sample_id": "eval_seed0_delay1600_batch0_first_AA_sample4",
+  "checkpoint_id": "sha256:b514de2f329fa183af05a2c4034a6d2577e62578796db333f783b7466c62458f",
+  "displayed_neurons": [
+    61,
+    7,
+    1,
+    5,
+    26,
+    20,
+    63,
+    60,
+    59,
+    58
+  ],
+  "total_neurons": 64,
+  "rule": "Historical paired non-tonic unit ranking; 10 displayed",
+  "heatmap_slot": "REAL_MODES3 occupies the historical lambda0 position; these are different models"
+}

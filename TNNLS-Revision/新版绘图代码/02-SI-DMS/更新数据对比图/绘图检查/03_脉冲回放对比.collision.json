@@ -1,0 +1,168 @@
+{
+  "pdf": "C:\\Users\\Administrator\\Desktop\\SPRiF-Neuron\\TNNLS-Revision\\新版绘图代码\\02-SI-DMS\\更新数据对比图\\03_脉冲回放对比.pdf",
+  "auditable": true,
+  "verdict": "REVIEW REQUIRED",
+  "page_count": 1,
+  "visible_text_box_count": 67,
+  "text_trace_count": 75,
+  "stroke_path_count": 2010,
+  "filled_region_count": 84,
+  "image_region_count": 0,
+  "summary": {
+    "fail": 0,
+    "warn": 6,
+    "contained_fill_overlays": 16,
+    "contained_image_overlays": 0
+  },
+  "thresholds": {
+    "text_inset_pt": 0.6,
+    "min_overlap_ratio": 0.05,
+    "clipping_tolerance_pt": 0.5
+  },
+  "findings": [
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "A",
+      "text_bbox": [
+        56.357444763183594,
+        33.232479095458984,
+        60.97932052612305,
+        39.632476806640625
+      ],
+      "other_text": null,
+      "other_bbox": [
+        53.29800033569336,
+        34.1326904296875,
+        64.02626037597656,
+        39.259765625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        4000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "delay",
+      "text_bbox": [
+        142.2195281982422,
+        33.232479095458984,
+        157.49571228027344,
+        39.632476806640625
+      ],
+      "other_text": null,
+      "other_bbox": [
+        64.02626037597656,
+        34.1326904296875,
+        235.67843627929688,
+        39.259765625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        5000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "A",
+      "text_bbox": [
+        238.73788452148438,
+        33.232479095458984,
+        243.35975646972656,
+        39.632476806640625
+      ],
+      "other_text": null,
+      "other_bbox": [
+        235.67843627929688,
+        34.1326904296875,
+        246.4066925048828,
+        39.259765625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        6000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "A",
+      "text_bbox": [
+        307.39874267578125,
+        33.232479095458984,
+        312.0206298828125,
+        39.632476806640625
+      ],
+      "other_text": null,
+      "other_bbox": [
+        304.33929443359375,
+        34.1326904296875,
+        315.06756591796875,
+        39.259765625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        883000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "delay",
+      "text_bbox": [
+        393.2608337402344,
+        33.232479095458984,
+        408.53704833984375,
+        39.632476806640625
+      ],
+      "other_text": null,
+      "other_bbox": [
+        315.06756591796875,
+        34.1326904296875,
+        486.7197265625,
+        39.259765625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        884000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "A",
+      "text_bbox": [
+        489.7791748046875,
+        33.232479095458984,
+        494.40106201171875,
+        39.632476806640625
+      ],
+      "other_text": null,
+      "other_bbox": [
+        486.7197265625,
+        34.1326904296875,
+        497.447998046875,
+        39.259765625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        885000
+      ]
+    }
+  ]
+}

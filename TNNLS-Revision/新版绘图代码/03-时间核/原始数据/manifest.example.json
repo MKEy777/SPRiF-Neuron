@@ -1,0 +1,11 @@
+{
+  "groups": [
+    {"label": "pSMNIST", "parameters": "pSMNIST_parameters.npz"},
+    {"label": "GSC", "parameters": "GSC_parameters.npz"},
+    {"label": "QTDB", "parameters": "QTDB_parameters.npz"}
+  ],
+  "comparisons": [
+    {"group": "GSC", "asrnn": "GSC_asrnn.npz"},
+    {"group": "QTDB", "asrnn": "QTDB_asrnn.npz"}
+  ]
+}

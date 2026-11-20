@@ -1,15 +1,3 @@
-"""
-SPRiF Ablation A — S-MNIST training with ω=0 (no rotation coupling).
-
-Usage:
-    python train_ablation_a.py
-
-Compared to full SPRiF:
-    - ω is fixed to 0  →  cos=1, sin=0
-    - x¹' = ρ·x¹ + (1-ρ)·I  (no rotation from x²)
-    - x²' = ρ·x²             (no rotation from x¹)
-    - 3D slow state, 2D fast state, G (2×3), and projective reset unchanged
-"""
 
 import argparse
 
@@ -23,29 +11,27 @@ from torch.utils.data import DataLoader
 from core_algorithm.utils import set_seed
 from model_ablation_a import SequentialMNIST, SPRiFSMNISTNetAblationA
 
-
 def get_args():
     parser = argparse.ArgumentParser(
         description="SPRiF Ablation A: S-MNIST with ω=0 (no rotation coupling)"
     )
-    # Training
+
     parser.add_argument("--lr", type=float, default=1e-2)
     parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--seed", type=int, default=0)
-    # Model
-    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 256])
+
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64, 210])
     parser.add_argument("--mode", type=str, default="srnn")
     parser.add_argument("--num-classes", type=int, default=10)
     parser.add_argument("--warmup-steps", type=int, default=0)
-    # TBPTT
+
     parser.add_argument("--tbptt-len", type=int, default=262,
                         help="TBPTT chunk length (0 = full BPTT)")
-    # Scheduler
+
     parser.add_argument("--scheduler-step", type=int, default=50)
     parser.add_argument("--scheduler-gamma", type=float, default=0.1)
     return parser.parse_args()
-
 
 def main():
     args = get_args()
@@ -54,7 +40,6 @@ def main():
     print(f"Device: {device}")
     print("Ablation A: ω=0, no rotation coupling (3D slow, 2D fast, G=2x3)")
 
-    # Data
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
     train_mnist = torchvision.datasets.MNIST(
         root="./data", train=True, download=True, transform=transform,
@@ -63,7 +48,6 @@ def main():
         root="./data", train=False, download=True, transform=transform,
     )
 
-    # No permutation — pixels in natural row-by-row order
     train_dataset = SequentialMNIST(train_mnist)
     test_dataset = SequentialMNIST(test_mnist)
 
@@ -79,7 +63,6 @@ def main():
 
     print(f"Train samples: {len(train_dataset)}, Test samples: {len(test_dataset)}")
 
-    # Model
     model = SPRiFSMNISTNetAblationA(
         input_size=1,
         hidden_sizes=list(args.hidden_sizes),
@@ -91,12 +74,10 @@ def main():
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}")
 
-    # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     criterion = nn.CrossEntropyLoss()
 
-    # Training loop
     best_test_acc = 0.0
 
     for epoch in range(1, args.epochs + 1):
@@ -136,7 +117,7 @@ def main():
                 valid_logits = logits_chunk[:, local_warmup:, :]
                 chunk_logits = valid_logits.mean(dim=1)
 
-                optimizer.zero_grad(set_to_none=True)
+                optimizer.zero_grad()
                 loss = criterion(chunk_logits, y)
                 loss.backward()
                 optimizer.step()
@@ -155,7 +136,6 @@ def main():
 
         scheduler.step()
 
-        # Evaluation
         model.eval()
         test_loss = 0.0
         test_correct = 0
@@ -163,7 +143,7 @@ def main():
         with torch.no_grad():
             for x, y in test_loader:
                 x, y = x.to(device, non_blocking=pin_memory), y.to(device, non_blocking=pin_memory)
-                logits = model(x)  # Full BPTT for eval
+                logits = model(x)
                 loss = criterion(logits, y)
                 test_loss += loss.item() * x.size(0)
                 test_correct += (logits.argmax(dim=-1) == y).sum().item()
@@ -185,6 +165,6 @@ def main():
 
     print(f"\nAblation A complete. Best test accuracy: {best_test_acc:.2f}%")
 
-
 if __name__ == "__main__":
     main()
+

@@ -1,0 +1,21 @@
+{
+  "training": "Clean",
+  "seed": 0,
+  "sample_id": "eval_seed0_delay1600_batch0_first_AA_sample4",
+  "checkpoint_id": "sha256:5e6a5b586d7d4dea6649e3d290d83d947fe699b4f7feba8a2a2f739b86ffc24b",
+  "displayed_neurons": [
+    2,
+    21,
+    49,
+    38,
+    7,
+    53,
+    12,
+    57,
+    46,
+    63
+  ],
+  "total_neurons": 64,
+  "rule": "Historical paired non-tonic unit ranking; 10 displayed",
+  "heatmap_slot": "REAL_MODES3 occupies the historical lambda0 position; these are different models"
+}

@@ -1,4 +1,3 @@
-"""SPRiF Ablation C — GSC training with scalar reset (lambda=0, no directional reset)."""
 
 import os
 import warnings
@@ -14,7 +13,6 @@ from data import MelSpectrogram, Pad, Rescale, SpeechCommandsDataset
 
 warnings.filterwarnings("ignore")
 
-
 def set_seed(seed: int):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
@@ -26,16 +24,14 @@ def set_seed(seed: int):
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     os.environ["PYTHONHASHSEED"] = str(seed)
 
-
 class Config:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 DEFAULT_CONFIG = {
-    "lr": 3e-3, "epochs": 150, "patience": 40, "batch_size": 200,
-    "num_workers": 8, "weight_decay": 1e-4, "grad_clip": 10.0, "seed": 42,
-    "data_root": "/root/autodl-tmp/dataset/SpeechCommands/speech_commands_v0.02",
-    "cache_root": "/root/autodl-tmp/dataset/SpeechCommands/cache_power_to_db",
+    "lr": 3e-3, "epochs": 150, "batch_size": 128,
+    "num_workers": 8, "seed": 42,
+    "data_root": os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset/SpeechCommands/speech_commands_v0.02"),
+    "cache_root": os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset/SpeechCommands/cache_power_to_db"),
     "hidden_sizes": [300], "recurrent_flags": [True], "mode": "srnn", "dropout": 0.15,
     "input_size": 120, "num_classes": 12, "n_mels": 40, "seq_len": 101,
     "wav_size": 16000, "sr": 16000, "n_fft": int(30e-3 * 16000),
@@ -43,14 +39,12 @@ DEFAULT_CONFIG = {
     "neuron_threshold": 1.0, "neuron_init_std": 0.1,
 }
 
-# Ablation C: full spectral params, NO lambda_reset (scalar reset only)
 HYPERPARAM_SEARCH = [
     {"lr": 5e-3, "neuron_threshold": 0.8, "dropout": 0.15,
      "tau_alpha_range": (10.0, 80.0), "tau_rho_range": (4.0, 30.0),
      "tau_eta_range": (0.8, 8.0),
      "omega_range": (0.04 * math.pi, 0.40 * math.pi)},
 ]
-
 
 def build_neuron_kwargs(config: dict) -> dict:
     kwargs = {"threshold": config["neuron_threshold"], "init_std": config["neuron_init_std"]}
@@ -59,19 +53,13 @@ def build_neuron_kwargs(config: dict) -> dict:
             kwargs[k] = config[k]
     return kwargs
 
-
 def _recurrent_flags_from_mode(config: dict):
     if "recurrent_flags" in config and config["recurrent_flags"] is not None:
         return tuple(config["recurrent_flags"])
     return tuple(config["mode"].lower() == "srnn" for _ in config["hidden_sizes"])
 
-
 def collate_fn(data):
-    x_batch = np.array([d[0] for d in data])
-    std = x_batch.std(axis=(0, 2), keepdims=True)
-    std[std == 0] = 1.0
-    return torch.tensor(x_batch / std).float(), torch.tensor([d[1] for d in data]).long()
-
+    return torch.tensor(np.array([d[0] for d in data])).float(), torch.tensor([d[1] for d in data]).long()
 
 def collect_param_stats(model) -> dict:
     stats = {}
@@ -98,13 +86,11 @@ def collect_param_stats(model) -> dict:
         stats[f"layer{li}/G1_norm_mean"] = G[:, 1, :].norm(dim=1).mean().item()
     return stats
 
-
 def preprocess_batch(x, y, device, config):
     x = x.view(-1, 3, config["seq_len"], config["n_mels"]).to(device, non_blocking=True)
     x = x.permute(0, 2, 1, 3).reshape(-1, config["seq_len"], config["input_size"])
     y = y.to(device, non_blocking=True)
     return x, y
-
 
 @torch.no_grad()
 def evaluate(model, loader, criterion, device, config):
@@ -123,7 +109,6 @@ def evaluate(model, loader, criterion, device, config):
     metrics.update(collect_param_stats(model))
     return metrics
 
-
 def run_experiment(params, train_loader, valid_loader, device):
     config = dict(DEFAULT_CONFIG); config.update(params)
     model = SPRiFGSCNetAblationC(
@@ -133,22 +118,19 @@ def run_experiment(params, train_loader, valid_loader, device):
         neuron_kwargs=build_neuron_kwargs(config)).to(device)
 
     criterion = nn.NLLLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"],
-                                   weight_decay=config["weight_decay"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"])
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
-    best_val_acc, patience_counter = 0.0, 0
-    best_ckpt_path = None
+    best_val_acc = 0.0
 
     for epoch in range(1, config["epochs"] + 1):
         model.train()
         total_loss, total_correct, total = 0.0, 0, 0
         for x, y in train_loader:
             x, y = preprocess_batch(x, y, device, config)
-            optimizer.zero_grad(set_to_none=True)
+            optimizer.zero_grad()
             logits, _ = model(x)
             loss = criterion(logits, y)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config["grad_clip"])
             optimizer.step()
             total_loss += loss.item() * x.size(0)
             total_correct += (logits.argmax(dim=-1) == y).sum().item()
@@ -171,23 +153,12 @@ def run_experiment(params, train_loader, valid_loader, device):
               f"G1={metrics['layer0/G1_norm_mean']:.3f}")
 
         if metrics["val_acc"] > best_val_acc:
-            best_val_acc = metrics["val_acc"]; patience_counter = 0
+            best_val_acc = metrics["val_acc"]
             hs_str = "hs" + "".join(str(h) for h in config["hidden_sizes"])
             save_name = (f"SPRiFGSCNetAblationC_{hs_str}_bs{config['batch_size']}"
                          f"_lr{config['lr']}_seed{config['seed']}_acc{best_val_acc:.4f}.pth")
-            if best_ckpt_path is not None and best_ckpt_path != save_name and os.path.exists(best_ckpt_path):
-                try:
-                    os.remove(best_ckpt_path)
-                except OSError:
-                    pass
             torch.save(model.state_dict(), save_name)
-            best_ckpt_path = save_name
-        else:
-            patience_counter += 1
-            if patience_counter >= config["patience"]:
-                print("  -> Early stopping triggered."); break
     return best_val_acc
-
 
 def build_loaders(config):
     testing_words = ["yes","no","up","down","left","right","on","off","stop","go"]
@@ -217,7 +188,6 @@ def build_loaders(config):
                               collate_fn=collate_fn, pin_memory=torch.cuda.is_available())
     return train_loader, valid_loader
 
-
 def main():
     set_seed(DEFAULT_CONFIG["seed"]); device = Config.device
     train_loader, valid_loader = build_loaders(DEFAULT_CONFIG)
@@ -232,6 +202,6 @@ def main():
             best_overall_acc, best_config = val_acc, params
     print(f"\nAblation C finished. Best Accuracy: {best_overall_acc:.4f} with {best_config}")
 
-
 if __name__ == "__main__":
     main()
+

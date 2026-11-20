@@ -1,0 +1,6 @@
+{
+  "source": "experiment-design-20260606\\results\\figures\\impulse_analysis\\asrnn_comparison_data.npz",
+  "sha256": "266e9dfca8c9de3e2b713458be7a2d962665e924b4a4e8e1b84c74e61734e756",
+  "provenance_status": "historical figure data; original ASRNN checkpoint and training seed require verification",
+  "preserved": "GSC_col2_asrnn_kernel and ECG_col2_asrnn_kernel unchanged"
+}

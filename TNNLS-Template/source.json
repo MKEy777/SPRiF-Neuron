@@ -1,0 +1,60 @@
+{
+  "downloaded_on": "2026-10-03",
+  "official_selector": "https://template-selector.ieee.org/",
+  "selection_api": "https://template-selector.ieee.org/api/ieee-template-selector/template/publication-type/1/publication-title/84/article/3",
+  "download_url": "https://template-selector.ieee.org/api/ieee-template-selector/template/262/download",
+  "template": {
+    "id": 262,
+    "descriptiveText": "Please use this template when writing an original research article or brief for IEEE Transactions on Neural Networks and Learning Systems in LaTeX format.",
+    "status": "Active",
+    "templateMeta": {
+      "id": 1,
+      "name": "IEEE-Transactions-LaTeX2e-templates-and-instructions.zip",
+      "format": "LaTeX",
+      "status": true,
+      "createdBy": null,
+      "createdDate": 1589816758000,
+      "shouldOverride": false,
+      "otherTitleAssociationCount": 0,
+      "modifiedBy": null,
+      "modifiedDate": 1761318435000
+    },
+    "publicationType": {
+      "id": 1,
+      "name": "Transactions, Journals and Letters",
+      "description": "Template type to publish new Journal",
+      "status": "Active"
+    },
+    "publicationTitle": {
+      "id": 84,
+      "name": "IEEE Transactions on Neural Networks and Learning Systems",
+      "acronym": null,
+      "description": "",
+      "status": "Active",
+      "publicationType": {
+        "id": 1,
+        "name": "Transactions, Journals and Letters",
+        "description": "Template type to publish new Journal",
+        "status": "Active"
+      },
+      "createdBy": null,
+      "createdDate": 1589906523000,
+      "modifiedBy": null,
+      "modifiedDate": 1589996187000,
+      "articleTypeAvailable": true
+    },
+    "articleType": {
+      "id": 3,
+      "name": "Original research and Brief",
+      "description": "",
+      "status": "",
+      "createdBy": null,
+      "createdDate": 1589831435000
+    },
+    "createdBy": null,
+    "createdDate": 1589996187000,
+    "modifiedBy": null,
+    "modifiedDate": 1589996187000,
+    "shouldOverride": false
+  }
+}

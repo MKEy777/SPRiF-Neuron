@@ -1,0 +1,165 @@
+
+import argparse
+import math
+import os
+import random
+import warnings
+from pathlib import Path
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
+
+from core_algorithm.utils import set_seed
+from core_algorithm.sprif_layer import SPRiFNeuronLayer
+from model import SPRiFSHDNet
+from data import SHDDataset
+
+warnings.filterwarnings("ignore")
+
+def get_args():
+    parser = argparse.ArgumentParser(description="TNNLS scalar-reset SPRiF (11 local coefficients): SPRiF-SHD: Spiking Heidelberg Digits")
+
+    parser.add_argument("--lr", type=float, default=1e-2)
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--batch-size", type=int, default=100)
+    parser.add_argument("--num-workers", type=int, default=6)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--model", choices=["sprif_scalar", "memory_reset5"], default="sprif_scalar")
+    parser.add_argument("--checkpoint-path", default=None)
+
+    parser.add_argument("--hidden-sizes", type=int, nargs="+", default=[64])
+    parser.add_argument("--mode", type=str, default="srnn")
+    parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument("--num-classes", type=int, default=20)
+    parser.add_argument("--input-size", type=int, default=700)
+    parser.add_argument("--warmup-steps", type=int, default=10)
+
+    parser.add_argument("--neuron-threshold", type=float, default=1.0)
+    parser.add_argument("--neuron-init-std", type=float, default=0.2)
+
+    parser.add_argument("--train-dir", type=str, required=True)
+    parser.add_argument("--test-dir", type=str, required=True)
+
+    parser.add_argument("--scheduler-step", type=int, default=20)
+    parser.add_argument("--scheduler-gamma", type=float, default=0.5)
+    return parser.parse_args()
+
+def main():
+    args = get_args()
+    if args.checkpoint_path and Path(args.checkpoint_path).exists():
+        raise FileExistsError(f"Checkpoint already exists: {args.checkpoint_path}")
+    set_seed(args.seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Device: {device}")
+
+    train_dataset = SHDDataset.from_directory(args.train_dir)
+    test_dataset = SHDDataset.from_directory(args.test_dir)
+
+    train_loader = DataLoader(
+        train_dataset, batch_size=args.batch_size,
+        shuffle=True, num_workers=args.num_workers,
+        pin_memory=device.type == "cuda",
+    )
+    test_loader = DataLoader(
+        test_dataset, batch_size=args.batch_size,
+        shuffle=False, num_workers=args.num_workers,
+        pin_memory=device.type == "cuda",
+    )
+
+    print(f"Train samples: {len(train_dataset)}, Test samples: {len(test_dataset)}")
+
+    recurrent_flags = tuple(args.mode.lower() == "srnn" for _ in args.hidden_sizes)
+    model = SPRiFSHDNet(
+        input_size=args.input_size,
+        hidden_sizes=list(args.hidden_sizes),
+        num_classes=args.num_classes,
+        dropout=args.dropout,
+        recurrent_flags=recurrent_flags,
+        warmup_steps=args.warmup_steps,
+        neuron_kwargs={
+            "threshold": args.neuron_threshold,
+            "init_std": args.neuron_init_std,
+            "memory_reset": (args.model == "memory_reset5"),
+            "tau_alpha_range": (10.0, 80.0),
+            "tau_rho_range": (4.0, 30.0),
+            "tau_eta_range": (0.8, 8.0),
+            "omega_range": (0.04 * math.pi, 0.40 * math.pi),
+        },
+    ).to(device)
+
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Model parameters: {total_params:,}")
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    scheduler = StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
+    criterion = nn.CrossEntropyLoss()
+
+    best_test_acc = 0.0
+
+    for epoch in range(1, args.epochs + 1):
+        model.train()
+        train_loss = 0.0
+        train_correct = 0
+        train_total = 0
+
+        for x, y in train_loader:
+            x, y = x.to(device), y.to(device)
+            optimizer.zero_grad()
+            logits, _ = model(x)
+            loss = criterion(logits, y)
+            loss.backward()
+            optimizer.step()
+            train_loss += loss.item() * x.size(0)
+            train_correct += (logits.argmax(dim=-1) == y).sum().item()
+            train_total += x.size(0)
+
+        scheduler.step()
+
+        model.eval()
+        test_loss = 0.0
+        test_correct = 0
+        test_total = 0
+        with torch.no_grad():
+            for x, y in test_loader:
+                x, y = x.to(device), y.to(device)
+                logits, _ = model(x)
+                loss = criterion(logits, y)
+                test_loss += loss.item() * x.size(0)
+                test_correct += (logits.argmax(dim=-1) == y).sum().item()
+                test_total += x.size(0)
+
+        train_loss /= max(train_total, 1)
+        train_acc = 100.0 * train_correct / max(train_total, 1)
+        test_loss /= max(test_total, 1)
+        test_acc = 100.0 * test_correct / max(test_total, 1)
+
+        print(
+            f"Epoch {epoch:03d} | "
+            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.2f}% | "
+            f"Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.2f}%"
+        )
+
+        if test_acc > best_test_acc:
+            best_test_acc = test_acc
+            hs_str = "hs" + "".join(str(h) for h in args.hidden_sizes)
+            save_name = (
+                f"TNNLS11_{args.model}_SHD_{hs_str}_bs{args.batch_size}"
+                f"_lr{args.lr}_seed{args.seed}_acc{best_test_acc:.2f}.pth"
+            )
+            if args.checkpoint_path:
+                save_name = args.checkpoint_path
+                Path(save_name).parent.mkdir(parents=True, exist_ok=True)
+            torch.save({"model": model.state_dict(), "name": args.model, "seed": args.seed,
+                        "task": "SHD", "training_args": vars(args), "selected_epoch": epoch,
+                        "selection_metric": "test_accuracy", "score_percent": best_test_acc,
+                        "config": {"model": {"threshold": args.neuron_threshold}},
+                        "protocol_version": "benchmark-spectral-reset-v1"}, save_name)
+
+    print(f"\nTraining complete. Best test accuracy: {best_test_acc:.2f}%")
+
+if __name__ == "__main__":
+    main()
+
