@@ -31,6 +31,11 @@ M.~Baronig, R.~Ferrand, S.~Sabathiel, and R.~Legenstein, ``Advancing
   spatio-temporal processing through adaptation in spiking neural networks,''
   \emph{Nature Communications}, vol.~16, p. 5776, 2025.
 
+\bibitem{radlif}
+A.~Bittar and P.~N. Garner, ``A surrogate gradient spiking baseline for speech
+  command recognition,'' \emph{Frontiers in Neuroscience}, vol.~16, p. 865897,
+  2022.
+
 \bibitem{heterogeneity}
 N.~Perez-Nieves, V.~C.~H. Leung, P.~L. Dragotti, and D.~F.~M. Goodman, ``Neural
   heterogeneity promotes robust learning,'' \emph{Nature Communications},
@@ -104,11 +109,6 @@ W.~Fang, Z.~Yu, Z.~Zhou, D.~Chen, Y.~Chen, Z.~Ma, T.~Masquelier, and Y.~Tian,
 D.~Salaj, A.~Subramoney, C.~Kraisnikovic, G.~Bellec, R.~Legenstein, and
   W.~Maass, ``Spike frequency adaptation supports network computations on
   temporally dispersed information,'' \emph{eLife}, vol.~10, p. e65459, 2021.
-
-\bibitem{radlif}
-A.~Bittar and P.~N. Garner, ``A surrogate gradient spiking baseline for speech
-  command recognition,'' \emph{Frontiers in Neuroscience}, vol.~16, p. 865897,
-  2022.
 
 \bibitem{dalif}
 T.~Zhang, K.~Yu, J.~Zhang, and H.~Wang, ``{DA-LIF}: Dual adaptive leaky
